@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#FCF8F2" />
+    <title>Terapanth AI</title>
+    
+    <script>
+      (function() {
+        function updateViewport() {
+          const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+          document.documentElement.style.setProperty('--visual-viewport-height', height + 'px');
+        }
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', updateViewport);
+          window.visualViewport.addEventListener('scroll', updateViewport);
+        }
+        window.addEventListener('resize', updateViewport);
+        window.addEventListener('load', updateViewport);
+        updateViewport();
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

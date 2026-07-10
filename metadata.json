@@ -1,0 +1,6 @@
+{
+  "name": "Terapanth AI",
+  "description": "Unified spiritual engine for Terapanth with AI insight, Samayik timers, Japa counters, fasting logs, and a dedicated Sadhana diary.",
+  "requestFramePermissions": ["camera", "microphone", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

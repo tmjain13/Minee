@@ -1,0 +1,865 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap");
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-saffron: #e67e22;
+  --color-cream: #fdfbf7;
+  --color-spiritual: var(--text-spiritual);
+  --font-serif: "Cormorant Garamond", serif;
+
+  @keyframes spin-slow {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  --animate-spin-slow: spin-slow 8s linear infinite;
+}
+
+:root {
+  --bg-cream: #fdfbf7;
+  --text-spiritual: #1a1a1a;
+  --card-bg: white;
+  --border-color: #e5e7eb; /* gray-200 */
+  --accent-soft: rgba(230, 126, 34, 0.1);
+  --radius-card: 24px;
+  --shadow-card: 0 4px 18px -4px rgba(0, 0, 0, 0.05);
+}
+
+/* Sunset Theme */
+.theme-sunset {
+  --bg-cream: #fff5f1;
+  --text-spiritual: #4a1e11;
+  --card-bg: #ffffff;
+  --border-color: #f8b4a6;
+  --accent-soft: rgba(244, 115, 93, 0.12);
+  --radius-card: 24px;
+  --shadow-card: 0 4px 18px -4px rgba(74, 30, 17, 0.06);
+}
+
+/* Ocean Theme */
+.theme-ocean {
+  --bg-cream: #f0f8ff;
+  --text-spiritual: #002244;
+  --card-bg: #ffffff;
+  --border-color: #89cff0;
+  --accent-soft: rgba(137, 207, 240, 0.15);
+  --radius-card: 24px;
+  --shadow-card: 0 4px 18px -4px rgba(0, 34, 68, 0.06);
+}
+
+/* Forest Theme */
+.theme-forest {
+  --bg-cream: #f1f8f1;
+  --text-spiritual: #1a331a;
+  --card-bg: #ffffff;
+  --border-color: #a3cca3;
+  --accent-soft: rgba(163, 204, 163, 0.15);
+  --radius-card: 24px;
+  --shadow-card: 0 4px 18px -4px rgba(26, 51, 26, 0.06);
+}
+
+.dark {
+  --bg-cream: #0f0f0f;
+  --text-spiritual: #ffffff;
+  --card-bg: #1a1a1a;
+  --border-color: #333333;
+  --accent-soft: rgba(230, 126, 34, 0.15);
+  --radius-card: 24px;
+  --shadow-card: 0 4px 24px -4px rgba(0, 0, 0, 0.3);
+}
+
+.dark.theme-sunset {
+  --bg-cream: #2d130a;
+  --text-spiritual: #ffebd2;
+  --card-bg: #3d1b11;
+  --border-color: #8c3a23;
+}
+
+.dark.theme-ocean {
+  --bg-cream: #001221;
+  --text-spiritual: #e0f2fe;
+  --card-bg: #00213b;
+  --border-color: #004d80;
+}
+
+.dark.theme-forest {
+  --bg-cream: #0c1a0c;
+  --text-spiritual: #dcfce7;
+  --card-bg: #142e14;
+  --border-color: #215c21;
+}
+
+/* High Contrast Mode Override */
+.high-contrast {
+  --bg-cream: #ffffff !important;
+  --text-spiritual: #000000 !important;
+  --card-bg: #ffffff !important;
+  --border-color: #000000 !important;
+}
+
+.high-contrast * {
+  border-color: #000000 !important;
+}
+
+.high-contrast h1,
+.high-contrast h2,
+.high-contrast h3,
+.high-contrast h4,
+.high-contrast h5,
+.high-contrast h6,
+.high-contrast p,
+.high-contrast span,
+.high-contrast li,
+.high-contrast a,
+.high-contrast td,
+.high-contrast th,
+.high-contrast input,
+.high-contrast select,
+.high-contrast textarea,
+.high-contrast button:not(.bg-saffron):not(.bg-spiritual):not(.bg-orange-500):not(.bg-indigo-500):not(.bg-blue-500):not(.bg-rose-500) {
+  color: #000000 !important;
+}
+
+.dark.high-contrast {
+  --bg-cream: #000000 !important;
+  --text-spiritual: #ffffff !important;
+  --card-bg: #000000 !important;
+  --border-color: #ffffff !important;
+}
+
+.dark.high-contrast * {
+  border-color: #ffffff !important;
+}
+
+.dark.high-contrast h1,
+.dark.high-contrast h2,
+.dark.high-contrast h3,
+.dark.high-contrast h4,
+.dark.high-contrast h5,
+.dark.high-contrast h6,
+.dark.high-contrast p,
+.dark.high-contrast span,
+.dark.high-contrast li,
+.dark.high-contrast a,
+.dark.high-contrast td,
+.dark.high-contrast th,
+.dark.high-contrast input,
+.dark.high-contrast select,
+.dark.high-contrast textarea,
+.dark.high-contrast button:not(.bg-saffron):not(.bg-spiritual):not(.bg-orange-500):not(.bg-indigo-500):not(.bg-blue-500):not(.bg-rose-500) {
+  color: #ffffff !important;
+}
+
+.high-contrast .bg-saffron,
+.high-contrast .bg-spiritual,
+.high-contrast .bg-orange-500,
+.high-contrast .bg-indigo-500,
+.high-contrast .bg-blue-500 {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+.high-contrast .bg-saffron *,
+.high-contrast .bg-spiritual *,
+.high-contrast .bg-orange-500 *,
+.high-contrast .bg-indigo-500 *,
+.high-contrast .bg-blue-500 * {
+  color: #ffffff !important;
+}
+
+.dark.high-contrast .bg-saffron,
+.dark.high-contrast .bg-spiritual,
+.dark.high-contrast .bg-orange-500,
+.dark.high-contrast .bg-indigo-500,
+.dark.high-contrast .bg-blue-500 {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+}
+
+.dark.high-contrast .bg-saffron *,
+.dark.high-contrast .bg-spiritual *,
+.dark.high-contrast .bg-orange-500 *,
+.dark.high-contrast .bg-indigo-500 *,
+.dark.high-contrast .bg-blue-500 * {
+  color: #000000 !important;
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  font-size: 1rem; /* Reduced from 1.1rem */
+  background-color: var(--bg-cream);
+  color: var(--text-spiritual);
+  transition:
+    background-color 0.5s ease,
+    color 0.5s ease;
+  line-height: 1.5;
+}
+
+.serif-text {
+  font-family: "Cormorant Garamond", serif;
+  letter-spacing: -0.01em;
+}
+
+.chat-bubble {
+  @apply p-4 rounded-2xl max-w-[90%] mb-4 font-sans leading-relaxed transition-all duration-300;
+  font-size: 0.95rem;
+}
+
+.chat-bubble:hover {
+  @apply shadow-xl ring-1 ring-black/5 dark:ring-white/5 transform -translate-y-0.5;
+}
+
+.user-bubble {
+  @apply bg-saffron text-white ml-auto rounded-tr-none shadow-md shadow-saffron/10;
+}
+
+.ai-bubble {
+  @apply bg-[var(--card-bg)] border border-[var(--border-color)] text-[var(--text-spiritual)] mr-auto rounded-tl-none shadow-sm;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.markdown-body {
+  @apply text-[15px] sm:text-base leading-relaxed font-sans text-[var(--text-spiritual)] antialiased;
+}
+
+.markdown-body p {
+  @apply mb-4 last:mb-0;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4 {
+  @apply font-bold mt-6 mb-3 font-serif tracking-tight;
+  letter-spacing: -0.01em;
+}
+
+.markdown-body h1 {
+  @apply text-2xl border-b border-black/10 dark:border-white/10 pb-2;
+}
+.markdown-body h2 {
+  @apply text-xl;
+}
+.markdown-body h3 {
+  @apply text-lg;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  @apply mb-4 pl-6 space-y-1.5;
+}
+
+.markdown-body ul {
+  @apply list-disc;
+}
+
+.markdown-body ol {
+  @apply list-decimal;
+}
+
+.markdown-body li {
+  @apply pl-1;
+}
+
+.markdown-body li > ul,
+.markdown-body li > ol {
+  @apply mt-1.5 mb-1;
+}
+
+.markdown-body img {
+  @apply rounded-2xl max-w-full h-auto my-6 shadow-xl border border-[var(--border-color)] block mx-auto transition-all hover:scale-[1.01] active:scale-100 cursor-zoom-in;
+}
+
+.markdown-body code {
+  @apply bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded-md font-mono text-[0.9em] border border-black/5 dark:border-white/5 font-medium;
+}
+
+.markdown-body pre {
+  @apply bg-gray-900 dark:bg-black text-[#e6edf3] p-4 rounded-2xl my-4 overflow-x-auto border border-white/10 shadow-lg font-mono text-[13px] leading-normal;
+}
+
+.markdown-body pre code {
+  @apply bg-transparent p-0 border-0 text-inherit text-[inherit] font-medium;
+}
+
+.markdown-body blockquote {
+  @apply border-l-4 border-black/30 dark:border-white/30 pl-5 py-2 italic my-6 bg-black/[0.03] dark:bg-white/[0.03] rounded-r-2xl text-black/70 dark:text-white/70 font-serif text-lg leading-relaxed;
+}
+
+.markdown-body strong {
+  @apply text-black dark:text-white font-bold;
+}
+
+.markdown-body hr {
+  @apply my-8 border-0 h-px bg-gradient-to-r from-transparent via-black/10 dark:via-white/20 to-transparent;
+}
+
+.markdown-body table {
+  @apply w-full border-collapse my-6 overflow-hidden rounded-xl border border-black/10 dark:border-white/10 text-sm;
+}
+
+.markdown-body th {
+  @apply bg-black/5 dark:bg-white/5 font-bold p-3 text-left border-b border-black/10 dark:border-white/10;
+}
+
+.markdown-body td {
+  @apply p-3 border-b border-black/5 dark:border-white/5;
+}
+
+.markdown-body tr:last-child td {
+  @apply border-b-0;
+}
+
+/* Absolute Global Viewport Recalculation */
+html,
+body,
+#root {
+  height: 100% !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-height: 100% !important;
+  max-height: 100vh !important;
+  max-height: 100dvh !important;
+  width: 100% !important;
+  width: 100vw !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-sizing: border-box !important;
+  background-color: var(--bg-cream);
+  overscroll-behavior-y: contain !important;
+}
+
+[class*="app-container"],
+[class*="preview-container"] {
+  height: 100% !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-height: 100% !important;
+  max-height: 100vh !important;
+  max-height: 100dvh !important;
+  width: 100% !important;
+  width: 100vw !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  background-color: var(--bg-cream);
+  color: var(--text-spiritual);
+  transition: background-color 0.5s ease;
+  overscroll-behavior-y: contain !important;
+}
+
+/* Force Core Content Window to Self-Correct and Avoid Cutoffs */
+[class*="main-content"],
+[class*="scroll-container"],
+.main-content {
+  flex: 1 1 auto !important;
+  height: auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  scroll-behavior: smooth;
+  box-sizing: border-box !important;
+  overscroll-behavior-y: contain !important;
+  
+  /* Adaptive Padding/Spacing Defaults for Small Mobile Devices */
+  padding: 8px !important;
+  padding-bottom: calc(env(safe-area-inset-bottom, 8px) + 72px) !important;
+}
+
+@media (min-width: 380px) {
+  [class*="main-content"],
+  [class*="scroll-container"],
+  .main-content {
+    padding: 12px !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 12px) + 80px) !important;
+  }
+}
+
+@media (min-width: 480px) {
+  [class*="main-content"],
+  [class*="scroll-container"],
+  .main-content {
+    padding: 16px !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 16px) + 84px) !important;
+  }
+}
+
+@media (min-width: 768px) {
+  [class*="main-content"],
+  [class*="scroll-container"],
+  .main-content {
+    padding: 24px !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 16px) + 96px) !important;
+  }
+}
+
+/* Eliminate empty vertical gaps on the Chat/Agent tab specifically */
+.is-chat-tab {
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow: hidden !important;
+}
+
+.is-chat-tab [class*="main-content"],
+.is-chat-tab .main-content {
+  flex: 1 1 0% !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.is-chat-tab [class*="main-content"] [class*="flex-col"],
+.is-chat-tab .main-content .flex-col {
+  flex: 1 1 0% !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.is-chat-tab [class*="main-content"] .overflow-y-auto {
+  flex: 1 1 0% !important;
+  height: 100% !important;
+  max-height: 100dvh !important;
+  overflow-y: auto !important;
+}
+
+/* Lock the Bottom Interactive Bar Flush to the Device Base */
+[class*="bottom-panel"],
+.bottom-panel-container,
+.footer {
+  flex-shrink: 0 !important;
+  margin-top: auto !important;
+  position: relative !important;
+  bottom: 0 !important;
+  padding-bottom: env(safe-area-inset-bottom, 16px) !important;
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  z-index: 9999 !important;
+}
+
+.dark [class*="bottom-panel"],
+.dark .bottom-panel-container,
+.dark .footer {
+  background-color: rgba(22, 22, 22, 0.85) !important;
+}
+
+.bottom-panel-container {
+  z-index: 9999 !important;
+  
+  /* Adaptive bottom panel spacing defaults for Small Mobile Devices */
+  padding-bottom: calc(4px + env(safe-area-inset-bottom, 8px)) !important;
+  height: calc(56px + env(safe-area-inset-bottom, 8px)) !important;
+}
+
+@media (min-width: 380px) {
+  .bottom-panel-container {
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 12px)) !important;
+    height: calc(60px + env(safe-area-inset-bottom, 12px)) !important;
+  }
+}
+
+@media (min-width: 480px) {
+  .bottom-panel-container {
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 16px)) !important;
+    height: calc(65px + env(safe-area-inset-bottom, 16px)) !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .bottom-panel-container {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 16px)) !important;
+    height: calc(72px + env(safe-area-inset-bottom, 16px)) !important;
+  }
+}
+
+/* Dynamic bottom spacing calculated via dynamic CSS variables */
+:root {
+  --chat-input-height: 108px; /* Elevated height to prevent any message clipping/hiding behind elevated chat input container */
+  --chat-input-bottom-spacing: calc(
+    var(--chat-input-height) + env(safe-area-inset-bottom, 8px)
+  );
+}
+
+@media (min-width: 480px) {
+  :root {
+    --chat-input-height: 120px; /* Elevated height for tablet/desktop viewports to prevent any message clipping */
+    --chat-input-bottom-spacing: calc(
+      var(--chat-input-height) + env(safe-area-inset-bottom, 16px)
+    );
+  }
+}
+
+.chat-scroll-spacer {
+  height: var(--chat-input-bottom-spacing) !important;
+  min-height: var(--chat-input-bottom-spacing) !important;
+  flex-shrink: 0 !important;
+}
+
+/* Remove restrictive overrides that cause cutoffs */
+.is-chat-tab .main-content,
+.is-chat-tab [class*="main-content"] {
+  padding: 0 !important;
+  padding-bottom: 0 !important;
+  overflow: hidden !important;
+}
+
+.app-container {
+  background-color: var(--bg-cream);
+  border-radius: 0 !important; /* Mobile is completely flush */
+  box-shadow: none !important;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  body {
+    padding: 1rem !important;
+  }
+  #root {
+    align-items: center !important;
+    justify-content: center !important;
+    max-height: calc(100dvh - 2rem) !important;
+    height: calc(100dvh - 2rem) !important;
+  }
+  .app-container {
+    border-radius: 2rem !important; /* Elegant rounded card on desktop only */
+    border: 1px solid var(--border-color) !important;
+    box-shadow:
+      inset 0 2px 10px rgba(0, 0, 0, 0.02),
+      0 20px 45px rgba(0, 0, 0, 0.15) !important;
+  }
+}
+
+.app-header {
+  height: 72px;
+  border-bottom: 1px solid var(--border-color);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+/* High-Readability Font Set Overrides */
+.high-readability {
+  --font-serif:
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif !important;
+  --font-sans:
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif !important;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif !important;
+}
+
+.high-readability .serif-text {
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif !important;
+  letter-spacing: normal !important;
+}
+
+/* =========================================================================
+   🎤 LUXURY VOICE MIC ANIMATION
+   ========================================================================= */
+
+@keyframes pulse-saffron-mic {
+  0% {
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(249, 115, 22, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+  }
+}
+
+.btn-mic-luxe {
+  background: rgba(30, 41, 59, 0.8);
+  color: #cbd5e1;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-mic-luxe:hover {
+  background: rgba(249, 115, 22, 0.1);
+  color: #f97316;
+  border-color: #f97316;
+}
+
+/* Active State when Listening */
+.btn-mic-luxe.listening {
+  background: linear-gradient(135deg, #fbbf24, #f97316);
+  color: #060814 !important;
+  animation: pulse-saffron-mic 1.5s infinite;
+  border: none;
+}
+
+/* =========================================================================
+   🌟 LUXURY SPIRITUAL CHAT UI STYLES
+   ========================================================================= */
+
+.bubble-user-luxe {
+  background: linear-gradient(
+    135deg,
+    rgba(230, 126, 34, 0.16),
+    rgba(243, 156, 18, 0.08)
+  ) !important;
+  border: 1px solid rgba(230, 126, 34, 0.3) !important;
+  color: #fffaf0 !important;
+  border-radius: 20px 20px 0px 20px !important;
+  box-shadow: 0 4px 15px rgba(230, 126, 34, 0.05) !important;
+}
+
+.bubble-ai-luxe {
+  background: rgba(22, 22, 28, 0.72) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #f1f5f9 !important;
+  border-radius: 20px 20px 20px 0px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+/* Light Mode Overrides for Luxe Bubbles */
+.theme-light-luxe .bubble-user-luxe,
+:root:not(.dark) .bubble-user-luxe {
+  background: linear-gradient(
+    135deg,
+    rgba(230, 126, 34, 0.12),
+    rgba(243, 156, 18, 0.05)
+  ) !important;
+  border: 1px solid rgba(230, 126, 34, 0.22) !important;
+  color: #5c2c06 !important;
+}
+
+.theme-light-luxe .bubble-ai-luxe,
+:root:not(.dark) .bubble-ai-luxe {
+  background: rgba(253, 251, 247, 0.92) !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  color: #1a202c !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04) !important;
+}
+
+.pill-luxe {
+  white-space: nowrap !important;
+  padding: 8px 16px !important;
+  border-radius: 50px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  cursor: pointer !important;
+  border: 1px solid rgba(249, 115, 22, 0.24) !important;
+  background: rgba(249, 115, 22, 0.05) !important;
+  color: #ea580c !important;
+}
+
+.dark .pill-luxe {
+  border: 1px solid rgba(249, 115, 22, 0.2) !important;
+  background: rgba(249, 115, 22, 0.04) !important;
+  color: #f97316 !important;
+}
+
+.pill-luxe:hover {
+  background: rgba(249, 115, 22, 0.12) !important;
+  color: #f59e0b !important;
+  border-color: #f59e0b !important;
+  transform: translateY(-1px) !important;
+}
+
+.input-bar-glass {
+  background: rgba(24, 24, 30, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25) !important;
+  backdrop-filter: blur(16px) !important;
+  transition: all 0.3s ease !important;
+}
+
+:root:not(.dark) .input-bar-glass {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05) !important;
+}
+
+.input-bar-glass:focus-within {
+  border-color: rgba(249, 115, 22, 0.4) !important;
+  box-shadow: 0 8px 32px rgba(249, 115, 22, 0.1) !important;
+}
+
+.ai-markdown-h1 {
+  font-family: inherit !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  color: #f59e0b !important;
+  margin-bottom: 8px !important;
+  border-bottom: 1px solid rgba(245, 158, 11, 0.15) !important;
+  padding-bottom: 6px !important;
+}
+
+/* Custom Markdown Container rules for secure rendering */
+.markdown-container h3 {
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  color: #ea580c;
+}
+.markdown-container p {
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+  color: var(--chat-text-main);
+}
+.markdown-container ul {
+  list-style-type: disc !important;
+  padding-left: 1.25rem !important;
+  margin-bottom: 0.75rem !important;
+}
+.markdown-container li {
+  margin-bottom: 0.25rem;
+  color: var(--chat-text-muted);
+}
+.markdown-container strong {
+  color: #ea580c;
+}
+
+/* WCAG 2.1 Touch Target size and hover effects for Sync Alert Dismiss button */
+#dismiss-sync-alert-btn {
+  padding: 14px !important;
+  margin-top: -10px !important;
+  margin-bottom: -10px !important;
+  transition:
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease !important;
+}
+
+#dismiss-sync-alert-btn:hover {
+  transform: scale(1.1) !important;
+  color: #1f2937 !important; /* Deeper shade for light mode */
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+.dark #dismiss-sync-alert-btn:hover {
+  color: #f9fafb !important; /* Brighter/deeper contrast for dark mode */
+  box-shadow:
+    0 4px 6px -1px rgba(255, 255, 255, 0.1),
+    0 2px 4px -1px rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Subtle ripple effect on click for tactile feedback */
+#dismiss-sync-alert-btn:active {
+  transform: scale(0.95) !important;
+  background-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.dark #dismiss-sync-alert-btn:active {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+#dismiss-sync-alert-btn::after {
+  content: "";
+  position: absolute;
+  top: var(--ripple-y, 50%);
+  left: var(--ripple-x, 50%);
+  width: 20px;
+  height: 20px;
+  background: currentColor;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+#dismiss-sync-alert-btn.is-rippling::after {
+  animation: ripple-effect 0.4s ease-out forwards;
+}
+
+@keyframes ripple-effect {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(4);
+    opacity: 0;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #item-detail-modal, #item-detail-modal * {
+    visibility: visible;
+  }
+  #item-detail-modal {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: auto;
+    overflow: visible !important;
+    max-height: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: white !important;
+    color: black !important;
+    border-radius: 0 !important;
+  }
+  #item-detail-modal button,
+  #item-detail-modal .print\:hidden {
+    display: none !important;
+  }
+}

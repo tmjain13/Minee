@@ -1,0 +1,20 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+.firebase
+.firebase/
+
+# Security & Config
+firebase-applet-config.json
+.env
+.env.local
+
+# Debug output files
+*.txt
+refactor.ts
+app/applet/

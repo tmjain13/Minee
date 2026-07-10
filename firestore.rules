@@ -1,0 +1,534 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidDailyStats(data) {
+      return (data.meditationMinutes == null || data.meditationMinutes is int) &&
+             (data.mantraCount == null || data.mantraCount is int) &&
+             (data.date == null || (data.date is string && data.date.size() <= 64)) &&
+             (data.updatedAt == null || (data.updatedAt == request.time || data.updatedAt is timestamp));
+    }
+
+    function isValidDailySadhanaStats(data) {
+      return (data.samayikMinutes == null || data.samayikMinutes is int) &&
+             (data.japaCount == null || data.japaCount is int) &&
+             (data.vowsCompleted == null || data.vowsCompleted is list) &&
+             (data.date == null || (data.date is string && data.date.size() <= 64)) &&
+             (data.updatedAt == null || (data.updatedAt == request.time || data.updatedAt is timestamp));
+    }
+
+    function isValidFastingLog(data) {
+      return (data.type == null || (data.type is string && data.type.size() <= 64)) &&
+             (data.date == null || (data.date is string && data.date.size() <= 64)) &&
+             (data.timestamp == null || (data.timestamp == request.time || data.timestamp is timestamp));
+    }
+
+    function isValidDiaryEntry(data) {
+      return (data.text == null || (data.text is string && data.text.size() <= 5000)) &&
+             (data.date == null || (data.date is string && data.date.size() <= 64)) &&
+             (data.timestamp == null || (data.timestamp == request.time || data.timestamp is timestamp));
+    }
+
+    function isValidGratitudeEntry(data) {
+      return (data.text == null || (data.text is string && data.text.size() <= 5000)) &&
+             (data.date == null || (data.date is string && data.date.size() <= 64)) &&
+             (data.timestamp == null || (data.timestamp == request.time || data.timestamp is timestamp));
+    }
+
+    function isValidTapaSchedule(data) {
+      return (data.type == null || data.type is string) &&
+             (data.date == null || data.date is string) &&
+             (data.recurring == null || data.recurring is bool) &&
+             (data.notified == null || data.notified is bool) &&
+             (data.timestamp == null || (data.timestamp == request.time || data.timestamp is timestamp));
+    }
+
+    function isValidWatchLaterVideo(data) {
+      return (data.videoId == null || (data.videoId is string && data.videoId.size() <= 128)) &&
+             (data.title == null || (data.title is string && data.title.size() <= 256)) &&
+             (data.url == null || (data.url is string && data.url.size() <= 512)) &&
+             (data.timestamp == null || (data.timestamp == request.time || data.timestamp is timestamp)) &&
+             (data.userId == null || data.userId == request.auth.uid);
+    }
+
+    function isValidReadHistoryItem(data) {
+      return (data.itemId == null || (data.itemId is string && data.itemId.size() <= 128)) &&
+             (data.title == null || (data.title is string && data.title.size() <= 256)) &&
+             (data.category == null || (data.category is string && data.category.size() <= 64)) &&
+             (data.isRead == null || data.isRead is bool) &&
+             (data.completedAt == null || (data.completedAt == request.time || data.completedAt is timestamp));
+    }
+
+    function isValidImageDatabaseItem(data) {
+      return (data.url == null || data.url is string) &&
+             (data.title == null || data.title is string) &&
+             (data.category == null || data.category is string) &&
+             (data.userId == null || data.userId is string) &&
+             (data.userEmail == null || data.userEmail is string);
+    }
+
+    function isValidAnuvratPledge(data) {
+      return (data.anuvratName is string && data.anuvratName.size() <= 128) &&
+             (data.takenAt == request.time || data.takenAt is timestamp);
+    }
+
+    function isValidAnuvratStat(data) {
+      return data.count is int && data.count >= 0 && data.count <= 10000000;
+    }
+
+    function isValidBook(data) {
+      return (data.title is string && data.title.size() <= 256) &&
+             (data.author is string && data.author.size() <= 256) &&
+             (data.category is string && data.category.size() <= 128) &&
+             (data.fileUrl is string && data.fileUrl.size() <= 1024) &&
+             (data.fileSize is string && data.fileSize.size() <= 64) &&
+             (data.language is string && data.language.size() <= 128) &&
+             (data.isPublic is bool);
+    }
+
+    function isValidParyushanaPost(data) {
+      return (data.recipient == null || (data.recipient is string && data.recipient.size() <= 200)) &&
+             (data.message == null || (data.message is string && data.message.size() <= 1000)) &&
+             (data.name == null || (data.name is string && data.name.size() <= 100)) &&
+             (data.text == null || (data.text is string && data.text.size() <= 1000)) &&
+             (data.userId == null || (data.userId is string && data.userId.size() <= 128)) &&
+             (data.userEmail == null || (data.userEmail is string && data.userEmail.size() <= 128)) &&
+             (data.createdAt == null || (data.createdAt == request.time || data.createdAt is timestamp)) &&
+             (data.timestamp == null || (data.timestamp == request.time || data.timestamp is timestamp));
+    }
+
+    function isValidGalleryLike(data) {
+      return data.count is int &&
+             (data.likedBy is list && data.likedBy.size() <= 1000) &&
+             data.count == data.likedBy.size();
+    }
+
+    function isValidKnowledge(data) {
+      return (data.id is string && data.id.size() <= 128) &&
+             (data.title is string && data.title.size() <= 1024) &&
+             (data.category is string && data.category.size() <= 128) &&
+             (data.description is string && data.description.size() <= 5000) &&
+             (data.details is string && data.details.size() <= 10000) &&
+             (!('tags' in data) || (data.tags is list && data.tags.size() <= 50)) &&
+             (!('views' in data) || data.views is int) &&
+             (!('upvotes' in data) || data.upvotes is int) &&
+             (!('downvotes' in data) || data.downvotes is int);
+    }
+
+    // Admin collection
+    match /admins/{userId} {
+      allow read: if request.auth.uid == userId || isAdmin();
+      allow write: if false; 
+    }
+
+    // Security Monitor Global
+    match /security_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn() && 
+                    incoming().event is string && 
+                    incoming().event.size() <= 128 && 
+                    incoming().timestamp != null;
+      allow update, delete: if false;
+    }
+
+    // Access Audit Logs (Admin access control and attempts)
+    match /access_audit/{auditId} {
+      allow read: if isAdmin();
+      allow create: if incoming().uid is string &&
+                    incoming().uid.size() <= 128 &&
+                    (incoming().status == 'granted' || incoming().status == 'denied') &&
+                    incoming().path is string &&
+                    incoming().path.size() <= 1024 &&
+                    incoming().timestamp != null;
+      allow update, delete: if false;
+    }
+
+    // Analytics & FAQ Logs: Client can update, Admin can read
+    match /app_analytics/{docId} {
+      allow create: if isSignedIn() && incoming().keys().hasAll(['event']) && incoming().event is string && incoming().timestamp != null;
+      allow update: if isSignedIn() && incoming().keys().hasAll(['event']) && incoming().event is string && incoming().timestamp != null;
+      allow read: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    match /faq_queries_logs/{docId} {
+      allow create: if isSignedIn() && incoming().keys().hasAll(['query']) && incoming().query is string && incoming().timestamp != null;
+      allow update: if isSignedIn() && incoming().keys().hasAll(['query']) && incoming().query is string && incoming().timestamp != null;
+      allow read: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Dynamic Q&A Knowledge Base
+    match /dynamic_qas/{document=**} {
+      // Anyone (even offline users syncing data) can read the answers
+      allow read: if true; 
+      // ONLY verified admins can add or edit new questions
+      allow write: if isAdmin();
+    }
+
+    // Knowledge base
+    match /knowledge/{itemId} {
+      allow read: if true;
+      allow create: if isValidKnowledge(incoming()) || isAdmin();
+      allow update: if (incoming().diff(existing()).affectedKeys().hasOnly(['views'])) ||
+                    (isSignedIn() && incoming().diff(existing()).affectedKeys().hasOnly(['views', 'upvotes', 'downvotes', 'updatedAt'])) ||
+                    isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Leaderboard
+    match /leaderboard/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Daily quotes
+    match /quotes/{quoteId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Daily affirmations
+    match /daily_affirmations/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // User Profile Rules
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId);
+
+      // Lock down the Sadhana Diary subcollection
+      match /sadhana_diary/{document=**} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Sessions
+      match /sessions/{sessionId} {
+        allow read, write: if isOwner(userId);
+
+        // Messages
+        match /messages/{messageId} {
+          allow read, write: if isOwner(userId);
+        }
+      }
+
+      // Chat Logs
+      match /chat_logs/{logId} {
+        allow read, create, delete: if isOwner(userId);
+        allow update: if false;
+      }
+
+      // Todos
+      match /todos/{todoId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Daily Stats
+      match /dailyStats/{dateId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidDailyStats(incoming());
+      }
+
+      // Daily Sadhana Stats
+      match /dailySadhanaStats/{dateId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidDailySadhanaStats(incoming());
+      }
+
+      // Fasting Logs
+      match /fastingLogs/{logId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidFastingLog(incoming());
+        allow update: if false; 
+        allow delete: if isOwner(userId);
+      }
+
+      // Ritual Logs
+      match /ritualLogs/{logId} {
+        allow read, create, delete: if isOwner(userId);
+        allow update: if false;
+      }
+
+      // Tapa Schedules
+      match /tapaSchedules/{scheduleId} {
+        allow read, delete: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidTapaSchedule(incoming());
+        allow update: if isOwner(userId) && incoming().diff(existing()).affectedKeys().hasOnly(['notified', 'date', 'recurring', 'type']);
+      }
+
+      // Meditation Logs
+      match /meditationLogs/{logId} {
+        allow read, create, delete: if isOwner(userId);
+        allow update: if false;
+      }
+
+      // Mantra Logs
+      match /mantraLogs/{logId} {
+        allow read, create, delete: if isOwner(userId);
+        allow update: if false;
+      }
+
+      // Navkar Logs
+      match /navkarLogs/{logId} {
+        allow read, create, delete: if isOwner(userId);
+        allow update: if false;
+      }
+
+      // Saved Quotes
+      match /savedQuotes/{quoteId} {
+        allow read, create, delete: if isOwner(userId);
+        allow update: if false;
+      }
+
+      // Pratikraman Logs
+      match /pratikramanLogs/{logId} {
+        allow read, create, delete: if isOwner(userId);
+        allow update: if false;
+      }
+
+      // Security Logs (User private)
+      match /securityLogs/{logId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update, delete: if false;
+      }
+
+      // Sadhana Diary
+      match /diary/{diaryId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidDiaryEntry(incoming());
+        allow update: if isOwner(userId) && isValidDiaryEntry(incoming()) && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['text'])
+        );
+        allow delete: if isOwner(userId);
+      }
+
+      // Gratitude Journal
+      match /gratitude/{entryId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidGratitudeEntry(incoming());
+        allow update: if isOwner(userId) && isValidGratitudeEntry(incoming()) && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['text'])
+        );
+        allow delete: if isOwner(userId);
+      }
+
+      // Favorites
+      match /favorites/{favoriteId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /watchLater/{videoId} {
+        allow read: if isSignedIn() && request.auth.uid == userId;
+        allow create: if isSignedIn() && request.auth.uid == userId && isValidWatchLaterVideo(incoming());
+        allow delete: if isSignedIn() && request.auth.uid == userId;
+      }
+
+      match /read_history/{itemId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidReadHistoryItem(incoming());
+        allow delete: if isOwner(userId);
+      }
+
+      match /anuvratPledges/{anuvratId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidAnuvratPledge(incoming());
+        allow delete: if isOwner(userId);
+        allow update: if false;
+      }
+
+      match /spiritualJournal/{date} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Global Feedback Collection (Old/AI)
+    match /feedback/{feedbackId} {
+      allow create: if isSignedIn();
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    // App Feedback (Bugs/Suggestions)
+    match /app_feedback/{feedbackId} {
+      allow create: if isSignedIn();
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    // Knowledge Feedback
+    match /knowledge_feedback/{feedbackId} {
+      allow create: if isSignedIn();
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    // Community Polls
+    match /polls/{pollId} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (
+        isSignedIn() && 
+        incoming().totalVotes == existing().totalVotes + 1
+      );
+
+      match /votes/{userId} {
+        allow read, create: if isOwner(userId);
+      }
+    }
+
+    // Image Metadata
+    match /imageMetadata/{imageId} {
+      allow read: if true;
+      allow update: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
+    
+    // Acharya Archive Gallery
+    match /acharyas_gallery/{imageId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Community Image Database Feed
+    match /imageDatabase/{imageId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidImageDatabaseItem(incoming());
+      allow delete: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+    }
+    
+    // Image Tags
+    match /imageTags/{tagId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow delete: if isSignedIn() && isOwner(resource.data.userId);
+    }
+
+    // Realtime Presence / Active Users Load Balancing
+    match /presence/{sessionId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && request.auth.uid == sessionId;
+      allow delete: if isSignedIn() && request.auth.uid == sessionId;
+    }
+
+    // Secure Likes collection for images
+    match /gallery_likes/{imageId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidGalleryLike(incoming());
+      allow update: if (isSignedIn() && isValidGalleryLike(incoming()) && (
+                      incoming().count == incoming().likedBy.size()
+                    )) || isAdmin();
+      allow delete: if isSignedIn();
+    }
+
+    // Secure Anuvrat Stats
+    match /anuvratStats/{anuvratId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidAnuvratStat(incoming());
+      allow update: if isSignedIn() && isValidAnuvratStat(incoming()) && incoming().count == existing().count + 1;
+    }
+
+    // Test Connection Rule
+    match /test/connection {
+      allow read: if true;
+    }
+
+    // Paryushana Forgiveness Wall
+    match /paryushanaWall/{postId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidParyushanaPost(incoming());
+    }
+
+    // Secure Comments subcollection for images
+    match /gallery_comments/{imageId} {
+      allow read: if true;
+      allow create, update: if isSignedIn();
+
+      match /messages/{messageId} {
+        allow read: if true;
+        allow create: if isSignedIn() && incoming().text is string && incoming().text.size() <= 550;
+        allow delete: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+      }
+    }
+
+    // Secure Digital Library Books collection
+    match /books/{bookId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidBook(incoming());
+      allow update: if (isAdmin() && isValidBook(incoming())) ||
+                     (isSignedIn() && incoming().diff(existing()).affectedKeys().hasOnly(['downloadCount']) && incoming().downloadCount == existing().downloadCount + 1);
+      allow delete: if isAdmin();
+    }
+
+    // Secure Chaturmas Master Registry
+    match /chaturmas_registry_2026/{id} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Community Prayers
+    match /communityPrayers/{prayerId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
+
+    // Gallery Members
+    match /gallery_members/{memberId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
+
+    // Volunteer Registrations
+    match /volunteer_registrations_2026/{regId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn();
+      allow update, delete: if isAdmin();
+    }
+
+    // Public Registry (Ascetic Vihar tracking, Bhawan details)
+    // Anyone can read this, but nobody can write/edit it from the client
+    match /public_registry/{document=**} {
+      allow read: if true;
+      allow write: if false; 
+    }
+
+    // विहार या न्यूज़ कलेक्शन की सुरक्षा
+    match /vihar_updates/{document=**} {
+      allow read: if true; // सभी श्रावक पढ़ सकते हैं
+      allow write, update, delete: if isAdmin(); // केवल एडमिन ही बदल सकते हैं
+    }
+  }
+}

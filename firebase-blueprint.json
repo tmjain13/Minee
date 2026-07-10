@@ -1,0 +1,605 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account information and spiritual preferences.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "lastLoginAt": { "type": "string", "format": "date-time" },
+        "dashboardPreferences": {
+          "type": "object",
+          "description": "User preferences for toggling visibility of dashboard sections"
+        }
+      },
+      "required": ["uid", "email"]
+    },
+    "ChatSession": {
+      "title": "Chat Session",
+      "description": "A single conversation session.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "lastMessage": { "type": "string" },
+        "summary": { "type": "string" }
+      },
+      "required": ["id", "title", "createdAt"]
+    },
+    "ChatMessage": {
+      "title": "Chat Message",
+      "description": "A message within a session.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "model"] },
+        "text": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "feedback": { "type": "string", "enum": ["up", "down"] }
+      },
+      "required": ["id", "role", "text", "timestamp"]
+    },
+    "Todo": {
+      "title": "Spiritual Todo",
+      "description": "A daily spiritual goal or task.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "text": { "type": "string" },
+        "completed": { "type": "boolean" },
+        "category": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "text", "completed", "timestamp"]
+    },
+    "DailyStats": {
+      "title": "Daily User Stats",
+      "description": "Daily spiritual tracking data for a user.",
+      "type": "object",
+      "properties": {
+        "meditationMinutes": { "type": "integer" },
+        "mantraCount": { "type": "integer" },
+        "date": { "type": "string", "format": "date" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "DailySadhanaStats": {
+      "title": "Daily Sadhana Stats",
+      "description": "Detailed multi-tool spiritual achievements and vows tracker.",
+      "type": "object",
+      "properties": {
+        "samayikMinutes": { "type": "integer" },
+        "japaCount": { "type": "integer" },
+        "vowsCompleted": { "type": "array", "items": { "type": "string" } },
+        "date": { "type": "string", "format": "date" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["samayikMinutes", "japaCount", "date", "updatedAt"]
+    },
+    "FastingLog": {
+      "title": "Fasting Log",
+      "description": "Records of user fasting (Tapa) sessions.",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["type", "date", "timestamp"]
+    },
+    "DiaryEntry": {
+      "title": "Sadhana Diary Entry",
+      "description": "Personal spiritual reflections and notes.",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["text", "date", "timestamp"]
+    },
+    "GratitudeEntry": {
+      "title": "Gratitude Journal Entry",
+      "description": "Daily gratitude entry stored secure in Firestore.",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["text", "date", "timestamp"]
+    },
+    "KnowledgeItem": {
+      "title": "Knowledge Item",
+      "description": "A curated piece of spiritual information.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "details": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "category", "description", "details"]
+    },
+    "DailyQuote": {
+      "title": "Daily Quote",
+      "description": "A spiritual quote from an Acharya.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "text": { "type": "string" },
+        "author": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "text", "author"]
+    },
+    "Feedback": {
+      "title": "AI Response Feedback",
+      "description": "User feedback on a specific AI response.",
+      "type": "object",
+      "properties": {
+        "sessionId": { "type": "string" },
+        "messageId": { "type": "string" },
+        "type": { "type": "string", "enum": ["up", "down"] },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string" }
+      },
+      "required": ["sessionId", "messageId", "type", "timestamp", "userId"]
+    },
+    "AppFeedback": {
+      "title": "Application Feedback",
+      "description": "User reports for bugs or improvement suggestions.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "type": { "type": "string", "enum": ["bug", "suggestion"] },
+        "content": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "metadata": { "type": "object" }
+      },
+      "required": ["id", "userId", "type", "content", "timestamp"]
+    },
+    "KnowledgeFeedback": {
+      "title": "Knowledge Item Feedback",
+      "description": "User feedback on a specific knowledge item.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "itemId": { "type": "string" },
+        "itemTitle": { "type": "string" },
+        "type": { "type": "string", "enum": ["up", "down"] },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" }
+      },
+      "required": ["id", "itemId", "type", "timestamp", "userId"]
+    },
+    "Poll": {
+      "title": "Community Poll",
+      "description": "A community poll regarding events or initiatives.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "question": { "type": "string" },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "text": { "type": "string" },
+              "votes": { "type": "integer" }
+            }
+          }
+        },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "expiresAt": { "type": "string", "format": "date-time" },
+        "totalVotes": { "type": "integer" }
+      },
+      "required": ["id", "question", "options", "isActive", "createdAt"]
+    },
+    "FavoriteImage": {
+      "title": "Favorite Image",
+      "description": "An image reference saved by the user.",
+      "type": "object",
+      "properties": {
+        "imageId": { "type": "string" },
+        "url": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string" }
+      },
+      "required": ["imageId", "url", "title", "timestamp", "userId"]
+    },
+    "WatchLaterVideo": {
+      "title": "Watch Later Video",
+      "description": "A video item bookmarked by the user for later viewing.",
+      "type": "object",
+      "properties": {
+        "videoId": { "type": "string" },
+        "title": { "type": "string" },
+        "type": { "type": "string" },
+        "duration": { "type": "string" },
+        "thumbnail": { "type": "string" },
+        "url": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string" }
+      },
+      "required": ["videoId", "title", "url", "timestamp", "userId"]
+    },
+    "AcharyaGalleryImage": {
+      "title": "Acharya Gallery Image",
+      "description": "Historical archive photograph for an Acharya.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "acharyaNr": { "type": "integer", "description": "The succession number of the Acharya (1-11)" },
+        "url": { "type": "string", "description": "URL of the archive photograph" },
+        "caption": { "type": "string", "description": "Description of the archive photo" },
+        "year": { "type": "string", "description": "Year of the photo context" },
+        "photographer": { "type": "string", "description": "Credit for the photographer or source" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["id", "acharyaNr", "url", "caption"]
+    },
+    "ImageDatabaseItem": {
+      "title": "Community Image Feed Item",
+      "description": "Dynamic, user-uploaded community photo reference synced with Firestore.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "url": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" }
+      },
+      "required": ["id", "url", "title", "createdAt"]
+    },
+    "DailyAffirmation": {
+      "title": "Daily Affirmation",
+      "description": "A spiritual quote curated for daily mental and emotional strength, with tags for categories.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "text": { "type": "string" },
+        "author": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "date": { "type": "string", "format": "date" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "text", "author"]
+    },
+    "ReadHistoryItem": {
+      "title": "Knowledge Read History",
+      "description": "Log of a knowledge base item read completely by the user.",
+      "type": "object",
+      "properties": {
+        "itemId": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "completedAt": { "type": "string", "format": "date-time" },
+        "isRead": { "type": "boolean" }
+      },
+      "required": ["itemId", "title", "category", "completedAt", "isRead"]
+    },
+    "NavkarLog": {
+      "title": "Navkar Mantra Jaap Log",
+      "description": "Records of user Navkar mantra chants and counts.",
+      "type": "object",
+      "properties": {
+        "count": { "type": "integer" },
+        "date": { "type": "string", "format": "date" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["count", "date", "timestamp"]
+    },
+    "GalleryLike": {
+      "title": "Gallery Like Record",
+      "description": "Reactive likes count and list of users who liked an image.",
+      "type": "object",
+      "properties": {
+        "count": { "type": "integer" },
+        "likedBy": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "GalleryComment": {
+      "title": "Gallery Comment Message",
+      "description": "User comment text and profile details for a photograph.",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["text", "userId", "userEmail", "createdAt"]
+    },
+    "SavedQuote": {
+      "title": "Saved Quote Reference",
+      "description": "A quote saved by the user from DailySuvichar.",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "author": { "type": "string" },
+        "source": { "type": "string" },
+        "savedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["text", "author", "source", "savedAt"]
+    },
+    "PratikramanLog": {
+      "title": "Pratikraman Completion Log",
+      "description": "A log of a completed Pratikraman ritual.",
+      "type": "object",
+      "properties": {
+        "mode": { "type": "string" },
+        "completedAt": { "type": "string", "format": "date-time" },
+        "stepsCompleted": { "type": "integer" },
+        "totalDuration": { "type": "integer" }
+      },
+      "required": ["mode", "completedAt", "stepsCompleted", "totalDuration"]
+    },
+    "AnuvratPledge": {
+      "title": "Anuvrat Pledge Record",
+      "description": "Anuvrat vow taken by the user.",
+      "type": "object",
+      "properties": {
+        "anuvratId": { "type": "integer" },
+        "anuvratName": { "type": "string" },
+        "takenAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["anuvratId", "anuvratName", "takenAt"]
+    },
+    "AnuvratStat": {
+      "title": "Anuvrat Stat Counter",
+      "description": "Counter for how many users have taken a specific vow.",
+      "type": "object",
+      "properties": {
+        "count": { "type": "integer" }
+      },
+      "required": ["count"]
+    },
+    "SpiritualJournalEntry": {
+      "title": "Spiritual Journal Entry",
+      "description": "Spiritual self-reflection and prompt outputs.",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "mood": { "type": "string" },
+        "aiReflection": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["text", "mood", "aiReflection", "createdAt"]
+    },
+    "ParyushanaPost": {
+      "title": "Paryushana Forgiveness Post",
+      "description": "A post written on the public Khamauji wall.",
+      "type": "object",
+      "properties": {
+        "recipient": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "name": { "type": "string" },
+        "text": { "type": "string" },
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string", "format": "email" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["recipient", "message"]
+    },
+    "ChaturmasDeclaration": {
+      "title": "Chaturmas Declaration 2026",
+      "description": "An official 2026 Chaturmas venue and ascetic announcement by the Supreme Head.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "integer" },
+        "date": { "type": "string" },
+        "dateEn": { "type": "string" },
+        "monk": { "type": "string" },
+        "monkEn": { "type": "string" },
+        "thana": { "type": "string" },
+        "thanaEn": { "type": "string" },
+        "venue": { "type": "string" },
+        "venueEn": { "type": "string" },
+        "state": { "type": "string", "enum": ["MAHARASHTRA", "GUJARAT", "RAJASTHAN", "DELHI"] },
+        "zone": { "type": "string" },
+        "zoneEn": { "type": "string" },
+        "era": { "type": "string" },
+        "eraEn": { "type": "string" },
+        "source": { "type": "string" },
+        "sourceEn": { "type": "string" }
+      },
+      "required": ["id", "monk", "venue", "state"]
+    },
+    "Book": {
+      "title": "Digital Book",
+      "description": "Metadata for downloadable PDFs in the Digital Library.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "author": { "type": "string" },
+        "category": { "type": "string", "enum": ["Philosophy", "Rituals", "Biography", "Meditation", "History", "Children"] },
+        "description": { "type": "string" },
+        "coverImageUrl": { "type": "string" },
+        "fileUrl": { "type": "string" },
+        "fileSize": { "type": "string" },
+        "language": { "type": "string" },
+        "uploadedAt": { "type": "string", "format": "date-time" },
+        "downloadCount": { "type": "integer" },
+        "isPublic": { "type": "boolean" }
+      },
+      "required": ["id", "title", "author", "category", "fileUrl", "fileSize", "language", "isPublic"]
+    },
+    "AccessAudit": {
+      "title": "Access Audit Log",
+      "description": "Logs administrative and access status records.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "status": { "type": "string", "enum": ["granted", "denied"] },
+        "path": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "userAgent": { "type": "string" },
+        "clientLanguage": { "type": "string" }
+      },
+      "required": ["uid", "status", "path", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/access_audit/{auditId}": {
+      "schema": "AccessAudit",
+      "description": "Logs administrative and routing access success/failure events for auditing."
+    },
+    "/books/{bookId}": {
+      "schema": "Book",
+      "description": "Store PDF book meta details inside Firestore."
+    },
+    "/chaturmas_registry_2026/{id}": {
+      "schema": "ChaturmasDeclaration",
+      "description": "Master list of the 10 verified Chaturmas announcements for year 2026."
+    },
+    "/daily_affirmations/{id}": {
+      "schema": "DailyAffirmation",
+      "description": "Daily spiritual affirmations with specific categorization tags for prioritization."
+    },
+    "/acharyas_gallery/{id}": {
+      "schema": "AcharyaGalleryImage",
+      "description": "Historical, high-quality archive photograph metadata for each Acharya."
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Public and private user profile data."
+    },
+    "/users/{userId}/sessions/{sessionId}": {
+      "schema": "ChatSession",
+      "description": "List of conversation sessions for a user."
+    },
+    "/users/{userId}/sessions/{sessionId}/messages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Messages within a specific chat session."
+    },
+    "/users/{userId}/todos/{todoId}": {
+      "schema": "Todo",
+      "description": "Daily spiritual tasks for a user."
+    },
+    "/users/{userId}/dailyStats/{dateId}": {
+      "schema": "DailyStats",
+      "description": "Daily meditation and other spiritual progress metrics."
+    },
+    "/users/{userId}/dailySadhanaStats/{dateId}": {
+      "schema": "DailySadhanaStats",
+      "description": "User's daily tracker stats for Samayik clock, haptic Japa count, and Anuvrat diary checkbox matrix."
+    },
+    "/users/{userId}/favorites/{favoriteId}": {
+      "schema": "FavoriteImage",
+      "description": "Favorite images saved by a user."
+    },
+    "/users/{userId}/fastingLogs/{logId}": {
+      "schema": "FastingLog",
+      "description": "User records of fasting and spiritual determination."
+    },
+    "/users/{userId}/diary/{diaryId}": {
+      "schema": "DiaryEntry",
+      "description": "User spiritual reflections and journal entries."
+    },
+    "/users/{userId}/gratitude/{gratitudeId}": {
+      "schema": "GratitudeEntry",
+      "description": "User daily gratitude entries."
+    },
+    "/users/{userId}/watchLater/{videoId}": {
+      "schema": "WatchLaterVideo",
+      "description": "Videos bookmarked for later viewing."
+    },
+    "/users/{userId}/read_history/{itemId}": {
+      "schema": "ReadHistoryItem",
+      "description": "User's completely read knowledge base items to track in Sadhana."
+    },
+    "/users/{userId}/navkarLogs/{logId}": {
+      "schema": "NavkarLog",
+      "description": "User's Navkar mantra jaap counts and dates logs."
+    },
+    "/users/{userId}/savedQuotes/{quoteId}": {
+      "schema": "SavedQuote",
+      "description": "List of suvichars/quotes saved by the user."
+    },
+    "/users/{userId}/pratikramanLogs/{logId}": {
+      "schema": "PratikramanLog",
+      "description": "Log of completed Pratikraman sessions for a user."
+    },
+    "/users/{userId}/anuvratPledges/{anuvratId}": {
+      "schema": "AnuvratPledge",
+      "description": "vows taken by the user under Anuvrat scheme"
+    },
+    "/users/{userId}/spiritualJournal/{date}": {
+      "schema": "SpiritualJournalEntry",
+      "description": "Daily self-reflection entries and AI responses"
+    },
+    "/paryushanaWall/{postId}": {
+      "schema": "ParyushanaPost",
+      "description": "Public community messages on Khamauji wall"
+    },
+    "/anuvratStats/{anuvratId}": {
+      "schema": "AnuvratStat",
+      "description": "Realtime counter stats of how many users pledged to this Anuvrat"
+    },
+    "/knowledge/{itemId}": {
+      "schema": "KnowledgeItem",
+      "description": "Public knowledge base items."
+    },
+    "/quotes/{quoteId}": {
+      "schema": "DailyQuote",
+      "description": "Spiritual quotes from Acharyas."
+    },
+    "/admins/{userId}": {
+      "schema": "User",
+      "description": "Authorized administrators."
+    },
+    "/feedback/{feedbackId}": {
+      "schema": "Feedback",
+      "description": "Global collection for response feedback voting."
+    },
+    "/app_feedback/{feedbackId}": {
+      "schema": "AppFeedback",
+      "description": "Global collection for app-wide bug reports and suggestions."
+    },
+    "/knowledge_feedback/{feedbackId}": {
+      "schema": "KnowledgeFeedback",
+      "description": "Global collection for knowledge item feedback."
+    },
+    "/polls/{pollId}": {
+      "schema": "Poll",
+      "description": "Global community polls."
+    },
+    "/polls/{pollId}/votes/{userId}": {
+      "schema": "object",
+      "description": "Individual votes for a poll."
+    },
+    "/imageDatabase/{id}": {
+      "schema": "ImageDatabaseItem",
+      "description": "DYNAMIC shared community photographs feed entries."
+    },
+    "/gallery_likes/{id}": {
+      "schema": "GalleryLike",
+      "description": "Stores user likes and engagement sums per photograph."
+    },
+    "/gallery_comments/{imageId}/messages/{messageId}": {
+      "schema": "GalleryComment",
+      "description": "Individual messages in comment threads for any archival or community image."
+    }
+  }
+}

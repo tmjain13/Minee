@@ -1,0 +1,44 @@
+{
+  "gyanshala_unified_knowledge_base": {
+    "motto_statement": "घर घर जागे सद्संस्कार, ज्ञानशाला का यह उपहार",
+    "monastic_oversight": {
+      "central_head_monk": "अग्रगण्य मुनि श्री उदित कुमार जी स्वामी",
+      "governing_council": "बहुश्रुत परिषद (7 in 1 Elite Monastic Matrix)"
+    },
+    "jain_shvetambar_terapanthi_mahasabha_data": {
+      "origin_year_vision": "1965 (आचार्य श्री तुलसी द्वारा परिकल्पित एवं बीजारोपण)",
+      "official_management_start": "1992 (महासभा के निर्देशन में स्थानीय सभाओं द्वारा क्रियान्वयन)",
+      "total_national_centers": 571,
+      "total_national_students": 18098,
+      "total_national_certified_prashikshaks": 4038,
+      "allied_organizations": [
+        "तेरापंथ युवक परिषद (TYP)",
+        "तेरापंथ महिला मंडल (TMM)"
+      ],
+      "academic_software_and_apps": "युगानुकूल नवीनतम डिजिटल तकनीकों के अनुरूप महासभा द्वारा विकसित ऐप्स एवं प्रेषित ज्ञानार्थी किट",
+      "certification_system_start": "2002 (व्यवस्थित प्रशिक्षक प्रशिक्षण शिविर एवं लिखित परीक्षा प्रणाली)",
+      "certification_tiers": ["विज्ञ (Vigya)", "विशारद (Visharad)", "स्नातक (Snatak)"],
+      "annual_award_protocol": "अखिल भारतीय स्तर पर प्रारूप एवं आचार-संहिता के अनुरूप प्रथम तीन स्थान प्राप्तकर्ताओं को प्रतिवर्ष वरीयता पुरस्कार"
+    },
+    "shri_jain_shvetambar_terapanth_sabha_regional_data": {
+      "geographical_span_states": 23,
+      "total_registered_regions": 470,
+      "total_regional_gyanarthis": 17872,
+      "total_regional_prashikshikas": 2978,
+      "active_aspiring_students_stream": 7932,
+      "bangalore_regional_census_2021": {
+        "area_wise_sub_centers": 32,
+        "active_prashashikas": 180,
+        "active_gyanarthis_count": 1000,
+        "historical_landmark_event": "2017 में संपन्न हुआ 'रजत जयंती वर्ष' (Rajat Jayanti Varsh) कार्यक्रम"
+      },
+      "central_executive_roster": {
+        "rashtriya_sanyojak": "Shri Sohanraj ji Chopda",
+        "national_trainers": [
+          "Shri Malamchand ji Nolkha",
+          "Shri Nirmal ji Nolkha"
+        ]
+      }
+    }
+  }
+}

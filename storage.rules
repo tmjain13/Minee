@@ -1,0 +1,64 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper functions for security validation
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && firestore.exists(
+        /databases/(default)/documents/admins/$(request.auth.uid)
+      );
+    }
+
+    // User Avatars / Profile Images — owner only, 3MB max, specific images only
+    match /avatars/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if isOwner(userId)
+                   && request.resource.size < 3 * 1024 * 1024
+                   && request.resource.contentType.matches('image/(jpeg|png|webp|gif)');
+    }
+
+    match /profile_images/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if isOwner(userId)
+                   && request.resource.size < 3 * 1024 * 1024
+                   && request.resource.contentType.matches('image/(jpeg|png|webp|gif)');
+    }
+
+    // Community / User Gallery — owner or admin write, 10MB max, images and videos only
+    match /gallery/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if (isOwner(userId) || isAdmin())
+                   && request.resource.size < 10 * 1024 * 1024
+                   && (request.resource.contentType.matches('image/.*') || request.resource.contentType.matches('video/.*'));
+    }
+
+    // Books / Digital Library — admin write, public read, 100MB max, PDF only
+    match /books/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin()
+                   && request.resource.size < 100 * 1024 * 1024
+                   && request.resource.contentType == 'application/pdf';
+    }
+
+    // Admin media uploads (gallery images, audio files)
+    match /media/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin()
+                   && request.resource.size < 100 * 1024 * 1024
+                   && (request.resource.contentType.matches('image/.*') || request.resource.contentType.matches('audio/.*') || request.resource.contentType.matches('video/.*'));
+    }
+
+    // Default deny — explicit catch-all, nothing else is accessible
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
