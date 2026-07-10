@@ -443,6 +443,25 @@ export default function App() {
     return unsubscribe;
   }, [user]);
 
+  // --- DYNAMIC SADHANA STREAK STATE ---
+  const [sadhanaStreak, setSadhanaStreak] = useState<number>(() => {
+    return Number(localStorage.getItem('terapanth_sadhana_streak_count') || 5);
+  });
+
+  useEffect(() => {
+    const handleSadhanaUpdate = () => {
+      const currentStreak = Number(localStorage.getItem('terapanth_sadhana_streak_count') || 5);
+      setSadhanaStreak(currentStreak);
+    };
+
+    window.addEventListener('sadhana-updated', handleSadhanaUpdate);
+    window.addEventListener('sadhana-streak-completed', handleSadhanaUpdate);
+    return () => {
+      window.removeEventListener('sadhana-updated', handleSadhanaUpdate);
+      window.removeEventListener('sadhana-streak-completed', handleSadhanaUpdate);
+    };
+  }, []);
+
   // --- COPY DEEP LINK ---
   const handleCopyDeepLink = () => {
     const url = window.location.href;
@@ -524,7 +543,7 @@ export default function App() {
           theme={theme}
           toggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
           userName={user?.displayName || "ज्योतिर्मय"}
-          streak={12}
+          streak={sadhanaStreak}
           onRefreshClick={() => window.location.reload()}
           onPenClick={() => setIsCustomizerOpen(true)}
           onProfileClick={() => setActiveTab('profile')}

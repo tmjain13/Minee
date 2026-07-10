@@ -132,6 +132,8 @@ export default function SadhanaStreaks() {
     if (isAllCompletedNow) {
       updatedStreak += 1;
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.8 } });
+      // Dispatch custom event indicating all daily sadhana completed with the updated streak count
+      window.dispatchEvent(new CustomEvent('sadhana-streak-completed', { detail: { streak: updatedStreak } }));
     } else if (totalCompleted === taskDefinitions.length && !isNowCompleted) {
       // fell below complete list
       updatedStreak = Math.max(0, streak - 1);
@@ -141,6 +143,8 @@ export default function SadhanaStreaks() {
     setPoints(updatedPoints);
     setStreak(updatedStreak);
     saveStateToStorage(updatedTasks, updatedPoints, updatedStreak);
+    // Notify all components that a sadhana task change occurred
+    window.dispatchEvent(new Event('sadhana-updated'));
   };
 
   // Reset daily state
