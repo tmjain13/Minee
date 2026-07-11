@@ -163,6 +163,18 @@ export default function App() {
   const { user, userData, loading, logout } = useAuth();
   const { language, toggleLanguage, t } = useLanguage();
   
+  // --- SAFETY FORCE-PROCEED TIMEOUT (Requirement 2 & 4) ---
+  const [forceProceed, setForceProceed] = useState(false);
+
+  useEffect(() => {
+    console.log("[App] Mounted. Initializing 3-second safety force-proceed timer.");
+    const timer = setTimeout(() => {
+      console.warn("[App] 3-second safety timeout triggered! Forcing proceed to render the main dashboard.");
+      setForceProceed(true);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Initialize and persist dynamic document localization attributes
   useLanguageInit();
 
@@ -282,6 +294,25 @@ export default function App() {
   const [spiritualSoundscape, setSpiritualSoundscape] = useState<"om" | "temple_bells" | "nature">("om");
   const [autoArchiveEnabled, setAutoArchiveEnabled] = useState(false);
   const [vibrationIntensity, setVibrationIntensity] = useState<"none" | "gentle" | "pulsing" | "steady">("gentle");
+
+  // --- ZEN MODE FOR DEEP FOCUS ---
+  const [zenMode, setZenMode] = useState<boolean>(() => {
+    return localStorage.getItem('terapanth_zen_mode') === 'true';
+  });
+
+  const handleZenModeChange = (enabled: boolean) => {
+    setZenMode(enabled);
+    localStorage.setItem('terapanth_zen_mode', String(enabled));
+    if (enabled) {
+      // If entering Zen Mode and on a non-meditation tab, switch to sadhana for active focus
+      if (activeTab !== 'sadhana' && activeTab !== 'vachan') {
+        setActiveTab('sadhana');
+      }
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate([80, 50, 80]);
+      }
+    }
+  };
 
   // --- BACKEND METADATA ---
   const [isAdmin, setIsAdmin] = useState(false);
@@ -511,6 +542,11 @@ export default function App() {
     setTodos((prev) => prev.filter((t) => t.id !== id));
   };
 
+  if (loading && !forceProceed) {
+    console.log("[App] Auth loading is true. Rendering full-screen LoadingScreen as initial experience gate.");
+    return <LoadingScreen />;
+  }
+
   if (showOnboarding) {
     return <Onboarding onComplete={() => setShowOnboarding(false)} />;
   }
@@ -527,7 +563,7 @@ export default function App() {
         backgroundSize: '20px 20px',
         backgroundPosition: '0 0, 10px 10px'
       }}
-      className={`${activeTab === "chat" ? "h-screen overflow-hidden pt-0 pb-0" : "min-h-screen pt-[56px] pb-[68px] overflow-x-hidden"} w-full flex flex-col relative antialiased select-none p-0 m-0 border-none outline-none transition-colors duration-300 ${
+      className={`${activeTab === "chat" ? "h-[100dvh] overflow-hidden pt-0 pb-0" : "min-h-[100dvh] h-[100dvh] overflow-y-auto pt-[56px] pb-[68px] overflow-x-hidden"} w-full flex flex-col relative antialiased select-none p-0 m-0 border-none outline-none transition-colors duration-300 ${
         highContrast ? "contrast-125 saturate-150" : ""
       } ${theme}`}
     >
@@ -545,8 +581,15 @@ export default function App() {
           userName={user?.displayName || "ज्योतिर्मय"}
           streak={sadhanaStreak}
           onRefreshClick={() => window.location.reload()}
-          onPenClick={() => setIsCustomizerOpen(true)}
+          onThemePreferencesClick={() => setIsCustomizerOpen(true)}
+          onPenClick={() => {
+            setActiveTab('home');
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('open-dashboard-customizer'));
+            }, 100);
+          }}
           onProfileClick={() => setActiveTab('profile')}
+          zenMode={zenMode}
         />
       )}
 
@@ -1036,11 +1079,41 @@ export default function App() {
         onClose={() => setShowQuickActions(false)} 
         setActiveTab={setActiveTab} 
       />
-      <TerapanthFooterNav 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab}
-        language={language}
-      />
+      {!zenMode && (
+        <TerapanthFooterNav 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab}
+          language={language}
+        />
+      )}
+
+      {/* ZEN MODE FLOATING DISMISSAL PILL */}
+      <AnimatePresence>
+        {zenMode && (
+          <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[100] w-full max-w-[280px] px-2">
+            <motion.div 
+              initial={{ y: 60, x: "-50%", opacity: 0 }}
+              animate={{ y: 0, x: "-50%", opacity: 1 }}
+              exit={{ y: 40, x: "-50%", opacity: 0 }}
+              transition={{ type: 'spring', damping: 20, stiffness: 180 }}
+              className="fixed bottom-5 left-1/2 bg-zinc-900/95 dark:bg-black/95 backdrop-blur-md text-stone-150 px-4 py-2 rounded-full border border-orange-500/30 flex items-center justify-between gap-4 shadow-2xl shadow-orange-500/10 w-[260px]"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-orange-500 animate-pulse text-sm">🧘</span>
+                <span className="text-[10px] font-black uppercase tracking-widest font-sans text-stone-100">
+                  {language === 'hi' ? 'ध्यान मोड' : 'Zen Focus'}
+                </span>
+              </div>
+              <button
+                onClick={() => handleZenModeChange(false)}
+                className="px-3 py-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-[9px] font-extrabold uppercase tracking-wider text-white rounded-full transition-all duration-300 shadow-md shadow-orange-500/20 active:scale-95 cursor-pointer"
+              >
+                {language === 'hi' ? 'बाहर निकलें' : 'Exit'}
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* SUBTLE NETWORK STATUS TOAST */}
       <AnimatePresence>
@@ -1076,8 +1149,8 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* FLOATING BUTTONS - RIGHT SIDE STACK (Only show if NOT on chat tab) */}
-      {activeTab !== 'chat' && (
+      {/* FLOATING BUTTONS - RIGHT SIDE STACK (Only show if NOT on chat tab and NOT in Zen Mode) */}
+      {activeTab !== 'chat' && !zenMode && (
         <div className="fixed bottom-[90px] right-4 z-[99] flex flex-col gap-3">
           {/* Chatbot trigger */}
           <button 
@@ -1130,6 +1203,8 @@ export default function App() {
           onKfontTypeChange={setKfontType}
           fontStyleSet={fontStyleSet}
           onFontStyleSetChange={setFontStyleSet}
+          zenMode={zenMode}
+          onZenModeChange={handleZenModeChange}
         />
 
 

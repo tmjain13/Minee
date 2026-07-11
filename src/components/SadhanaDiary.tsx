@@ -19,6 +19,7 @@ import {
 } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { handleFirestoreError, OperationType } from '../lib/firebase-utils';
+import ConfirmationModal from './ConfirmationModal';
 
 interface DiaryEntry {
   id: string;
@@ -64,6 +65,8 @@ const SadhanaDiary = memo(() => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showClearJournalConfirm, setShowClearJournalConfirm] = useState(false);
+  const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
   const [speedDialOpen, setSpeedDialOpen] = useState(false);
 
   // Specialized Paryushana Fasting Calculator States
@@ -437,6 +440,19 @@ const SadhanaDiary = memo(() => {
     const path = `users/${user.uid}/diary/${id}`;
     try {
       await deleteDoc(doc(db, `users/${user.uid}/diary`, id));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, path);
+    }
+  };
+
+  const handleClearAllEntries = async () => {
+    if (!user || entries.length === 0) return;
+    const path = `users/${user.uid}/diary`;
+    try {
+      const promises = entries.map(entry => 
+        deleteDoc(doc(db, `users/${user.uid}/diary`, entry.id))
+      );
+      await Promise.all(promises);
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, path);
     }
@@ -1267,6 +1283,16 @@ const SadhanaDiary = memo(() => {
           >
             <Download size={18} />
           </button>
+          {entries.length > 0 && (
+            <button 
+              onClick={() => setShowClearJournalConfirm(true)}
+              className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl transition-all active:scale-95"
+              title="Clear entire Sadhana diary"
+              id="clear-all-diary-entries-btn"
+            >
+              <Trash2 size={18} />
+            </button>
+          )}
           <button 
             onClick={() => setIsAdding(!isAdding)}
             className={`p-2 rounded-xl transition-all active:scale-95 ${isAdding ? 'bg-black text-white' : 'bg-spiritual/10 text-spiritual'}`}
@@ -1345,8 +1371,9 @@ const SadhanaDiary = memo(() => {
                     <Pen size={14} />
                   </button>
                   <button 
-                    onClick={() => handleDeleteEntry(entry.id)}
+                    onClick={() => setDeletingEntryId(entry.id)}
                     className="p-1.5 text-gray-400 hover:text-red-500 transition-all"
+                    id={`delete-entry-btn-${entry.id}`}
                   >
                     <Trash2 size={16} />
                   </button>
@@ -1386,6 +1413,36 @@ const SadhanaDiary = memo(() => {
           ))
         )}
       </div>
+
+      {/* Clear All Journal Entries Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showClearJournalConfirm}
+        onClose={() => setShowClearJournalConfirm(false)}
+        onConfirm={handleClearAllEntries}
+        title="डायरी खाली करने की पुष्टि (Clear Entire Journal)"
+        message="क्या आप सचमुच अपने साधना डायरी के सभी विचारों को हटाना चाहते हैं? यह क्रिया पूर्ववत नहीं की जा सकती।"
+        confirmLabel="हाँ, सभी हटाएं (Clear All)"
+        cancelLabel="रद्द करें (Cancel)"
+        type="danger"
+        iconType="trash"
+      />
+
+      {/* Delete Single Entry Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deletingEntryId !== null}
+        onClose={() => setDeletingEntryId(null)}
+        onConfirm={() => {
+          if (deletingEntryId) {
+            handleDeleteEntry(deletingEntryId);
+          }
+        }}
+        title="प्रविष्टि हटाने की पुष्टि (Confirm Delete Entry)"
+        message="क्या आप इस साधना प्रविष्टि को हटाना चाहते हैं?"
+        confirmLabel="हाँ, हटाएं (Delete)"
+        cancelLabel="रद्द करें (Cancel)"
+        type="danger"
+        iconType="trash"
+      />
     </div>
   );
 });

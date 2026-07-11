@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Moon, Sun, Volume2, Bell, User } from 'lucide-react';
+import { Download, Moon, Sun, Volume2, Bell, User, Flower } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -9,8 +9,10 @@ interface TerapanthHeaderProps {
   userName?: string;
   streak?: number;
   onRefreshClick?: () => void;
+  onThemePreferencesClick?: () => void;
   onPenClick?: () => void;
   onProfileClick?: () => void;
+  zenMode?: boolean;
 }
 
 export default function TerapanthHeader({ 
@@ -19,13 +21,46 @@ export default function TerapanthHeader({
   userName = "ज्योतिर्मय", 
   streak = 5,
   onRefreshClick,
+  onThemePreferencesClick,
   onPenClick,
-  onProfileClick
+  onProfileClick,
+  zenMode = false
 }: TerapanthHeaderProps) {
   const { language, toggleLanguage } = useLanguage();
   const [scrolled, setScrolled] = useState(false);
   const [animateStreak, setAnimateStreak] = useState(false);
   const [confettiParticles, setConfettiParticles] = useState<{ id: number; x: number; y: number; color: string; size: number }[]>([]);
+
+  // Get milestone info based on daily streak length
+  const getStreakMilestone = (days: number) => {
+    if (days >= 100) {
+      return {
+        label: language === 'hi' ? 'प्रेक्षा मनीषी' : 'Preksha Master',
+        color: scrolled ? 'bg-purple-500/10 text-purple-600 border-purple-500/30' : 'bg-purple-900/40 text-purple-200 border-purple-400/40',
+        icon: '👑'
+      };
+    } else if (days >= 30) {
+      return {
+        label: language === 'hi' ? 'ध्यान योगी' : 'Dhyan Yogi',
+        color: scrolled ? 'bg-indigo-500/10 text-indigo-600 border-indigo-500/30' : 'bg-indigo-900/40 text-indigo-200 border-indigo-400/40',
+        icon: '🔮'
+      };
+    } else if (days >= 7) {
+      return {
+        label: language === 'hi' ? 'उदयमान तारा' : 'Rising Star',
+        color: scrolled ? 'bg-amber-500/10 text-amber-600 border-amber-500/30' : 'bg-amber-900/40 text-amber-200 border-amber-400/40',
+        icon: '🌟'
+      };
+    } else {
+      return {
+        label: language === 'hi' ? 'साधना साधक' : 'Sadhana Seeker',
+        color: scrolled ? 'bg-stone-500/10 text-stone-600 border-stone-500/20' : 'bg-white/10 text-stone-200 border-white/10',
+        icon: '🌱'
+      };
+    }
+  };
+
+  const milestone = getStreakMilestone(streak);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -112,8 +147,8 @@ export default function TerapanthHeader({
                     ? 'bg-orange-500/10 border-orange-500/20 text-orange-600 hover:bg-orange-500/15' 
                     : 'bg-white/15 border-white/20 text-white hover:bg-white/20'
               }`}
-              title="Daily Sadhana Streak"
-              onClick={onPenClick}
+              title={`Daily Sadhana Streak: ${streak} Days - Rank: ${milestone.label}`}
+              onClick={onThemePreferencesClick}
             >
               <motion.span 
                 animate={animateStreak ? {
@@ -123,9 +158,12 @@ export default function TerapanthHeader({
                 transition={{ duration: 1 }}
                 className="text-xs"
               >
-                🔥
+                {milestone.icon}
               </motion.span>
               <span>{streak} Days</span>
+              <span className="hidden sm:inline-block text-[8px] opacity-90 px-1 rounded-sm bg-black/5 dark:bg-white/5 border border-stone-400/20 font-bold">
+                {milestone.label}
+              </span>
 
               {/* Multi-layered Glowing expansion ring */}
               {animateStreak && (
@@ -178,19 +216,36 @@ export default function TerapanthHeader({
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
           </button>
 
-          {/* 2. Pen Tool (Nib) Icon */}
+          {/* 2. Edit Dashboard Layout Icon (Pen) */}
           <button 
             onClick={(e) => {
               e.stopPropagation();
-              (onPenClick || (() => alert("Jai Jinendra! Opening Daily Spiritual Reflection Diary...")))();
+              onPenClick?.();
             }}
             className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
-            title="Spiritual Journal / Sadhana"
+            title={language === 'hi' ? 'डैशबोर्ड कस्टमाइज़ करें' : 'Edit Dashboard Layout'}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
           </button>
 
-          {/* 3. Theme Toggle (Moon/Sun) */}
+          {/* 3. Theme & Preferences (Lotus Flower) */}
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              onThemePreferencesClick?.();
+            }}
+            className={`p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer bg-transparent border-none outline-none flex items-center justify-center relative ${
+              scrolled ? 'text-stone-600 dark:text-stone-300' : 'text-white'
+            }`}
+            title={language === 'hi' ? 'थीम और प्राथमिकताएं' : 'Theme & Preferences'}
+          >
+            <Flower 
+              size={16} 
+              className="transition-all duration-300" 
+            />
+          </button>
+
+          {/* 4. Theme Toggle (Moon/Sun) */}
           <button 
             onClick={toggleTheme} 
             className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
@@ -203,7 +258,7 @@ export default function TerapanthHeader({
             )}
           </button>
 
-          {/* 4. Language Toggle (हि / EN) */}
+          {/* 5. Language Toggle (हि / EN) */}
           <button 
             onClick={toggleLanguage}
             className="w-6.5 h-6.5 flex items-center justify-center rounded-full hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all text-xs font-bold cursor-pointer bg-transparent border-none outline-none"
@@ -212,7 +267,7 @@ export default function TerapanthHeader({
             {language === 'hi' ? 'EN' : 'हि'}
           </button>
 
-          {/* 5. Profile/Seal */}
+          {/* 6. Profile/Seal */}
           <button 
             onClick={onProfileClick}
             className="w-6.5 h-6.5 rounded-full bg-red-900/85 border border-white/20 overflow-hidden active:scale-95 transition-all cursor-pointer flex items-center justify-center shrink-0"
@@ -229,8 +284,8 @@ export default function TerapanthHeader({
 
       {/* Sticky Scroll Greeting */}
       <div className={`overflow-hidden transition-all duration-300 max-w-md mx-auto ${scrolled ? 'h-8 opacity-100 border-b border-stone-200/50 dark:border-stone-800' : 'h-0 opacity-0'}`}>
-        <div className="flex items-center justify-center h-full text-[10px] font-bold text-stone-600 dark:text-stone-300 bg-stone-50 dark:bg-stone-900/50">
-          सुप्रभात • जय जिनेन्द्र, {userName}! 
+        <div className="flex items-center justify-center h-full text-[10px] font-bold text-stone-600 dark:text-stone-300 bg-stone-50 dark:bg-stone-900/50 gap-1.5 px-3">
+          <span>सुप्रभात • जय जिनेन्द्र, {userName}!</span>
           <motion.span 
             animate={animateStreak ? {
               scale: [1, 1.25, 0.9, 1.15, 1],
@@ -241,6 +296,10 @@ export default function TerapanthHeader({
           >
             🔥 {streak} Days
           </motion.span>
+          <span className={`px-1.5 py-0.5 rounded-md text-[8px] font-black tracking-wider uppercase border flex items-center gap-1 ${milestone.color}`}>
+            <span>{milestone.icon}</span>
+            <span>{milestone.label}</span>
+          </span>
         </div>
       </div>
     </header>

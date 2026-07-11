@@ -153,6 +153,9 @@ const AdminDashboardContent: React.FC<AdminDashboardProps> = ({ onBackToProfile 
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 5;
 
+  const [togglingRoleId, setTogglingRoleId] = useState<string | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+
   // Sorting State
   const [sortField, setSortField] = useState<'displayName' | 'createdAt'>('displayName');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -302,6 +305,7 @@ const AdminDashboardContent: React.FC<AdminDashboardProps> = ({ onBackToProfile 
     );
     if (!confirmDelete) return;
 
+    setDeletingUserId(userId);
     const userPath = `users/${userId}`;
     try {
       await deleteDoc(doc(db, 'users', userId));
@@ -316,6 +320,8 @@ const AdminDashboardContent: React.FC<AdminDashboardProps> = ({ onBackToProfile 
         type: 'error'
       });
       handleFirestoreError(error, OperationType.DELETE, userPath);
+    } finally {
+      setDeletingUserId(null);
     }
   };
 
@@ -365,6 +371,7 @@ const AdminDashboardContent: React.FC<AdminDashboardProps> = ({ onBackToProfile 
 
   // Handle role modification
   const handleToggleRole = async (userId: string, currentRole: string) => {
+    setTogglingRoleId(userId);
     const newRole = currentRole === 'admin' ? 'user' : 'admin';
     const userPath = `users/${userId}`;
     try {
@@ -373,6 +380,8 @@ const AdminDashboardContent: React.FC<AdminDashboardProps> = ({ onBackToProfile 
       console.log(`Successfully updated role for ${userId} to ${newRole}`);
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, userPath);
+    } finally {
+      setTogglingRoleId(null);
     }
   };
 
@@ -738,24 +747,38 @@ const AdminDashboardContent: React.FC<AdminDashboardProps> = ({ onBackToProfile 
                         {/* Interactive Role Toggle Button */}
                         <button
                           onClick={() => handleToggleRole(u.id, u.role || 'user')}
+                          disabled={togglingRoleId === u.id}
                           className={`px-2 py-1 rounded-lg font-bold text-[9px] flex items-center gap-1 cursor-pointer transition-all active:scale-95 border uppercase ${
                             u.role === 'admin' 
                               ? 'bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-900/30' 
                               : 'bg-slate-200/50 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
-                          }`}
+                          } ${togglingRoleId === u.id ? 'opacity-60 cursor-not-allowed' : ''}`}
                           title="Click to toggle user role"
                         >
-                          {u.role === 'admin' ? <Shield className="w-3 h-3" /> : <User className="w-3 h-3" />}
-                          <span>{u.role || 'user'}</span>
+                          {togglingRoleId === u.id ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : u.role === 'admin' ? (
+                            <Shield className="w-3 h-3" />
+                          ) : (
+                            <User className="w-3 h-3" />
+                          )}
+                          <span>{togglingRoleId === u.id ? 'Updating...' : (u.role || 'user')}</span>
                         </button>
 
                         {/* Delete User Trash Button */}
                         <button
                           onClick={() => handleDeleteUser(u.id, u.displayName)}
-                          className="p-1.5 rounded-lg border border-red-100 hover:bg-red-50 dark:border-red-950/30 dark:hover:bg-red-950/20 text-red-500 hover:text-red-600 transition-colors cursor-pointer"
+                          disabled={deletingUserId === u.id}
+                          className={`p-1.5 rounded-lg border border-red-100 hover:bg-red-50 dark:border-red-950/30 dark:hover:bg-red-950/20 text-red-500 hover:text-red-600 transition-colors cursor-pointer ${
+                            deletingUserId === u.id ? 'opacity-60 cursor-not-allowed' : ''
+                          }`}
                           title="उपयोगकर्ता को हटाएं (Delete User)"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          {deletingUserId === u.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-red-500" />
+                          ) : (
+                            <Trash2 className="w-3.5 h-3.5" />
+                          )}
                         </button>
                       </div>
                     </div>

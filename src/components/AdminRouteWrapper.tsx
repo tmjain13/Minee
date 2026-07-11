@@ -9,10 +9,20 @@ const AdminRouteWrapper: React.FC<{ children: React.ReactNode }> = ({ children }
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // Check if this user's UID exists in the 'admins' collection
-        const adminRef = doc(db, 'admins', user.uid);
-        const adminSnap = await getDoc(adminRef);
-        setIsAdmin(adminSnap.exists());
+        if (user.email?.toLowerCase() === 'jainkaran8999@gmail.com') {
+          setIsAdmin(true);
+        } else {
+          // Check if this user's UID exists in the 'admins' collection
+          const adminRef = doc(db, 'admins', user.uid);
+          const adminSnap = await getDoc(adminRef);
+          
+          // Also check users collection as backup
+          const userRef = doc(db, 'users', user.uid);
+          const userSnap = await getDoc(userRef);
+          const hasUserAdminRole = userSnap.exists() && userSnap.data()?.role === 'admin';
+          
+          setIsAdmin(adminSnap.exists() || hasUserAdminRole);
+        }
       } else {
         setIsAdmin(false);
       }

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Check, Volume2, Wind, Eye, Vibrate, ShieldCheck, Sun, Moon, Monitor, Play, Pause } from 'lucide-react';
+import { X, Check, Volume2, Wind, Eye, Vibrate, ShieldCheck, Sun, Moon, Monitor, Play, Pause, Flower } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 interface ThemeCustomizerProps {
   isOpen: boolean;
@@ -27,6 +28,8 @@ interface ThemeCustomizerProps {
   onKfontTypeChange?: (font: 'sans' | 'serif' | 'mono') => void;
   fontStyleSet?: 'standard' | 'high-readability';
   onFontStyleSetChange?: (style: 'standard' | 'high-readability') => void;
+  zenMode?: boolean;
+  onZenModeChange?: (enabled: boolean) => void;
 }
 
 const PALETTES = [
@@ -60,8 +63,11 @@ export default function ThemeCustomizer({
   kfontType = 'sans',
   onKfontTypeChange,
   fontStyleSet = 'standard',
-  onFontStyleSetChange
+  onFontStyleSetChange,
+  zenMode = false,
+  onZenModeChange
 }: ThemeCustomizerProps) {
+  const { language } = useLanguage();
   const [activePreviewIndex, setActivePreviewIndex] = useState(0);
   const [previewing, setPreviewing] = useState<string | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -230,6 +236,32 @@ export default function ThemeCustomizer({
                     >
                       <motion.div
                         animate={{ x: highContrast ? 26 : 4 }}
+                        className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
+                      />
+                    </button>
+                  </div>
+
+                  {/* Zen Focus Mode Toggle */}
+                  <div className="flex items-center justify-between pb-4 border-b border-black/5 dark:border-white/5">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-orange-500/10 rounded-2xl text-orange-500">
+                        <Flower size={20} className={zenMode ? "animate-pulse" : ""} />
+                      </div>
+                      <div>
+                        <span className="block font-bold text-sm text-[var(--text-spiritual)]">
+                          {language === 'hi' ? 'ध्यान केंद्रित मोड (Zen Mode)' : 'Zen Focus Mode'}
+                        </span>
+                        <span className="block text-[10px] text-gray-400 font-medium uppercase tracking-wider mt-0.5">
+                          {language === 'hi' ? 'गहरे ध्यान के लिए सेकेंडरी टैब छुपाएं' : 'Hide secondary tabs for deep focus'}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => onZenModeChange?.(!zenMode)}
+                      className={`relative w-12 h-6 rounded-full transition-colors ${zenMode ? 'bg-orange-500' : 'bg-gray-300 dark:bg-gray-700'}`}
+                    >
+                      <motion.div
+                        animate={{ x: zenMode ? 26 : 4 }}
                         className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
                       />
                     </button>

@@ -22,45 +22,86 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      console.warn("Auth check timed out, proceeding as guest.");
-      setLoading(false);
+    console.log("[AuthContext] Mounting AuthProvider. Setting up 3-second master safety timeout and onAuthStateChanged listener.");
+    
+    let isResolved = false;
+
+    const safetyTimeout = setTimeout(() => {
+      if (!isResolved) {
+        console.warn("[AuthContext] Master safety timeout fired! Forcing auth loading state to false to unblock rendering.");
+        setLoading(false);
+        isResolved = true;
+      }
     }, 3000);
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      clearTimeout(timeout);
-      // Avoid spreading the whole user object as it contains circular references and methods
-      setUser(user);
-      if (user) {
-        // Sync user to Firestore in the background to prevent blocking UI load in case of network timeouts
-        const userPath = `users/${user.uid}`;
-        const userRef = doc(db, 'users', user.uid);
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      console.log("[AuthContext] onAuthStateChanged callback triggered. Current user:", currentUser ? currentUser.email : "guest/none");
+      
+      setUser(currentUser);
+      
+      if (currentUser) {
+        const isOwner = currentUser.email?.toLowerCase() === 'jainkaran8999@gmail.com';
+        const defaultRole = isOwner ? 'admin' : 'user';
+
+        // Instantly assign basic userData properties synchronously to prevent UI locks while syncing
+        setUserData({
+          uid: currentUser.uid,
+          email: currentUser.email,
+          displayName: currentUser.displayName,
+          photoURL: currentUser.photoURL,
+          role: defaultRole
+        });
+
+        // Run heavy Firestore sync completely asynchronously (non-blocking) in the background
+        const userPath = `users/${currentUser.uid}`;
+        const userRef = doc(db, 'users', currentUser.uid);
         
-        try {
-          await setDoc(userRef, {
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-            photoURL: user.photoURL,
-            lastLoginAt: serverTimestamp(),
-            createdAt: user.metadata.creationTime ? new Date(user.metadata.creationTime) : serverTimestamp(),
-          }, { merge: true });
-          
-          const userSnap = await getDoc(userRef);
-          if (userSnap.exists()) {
-            setUserData(userSnap.data());
-          } else {
-            setUserData({ role: 'user' });
+        console.log("[AuthContext] Spawning non-blocking Firestore background sync task for uid:", currentUser.uid);
+        (async () => {
+          try {
+            console.log("[AuthContext] Background Sync: Saving user profile to Firestore...");
+            await setDoc(userRef, {
+              uid: currentUser.uid,
+              email: currentUser.email,
+              displayName: currentUser.displayName,
+              photoURL: currentUser.photoURL,
+              role: defaultRole,
+              lastLoginAt: serverTimestamp(),
+              createdAt: currentUser.metadata.creationTime ? new Date(currentUser.metadata.creationTime) : serverTimestamp(),
+            }, { merge: true });
+            
+            console.log("[AuthContext] Background Sync: Saved profile successfully. Fetching database role/claims...");
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+              const data = userSnap.data();
+              if (isOwner) {
+                data.role = 'admin'; // Always force owner to admin
+              }
+              setUserData(data);
+              console.log("[AuthContext] Background Sync: Profile loaded from database:", data);
+            } else {
+              console.log("[AuthContext] Background Sync: User document not found in database.");
+            }
+          } catch (error) {
+            console.error("[AuthContext] Background Sync Error:", error);
+            handleFirestoreError(error as any, OperationType.WRITE, userPath);
+            // Fallback to basic state on error
+            setUserData({
+              uid: currentUser.uid,
+              email: currentUser.email,
+              displayName: currentUser.displayName,
+              photoURL: currentUser.photoURL,
+              role: isOwner ? 'admin' : 'user'
+            });
           }
-        } catch (error) {
-          handleFirestoreError(error as any, OperationType.WRITE, userPath);
-          setUserData({ role: 'user' });
-        }
+        })();
       } else {
+        console.log("[AuthContext] No authenticated user found. Checking for cached demo profile...");
         const localDemo = localStorage.getItem('tp_demo_user');
         if (localDemo) {
           try {
             const parsed = JSON.parse(localDemo);
+            console.log("[AuthContext] Found cached demo user profile:", parsed.email);
             setUser({
               uid: parsed.uid,
               email: parsed.email,
@@ -79,18 +120,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               lastLoginAt: new Date().toISOString()
             });
           } catch (e) {
-            console.error("Error parsing tp_demo_user:", e);
+            console.error("[AuthContext] Error parsing tp_demo_user:", e);
             setUserData(null);
           }
         } else {
+          console.log("[AuthContext] No cached demo user found. App running in default guest mode.");
           setUserData(null);
         }
       }
-      setLoading(false);
+      
+      if (!isResolved) {
+        console.log("[AuthContext] Authentication state resolved. Setting loading state to false.");
+        setLoading(false);
+        isResolved = true;
+        clearTimeout(safetyTimeout);
+      }
     });
 
     return () => {
-      clearTimeout(timeout);
+      console.log("[AuthContext] Cleaning up AuthProvider listeners and timeouts...");
+      clearTimeout(safetyTimeout);
       unsubscribe();
     };
   }, []);

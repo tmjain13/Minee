@@ -49,7 +49,7 @@ async function startServer() {
   });
 
   app.use(helmet({
-    contentSecurityPolicy: {
+    contentSecurityPolicy: process.env.NODE_ENV === "production" ? {
       directives: {
         defaultSrc: ["'self'"],
         frameAncestors: ["'self'", "https://studio.google.com", "https://*.google.com", "https://*.googleusercontent.com", "https://*.run.app"],
@@ -70,7 +70,7 @@ async function startServer() {
           "ws://0.0.0.0:*"
         ]
       }
-    },
+    } : false,
     frameguard: false,
     noSniff: true,
     dnsPrefetchControl: { allow: false }

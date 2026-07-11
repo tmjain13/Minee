@@ -49,6 +49,16 @@ export default function UnifiedHomeDashboard({
     }
   });
 
+  useEffect(() => {
+    const handleOpenCustomizer = () => {
+      setIsCustomizerOpen(true);
+    };
+    window.addEventListener('open-dashboard-customizer', handleOpenCustomizer);
+    return () => {
+      window.removeEventListener('open-dashboard-customizer', handleOpenCustomizer);
+    };
+  }, []);
+
   // Filter knowledge items dynamically when search is active
   const filteredKnowledge = searchQuery.trim() !== ''
     ? knowledgeItems.filter((item: any) => 

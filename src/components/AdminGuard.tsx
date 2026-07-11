@@ -13,8 +13,16 @@ interface AdminGuardProps {
 
 export const AdminGuard: React.FC<AdminGuardProps> = ({ children, onBack }) => {
   const { user, userData, loading: authLoading } = useAuth();
-  const [userRole, setUserRole] = useState<string | undefined>(userData?.role);
+  const isOwner = user?.email?.toLowerCase() === 'jainkaran8999@gmail.com';
+  const [userRole, setUserRole] = useState<string | undefined>(isOwner ? 'admin' : userData?.role);
   const [checkingRole, setCheckingRole] = useState(true);
+
+  // Sync state with userData role changes
+  useEffect(() => {
+    if (userData?.role) {
+      setUserRole(user?.email?.toLowerCase() === 'jainkaran8999@gmail.com' ? 'admin' : userData.role);
+    }
+  }, [userData?.role, user?.email]);
 
   // Real-time Firestore document listener to ensure role state is 100% accurate
   useEffect(() => {
@@ -24,6 +32,14 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children, onBack }) => {
       setUserRole(undefined);
       setCheckingRole(false);
       logAccess("anonymous", "denied", window.location.pathname);
+      return;
+    }
+
+    // Direct access if owner
+    if (user.email?.toLowerCase() === 'jainkaran8999@gmail.com') {
+      setUserRole('admin');
+      setCheckingRole(false);
+      logAccess(user.uid, 'granted', window.location.pathname);
       return;
     }
 
@@ -75,7 +91,7 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children, onBack }) => {
   }
 
   // Access Denied screen if role is not 'admin'
-  const isAuthorized = user && userRole === 'admin';
+  const isAuthorized = user && (userRole === 'admin' || user.email?.toLowerCase() === 'jainkaran8999@gmail.com');
 
   if (!isAuthorized) {
     return (
