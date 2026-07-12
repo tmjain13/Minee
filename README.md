@@ -1,20 +1,30 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Terapanth AI Hub
 
-# Run and deploy your AI Studio app
+**Terapanth AI Hub** is a specialized spiritual community PWA (Progressive Web App) developed for the Jain Shwetambar Terapanth tradition. It bridges technology and spirituality by offering an AI-powered assistant, Sadhana tracking, and community resource management.
 
-This contains everything you need to run your app locally.
+## 🚀 Key Features
 
-View your app in AI Studio: https://ai.studio/apps/07fb2a50-12ff-404e-b857-ae2844c373db
+*   **Spiritual AI Assistant:** Powered by Google Gemini 2.0 Flash, finely-tuned for Terapanth knowledge, terminology (Bhawan, Vihar, Gochari), and historical context.
+*   **Sadhana Tracker:** Manage daily diary entries, spiritual streaks, and mindfulness rituals.
+*   **Live Community Updates:** Access to Panchang, Vihar status, and community announcements.
+*   **Secure Admin Portal:** Role-based access control for administrative tasks.
 
-## Run Locally
+## 🛠️ Tech Stack
 
-**Prerequisites:**  Node.js
+*   **Frontend:** React 19, TypeScript, Vite 6, TailwindCSS 4
+*   **Backend:** Express.js + TypeScript
+*   **Database & Auth:** Firebase Firestore, Firebase Auth
+*   **Storage:** Secure user-scoped Cloud Storage
+*   **AI Engine:** Google Gemini 2.0 Flash
 
+## 🛡️ Security
+This project prioritizes data security with:
+*   Firestore Security Rules (Strict data access control).
+*   Environment variable management (No API keys exposed in code).
+*   Sanitized input handling to prevent injection.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 📜 Spiritual Guidelines
+This project adheres to the Terapanth tradition's values, prioritizing accuracy in historical facts, monastic hierarchy, and terminology.
+
+---
+*Built with dedication for the Terapanth community.*
