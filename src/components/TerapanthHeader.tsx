@@ -1,35 +1,59 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Moon, Sun, Volume2, Bell, User, Flower } from 'lucide-react';
+import { Download, Moon, Sun, Volume2, Bell, User, Flower, LogIn } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { motion, AnimatePresence } from 'motion/react';
+import { useAuth } from '../context/AuthContext';
+import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 
 interface TerapanthHeaderProps {
   theme: string;
   toggleTheme: () => void;
-  userName?: string;
   streak?: number;
   onRefreshClick?: () => void;
   onThemePreferencesClick?: () => void;
   onPenClick?: () => void;
   onProfileClick?: () => void;
+  onLoginClick?: () => void;
   zenMode?: boolean;
 }
 
 export default function TerapanthHeader({ 
   theme, 
   toggleTheme, 
-  userName = "ज्योतिर्मय", 
   streak = 5,
   onRefreshClick,
   onThemePreferencesClick,
   onPenClick,
   onProfileClick,
+  onLoginClick,
   zenMode = false
 }: TerapanthHeaderProps) {
   const { language, toggleLanguage } = useLanguage();
+  const { user, userData } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [animateStreak, setAnimateStreak] = useState(false);
   const [confettiParticles, setConfettiParticles] = useState<{ id: number; x: number; y: number; color: string; size: number }[]>([]);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarLoading, setAvatarLoading] = useState(false);
+
+  useEffect(() => {
+    if (user?.uid) {
+      setAvatarLoading(true);
+      const storage = getStorage();
+      const avatarRef = ref(storage, `avatars/${user.uid}/profile.jpg`);
+      getDownloadURL(avatarRef)
+        .then(url => {
+          setAvatarUrl(url);
+          setAvatarLoading(false);
+        })
+        .catch(() => {
+          setAvatarUrl(null);
+          setAvatarLoading(false);
+        });
+    } else {
+      setAvatarUrl(null);
+    }
+  }, [user?.uid]);
 
   // Get milestone info based on daily streak length
   const getStreakMilestone = (days: number) => {
@@ -268,24 +292,44 @@ export default function TerapanthHeader({
           </button>
 
           {/* 6. Profile/Seal */}
-          <button 
-            onClick={onProfileClick}
-            className="w-6.5 h-6.5 rounded-full bg-red-900/85 border border-white/20 overflow-hidden active:scale-95 transition-all cursor-pointer flex items-center justify-center shrink-0"
-            title="Spiritual Profile & Settings"
-          >
-            <img 
-              src="https://i.postimg.cc/vmrrKKDp/4f9ba4b7a8d6fd8a83f711595c3f3242-3.jpg" 
-              alt="Seal" 
-              className="w-full h-full object-cover rounded-full"
-            />
-          </button>
+          {user ? (
+            <button 
+              onClick={onProfileClick}
+              className="w-8 h-8 rounded-full bg-amber-600 border border-white/20 overflow-hidden active:scale-95 transition-all cursor-pointer flex items-center justify-center shrink-0"
+              title="Spiritual Profile & Settings"
+            >
+              {avatarLoading ? (
+                <div className="w-full h-full animate-pulse bg-slate-700" />
+              ) : avatarUrl ? (
+                <motion.img 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  src={avatarUrl}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-xs font-bold text-white">
+                  {userData?.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}
+                </span>
+              )}
+            </button>
+          ) : (
+            <button 
+              onClick={onLoginClick}
+              className="w-8 h-8 rounded-full bg-stone-700/50 border border-white/20 overflow-hidden active:scale-95 transition-all cursor-pointer flex items-center justify-center shrink-0"
+              title="Login"
+            >
+              <LogIn size={16} className="text-white" />
+            </button>
+          )}
         </div>
       </div>
 
       {/* Sticky Scroll Greeting */}
       <div className={`overflow-hidden transition-all duration-300 max-w-md mx-auto ${scrolled ? 'h-8 opacity-100 border-b border-stone-200/50 dark:border-stone-800' : 'h-0 opacity-0'}`}>
         <div className="flex items-center justify-center h-full text-[10px] font-bold text-stone-600 dark:text-stone-300 bg-stone-50 dark:bg-stone-900/50 gap-1.5 px-3">
-          <span>सुप्रभात • जय जिनेन्द्र, {userName}!</span>
+          <span>सुप्रभात • जय जिनेन्द्र, {userData?.displayName || user?.displayName || 'साधक'}!</span>
           <motion.span 
             animate={animateStreak ? {
               scale: [1, 1.25, 0.9, 1.15, 1],

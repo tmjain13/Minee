@@ -152,3 +152,8 @@ export const Registry = {
   TerapanthOverview: lazyWrap(() => import('../components/TerapanthOverview')),
 };
 
+export const LazyWrapper = ({ componentKey, ...props }: { componentKey: keyof typeof Registry } & any) => {
+  const Component = Registry[componentKey];
+  return <Component {...props} />;
+};
+

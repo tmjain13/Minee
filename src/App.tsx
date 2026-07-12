@@ -44,6 +44,7 @@ import TerapanthHeader from "./components/TerapanthHeader";
 import TerapanthFooterNav from "./components/TerapanthFooterNav";
 import QuickActions from "./components/QuickActions";
 import { AdminGuard } from "./components/AdminGuard";
+import { LazyWrapper } from "./integrations/ComponentRegistry";
 
 // --- SAFE LAZY WRAPPER FOR CHUNK-LOAD SELF-HEALING ---
 const safeLazy = <T extends React.ComponentType<any>>(
@@ -182,6 +183,23 @@ export default function App() {
   // Check if user has already onboarded via local storage state
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>('home');
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'home':
+        return <LazyWrapper componentKey="TerapanthOverview" />;
+      case 'sadhana':
+        return <LazyWrapper componentKey="SadhanaTracker" />;
+      case 'panchang':
+        return <LazyWrapper componentKey="SadhalaAuthAndPanchangHub" />;
+      case 'gallery':
+        return <LazyWrapper componentKey="GalleryTab" />;
+      case 'pravachan':
+        return <LazyWrapper componentKey="DailyReflectionEngineV2" />;
+      default:
+        return <LazyWrapper componentKey="TerapanthOverview" />;
+    }
+  };
   const [prevTab, setPrevTab] = useState<string>('home');
   const [direction, setDirection] = useState<number>(0);
 
@@ -578,7 +596,6 @@ export default function App() {
         <TerapanthHeader
           theme={theme}
           toggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
-          userName={user?.displayName || "ज्योतिर्मय"}
           streak={sadhanaStreak}
           onRefreshClick={() => window.location.reload()}
           onThemePreferencesClick={() => setIsCustomizerOpen(true)}
@@ -589,6 +606,7 @@ export default function App() {
             }, 100);
           }}
           onProfileClick={() => setActiveTab('profile')}
+          onLoginClick={() => setIsLoginModalOpen(true)}
           zenMode={zenMode}
         />
       )}

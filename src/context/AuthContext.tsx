@@ -3,6 +3,8 @@ import { User, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut,
 import { auth, db } from '../lib/firebase';
 import { doc, setDoc, serverTimestamp, updateDoc, getDoc } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../lib/firestoreErrors';
+import toast from 'react-hot-toast';
+import { syncAdminStatus } from '../lib/auth-sync';
 
 interface AuthContextType {
   user: User | null;
@@ -40,10 +42,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(currentUser);
       
       if (currentUser) {
+        // Sync Admin Status
+        await syncAdminStatus(currentUser);
+
         const isOwner = currentUser.email?.toLowerCase() === 'jainkaran8999@gmail.com';
         const defaultRole = isOwner ? 'admin' : 'user';
 
-        // Instantly assign basic userData properties synchronously to prevent UI locks while syncing
         setUserData({
           uid: currentUser.uid,
           email: currentUser.email,
@@ -52,7 +56,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           role: defaultRole
         });
 
-        // Run heavy Firestore sync completely asynchronously (non-blocking) in the background
         const userPath = `users/${currentUser.uid}`;
         const userRef = doc(db, 'users', currentUser.uid);
         
@@ -85,7 +88,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } catch (error) {
             console.error("[AuthContext] Background Sync Error:", error);
             handleFirestoreError(error as any, OperationType.WRITE, userPath);
-            // Fallback to basic state on error
             setUserData({
               uid: currentUser.uid,
               email: currentUser.email,
@@ -148,8 +150,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-    } catch (error) {
+      toast.success('Successfully signed in!');
+    } catch (error: any) {
       console.error("Error signing in with Google:", error);
+      let message = 'Failed to sign in. Please try again.';
+      if (error.code === 'auth/network-request-failed') message = 'Network issue. Check your connection.';
+      else if (error.code === 'auth/popup-closed-by-user') message = 'Sign-in cancelled.';
+      toast.error(message);
       throw error;
     }
   };
@@ -158,7 +165,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.removeItem('tp_demo_user');
       await signOut(auth);
-      // Clear app-specific local storage
       const keysToRemove = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
@@ -167,8 +173,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
       keysToRemove.forEach(key => localStorage.removeItem(key));
+      toast.success('Logged out successfully.');
     } catch (error) {
       console.error("Error signing out:", error);
+      toast.error('Failed to log out.');
       throw error;
     }
   };
@@ -177,24 +185,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!auth.currentUser) throw new Error('No user logged in');
     
     try {
-      // Update Firebase Auth
       await updateProfile(auth.currentUser, {
         displayName,
         photoURL
       });
 
-      // Update Firestore
       const userPath = `users/${auth.currentUser.uid}`;
       await updateDoc(doc(db, 'users', auth.currentUser.uid), {
         displayName,
         photoURL
       });
 
-      // Update local state with only the needed serializable properties or let Firebase handle it
       setUser(auth.currentUser);
       setUserData((prev: any) => prev ? { ...prev, displayName, photoURL } : { displayName, photoURL });
+      toast.success('Profile updated!');
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `users/${auth.currentUser.uid}`);
+      toast.error('Failed to update profile.');
       throw error;
     }
   };
@@ -205,6 +212,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     </AuthContext.Provider>
   );
 }
+
 
 export function useAuth() {
   const context = useContext(AuthContext);

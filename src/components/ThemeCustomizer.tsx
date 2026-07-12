@@ -2,6 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Check, Volume2, Wind, Eye, Vibrate, ShieldCheck, Sun, Moon, Monitor, Play, Pause, Flower } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import toast from 'react-hot-toast';
 
 interface ThemeCustomizerProps {
   isOpen: boolean;
@@ -68,51 +72,46 @@ export default function ThemeCustomizer({
   onZenModeChange
 }: ThemeCustomizerProps) {
   const { language } = useLanguage();
+  const { user } = useAuth();
   const [activePreviewIndex, setActivePreviewIndex] = useState(0);
   const [previewing, setPreviewing] = useState<string | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  const togglePreview = (soundId: string) => {
-    if (previewing === soundId) {
-      previewAudioRef.current?.pause();
-      setPreviewing(null);
-    } else {
-      previewAudioRef.current?.pause();
-      const soundUrls = {
-        om: 'https://raw.githubusercontent.com/scottschiller/soundmanager2/master/demo/_mp3/rain.mp3',
-        temple_bells: '/assets/peaceful-bell.mp3',
-        nature: 'https://raw.githubusercontent.com/scottschiller/soundmanager2/master/demo/_mp3/click-low.mp3'
-      };
-      const audio = new Audio(soundUrls[soundId as keyof typeof soundUrls]);
-      audio.loop = true;
-      audio.play().catch(console.error);
-      previewAudioRef.current = audio;
-      setPreviewing(soundId);
+  const savePreferences = async (newPrefs: any) => {
+    if (!user?.uid) return;
+    try {
+      await setDoc(doc(db, 'users', user.uid), {
+        preferences: newPrefs,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      toast.success('Preferences saved!');
+    } catch (error) {
+      console.error('Save error:', error);
+      toast.error('Failed to save preferences.');
     }
   };
 
-  useEffect(() => {
-    return () => {
-      previewAudioRef.current?.pause();
-    };
-  }, []);
-
-  const previewTexts = [
-    {
-      title: 'Navkar Mantra',
-      text: 'नमो अरिहंताणं • नमो सिद्धाणं • नमो आयरियाणं • नमो उवज्झायाणं • नमो लोए सव्व साहूणं • एसोपंचनमुक्कारो, सव्वपावप्पणासणो • पढमं हवई मंगलं ॥'
-    },
-    {
-      title: 'Anekantavada',
-      text: 'Truth and reality are perceived differently from diverse points of view, and no single point of view is the complete truth.'
-    },
-    {
-      title: 'Acharya Quote',
-      text: 'Avoid cruelty, embrace non-violence. Real peace lies in self-restraint and inner purification. - Acharya Mahashraman'
+  const handlePreferenceChange = (key: string, value: any) => {
+    // Call the original handlers
+    switch (key) {
+      case 'theme': onThemeChange?.(value); break;
+      case 'palette': onPaletteChange(value); break;
+      case 'mantraAudioCue': onMantraAudioCueChange(value); break;
+      case 'ambientSound': onAmbientSoundChange(value); break;
+      case 'highContrast': onHighContrastChange(value); break;
+      case 'autoArchive': onAutoArchiveChange(value); break;
+      case 'vibrationIntensity': onVibrationIntensityChange(value); break;
+      case 'spiritualSoundscape': onSpiritualSoundscapeChange?.(value); break;
+      case 'kfontSize': onKfontSizeChange?.(value); break;
+      case 'kfontType': onKfontTypeChange?.(value); break;
+      case 'fontStyleSet': onFontStyleSetChange?.(value); break;
+      case 'zenMode': onZenModeChange?.(value); break;
     }
-  ];
 
-  const activePalette = PALETTES.find(p => p.id === palette) || PALETTES[0];
+    // Save to Firestore
+    savePreferences({ [key]: value });
+  };
+
 
   return (
     <AnimatePresence>
@@ -156,7 +155,7 @@ export default function ThemeCustomizer({
                   ].map((m) => (
                     <button
                       key={m.id}
-                      onClick={() => onThemeChange?.(m.id as any)}
+                      onClick={() => handlePreferenceChange('theme', m.id)}
                       className={`relative p-4 rounded-3xl border-2 transition-all flex flex-col items-center gap-2 text-center ${
                         theme === m.id
                           ? 'border-spiritual bg-spiritual/5 text-spiritual'
