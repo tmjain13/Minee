@@ -98,7 +98,7 @@ export const Registry = {
   // PROFILE / REGISTRY TAB
   AcharyaArchiveModal: lazyWrap(() => import('../components/AcharyaArchiveModal')),
   BahushrutParishadPortal: lazyWrap(() => import('../components/BahushrutParishadPortal')),
-  AdminRouteWrapper: lazyWrap(() => import('../components/AdminRouteWrapper')),
+  AdminRouteWrapper: lazyWrap(() => import('../components/AdminGuard')),
   ProfileTab: lazyWrap(() => import('../components/ProfileTab')),
   SadhviPramukhaPortal: lazyWrap(() => import('../components/SadhviPramukhaPortal')),
   SadhviRajimatiPortal: lazyWrap(() => import('../components/SadhviRajimatiPortal')),

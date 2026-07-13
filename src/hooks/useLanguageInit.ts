@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import { devLog } from '../lib/devLog';
 
 /**
  * Custom hook to initialize and keep the HTML document attributes
@@ -16,7 +17,7 @@ export function useLanguageInit() {
     document.body.classList.remove('lang-hi', 'lang-en');
     document.body.classList.add(`lang-${language}`);
     
-    console.log(`[Language Init] Localized document configuration applied for: ${language.toUpperCase()}`);
+    devLog(`[Language Init] Localized document configuration applied for: ${language.toUpperCase()}`);
   }, [language]);
 
   return language;

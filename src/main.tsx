@@ -43,6 +43,15 @@
       throw err;
     }
   };
+
+  // Safely disable all console.log calls in production environments
+  if (typeof window !== 'undefined' && import.meta.env.PROD) {
+    const noop = () => {};
+    console.log = noop;
+    // Keep warn and error for diagnostics, but silence verbose logs
+    console.debug = noop;
+    console.info = noop;
+  }
 })();
 
 import {StrictMode} from 'react';

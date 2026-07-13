@@ -1,5 +1,6 @@
 import { KnowledgeItem } from '../data/knowledge';
 import { safeStringify } from './safe-json';
+import { devLog } from './devLog';
 
 const OFFLINE_KEY = 'terapanth_ai_offline_knowledge';
 const BOOKMARKS_KEY = 'terapanth_ai_bookmarks';
@@ -147,7 +148,7 @@ export const OfflineStorage = {
       // Tier 3: Aggressively persist to high-scale asynchronous Structured IndexedDB
       idbHelper.saveItems(timestamped)
         .then(() => {
-          console.log(`Aggressive IndexedDB cache populated successfully with ${timestamped.length} items.`);
+          devLog(`Aggressive IndexedDB cache populated successfully with ${timestamped.length} items.`);
         })
         .catch(err => {
           console.error('Core IndexedDB write transactional failure:', err);

@@ -107,7 +107,7 @@ The AI must reference only verified, authentic registries of Jain Terapanth hist
 
 ### Approved Community Wings & Logos
 Whenever a specific wing is mentioned in the UI, direct the matching official visual rendering:
-* **Terapanth Professional Forum (TPF)**: `https://i.postimg.cc/ydXQL3gn/logo-(1).png`
+* **Terapanth Professional Forum (TPF)**: `/media/logos/tpf_logo.png`
 * **ABTYP (Youth Wing)**, **ABTMM (Women's Wing)**, **GYANSHALA (School Division)**, **ANUVIBHA (Peace Movement)** inside respective sections.
 
 ---

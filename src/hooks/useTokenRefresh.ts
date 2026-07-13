@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { devLog } from '../lib/devLog';
 
 export function useTokenRefresh() {
   const { user } = useAuth();
@@ -26,9 +27,7 @@ export function useTokenRefresh() {
         timeoutId.current = setTimeout(async () => {
           try {
             await user.getIdToken(true);
-            if (import.meta.env.DEV) {
-              console.log("Firebase token refreshed successfully");
-            }
+            devLog("Firebase token refreshed successfully");
             retryCount.current = 0; // reset
             scheduleRefresh(); // schedule next
           } catch (err) {

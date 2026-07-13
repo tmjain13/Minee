@@ -11,6 +11,7 @@ import {
   getDocFromServer,
   CACHE_SIZE_UNLIMITED
 } from 'firebase/firestore';
+import { devLog } from './devLog';
 
 // Securely resolve config: prioritize process/import.meta.env variables, fall back to JSON config if present
 const configs = import.meta.glob('../../firebase-applet-config.json', { eager: true });
@@ -52,11 +53,11 @@ if (isFirebaseConfigured) {
 
     if (appAny.__firestore_db__) {
       db = appAny.__firestore_db__;
-      console.log("Firestore: Reusing existing db instance from App property.");
+      devLog("Firestore: Reusing existing db instance from App property.");
     } else if (globalTemp.__firestore_db__) {
       db = globalTemp.__firestore_db__;
       appAny.__firestore_db__ = db;
-      console.log("Firestore: Reusing existing global db instance.");
+      devLog("Firestore: Reusing existing global db instance.");
     } else {
       try {
         // Safely use initializeFirestore with the configured database ID and persistent cache for automatic reconnection
@@ -79,7 +80,7 @@ if (isFirebaseConfigured) {
         if (typeof window !== 'undefined') {
           globalTemp.__firestore_db__ = db;
         }
-        console.log("Firestore: Successfully initialized with persistent local cache.");
+        devLog("Firestore: Successfully initialized with persistent local cache.");
       } catch (error) {
         console.warn("Firestore: initializeFirestore with databaseId failed, trying default initializeFirestore:", error);
         try {
@@ -93,7 +94,7 @@ if (isFirebaseConfigured) {
           if (typeof window !== 'undefined') {
             globalTemp.__firestore_db__ = db;
           }
-          console.log("Firestore: Successfully resolved via default initializeFirestore with persistence.");
+          devLog("Firestore: Successfully resolved via default initializeFirestore with persistence.");
         } catch (fallbackError) {
           console.warn("Firestore: initializeFirestore failed, falling back to standard getFirestore:", fallbackError);
           try {
@@ -102,7 +103,7 @@ if (isFirebaseConfigured) {
             if (typeof window !== 'undefined') {
               globalTemp.__firestore_db__ = db;
             }
-            console.log("Firestore: Successfully resolved via standard getFirestore.");
+            devLog("Firestore: Successfully resolved via standard getFirestore.");
           } catch (finalError) {
             console.error("Firestore: All initializations failed:", finalError);
             throw finalError;
@@ -120,7 +121,7 @@ if (isFirebaseConfigured) {
       try {
         await getDocFromServer(doc(db, 'test', 'connection'));
       } catch (error) {
-        console.log("Firestore operating in secure local offline persistence mode.");
+        devLog("Firestore operating in secure local offline persistence mode.");
       }
     };
     testConnection();

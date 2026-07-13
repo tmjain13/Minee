@@ -5,6 +5,7 @@ import { doc, setDoc, serverTimestamp, updateDoc, getDoc } from 'firebase/firest
 import { handleFirestoreError, OperationType } from '../lib/firestoreErrors';
 import toast from 'react-hot-toast';
 import { syncAdminStatus } from '../lib/auth-sync';
+import { devLog } from '../lib/devLog';
 
 interface AuthContextType {
   user: User | null;
@@ -24,7 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log("[AuthContext] Mounting AuthProvider. Setting up 3-second master safety timeout and onAuthStateChanged listener.");
+    devLog("[AuthContext] Mounting AuthProvider. Setting up 3-second master safety timeout and onAuthStateChanged listener.");
     
     let isResolved = false;
 
@@ -37,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, 3000);
 
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      console.log("[AuthContext] onAuthStateChanged callback triggered. Current user:", currentUser ? currentUser.email : "guest/none");
+      devLog("[AuthContext] onAuthStateChanged callback triggered. Current user:", currentUser ? currentUser.email : "guest/none");
       
       setUser(currentUser);
       
@@ -59,10 +60,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userPath = `users/${currentUser.uid}`;
         const userRef = doc(db, 'users', currentUser.uid);
         
-        console.log("[AuthContext] Spawning non-blocking Firestore background sync task for uid:", currentUser.uid);
+        devLog("[AuthContext] Spawning non-blocking Firestore background sync task for uid:", currentUser.uid);
         (async () => {
           try {
-            console.log("[AuthContext] Background Sync: Saving user profile to Firestore...");
+            devLog("[AuthContext] Background Sync: Saving user profile to Firestore...");
             await setDoc(userRef, {
               uid: currentUser.uid,
               email: currentUser.email,
@@ -73,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               createdAt: currentUser.metadata.creationTime ? new Date(currentUser.metadata.creationTime) : serverTimestamp(),
             }, { merge: true });
             
-            console.log("[AuthContext] Background Sync: Saved profile successfully. Fetching database role/claims...");
+            devLog("[AuthContext] Background Sync: Saved profile successfully. Fetching database role/claims...");
             const userSnap = await getDoc(userRef);
             if (userSnap.exists()) {
               const data = userSnap.data();
@@ -81,9 +82,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 data.role = 'admin'; // Always force owner to admin
               }
               setUserData(data);
-              console.log("[AuthContext] Background Sync: Profile loaded from database:", data);
+              devLog("[AuthContext] Background Sync: Profile loaded from database:", data);
             } else {
-              console.log("[AuthContext] Background Sync: User document not found in database.");
+              devLog("[AuthContext] Background Sync: User document not found in database.");
             }
           } catch (error) {
             console.error("[AuthContext] Background Sync Error:", error);
@@ -98,12 +99,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         })();
       } else {
-        console.log("[AuthContext] No authenticated user found. Checking for cached demo profile...");
+        devLog("[AuthContext] No authenticated user found. Checking for cached demo profile...");
         const localDemo = localStorage.getItem('tp_demo_user');
         if (localDemo) {
           try {
             const parsed = JSON.parse(localDemo);
-            console.log("[AuthContext] Found cached demo user profile:", parsed.email);
+            devLog("[AuthContext] Found cached demo user profile:", parsed.email);
             setUser({
               uid: parsed.uid,
               email: parsed.email,
@@ -126,13 +127,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUserData(null);
           }
         } else {
-          console.log("[AuthContext] No cached demo user found. App running in default guest mode.");
+          devLog("[AuthContext] No cached demo user found. App running in default guest mode.");
           setUserData(null);
         }
       }
       
       if (!isResolved) {
-        console.log("[AuthContext] Authentication state resolved. Setting loading state to false.");
+        devLog("[AuthContext] Authentication state resolved. Setting loading state to false.");
         setLoading(false);
         isResolved = true;
         clearTimeout(safetyTimeout);
@@ -140,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => {
-      console.log("[AuthContext] Cleaning up AuthProvider listeners and timeouts...");
+      devLog("[AuthContext] Cleaning up AuthProvider listeners and timeouts...");
       clearTimeout(safetyTimeout);
       unsubscribe();
     };

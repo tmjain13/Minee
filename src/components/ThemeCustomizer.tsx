@@ -43,6 +43,12 @@ const PALETTES = [
   { id: 'forest', name: 'Forest (Peace)', color: '#1A331A', bg: '#F1F8F1' },
 ] as const;
 
+const previewTexts = [
+  { title: 'Navkar', text: 'णमो अरिहंताणं णमो सिद्धाणं णमो आयरियाणं णमो उवज्झायाणं णमो लोए सव्वसाहूणं' },
+  { title: 'Anuvrat', text: 'अणुव्रत गति-पथ: संयमः खलु जीवनम्।' },
+  { title: 'Weetragi', text: 'Jai Jinendra! May peace, non-violence, and self-restraint lead to ultimate liberation.' }
+];
+
 export default function ThemeCustomizer({ 
   isOpen, 
   onClose, 
@@ -76,6 +82,16 @@ export default function ThemeCustomizer({
   const [activePreviewIndex, setActivePreviewIndex] = useState(0);
   const [previewing, setPreviewing] = useState<string | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const activePalette = PALETTES.find(p => p.id === palette) || PALETTES[0];
+
+  const togglePreview = (soundId: string) => {
+    if (previewing === soundId) {
+      setPreviewing(null);
+    } else {
+      setPreviewing(soundId);
+    }
+  };
 
   const savePreferences = async (newPrefs: any) => {
     if (!user?.uid) return;

@@ -8,7 +8,7 @@ import { KnowledgeItem } from '../data/knowledge';
 import { safeStringify } from '../lib/safe-json';
 import { CHATURMAS_MASTER_2026 } from '../data/chaturmas2026';
 
-import AdminRouteWrapper from './AdminRouteWrapper';
+import AdminGuard from './AdminGuard';
 
 interface AdminPanelProps {
   isOpen: boolean;
@@ -488,7 +488,7 @@ export default function AdminPanel({ isOpen, onClose, knowledgeItems, isAdmin }:
           )}
 
           {activeTab === 'knowledge' ? (
-            <AdminRouteWrapper>
+            <AdminGuard>
               <div className="max-w-2xl mx-auto bg-white dark:bg-zinc-900 rounded-xl">
                 <div className="mb-6">
                   <h1 className="text-2xl font-bold text-gray-800 mb-2">Terapanth Knowledge Manager</h1>
@@ -545,7 +545,7 @@ export default function AdminPanel({ isOpen, onClose, knowledgeItems, isAdmin }:
                   {dynStatus && <p className="text-center font-medium mt-4 text-sm text-saffron">{dynStatus}</p>}
                 </form>
               </div>
-            </AdminRouteWrapper>
+            </AdminGuard>
           ) : activeTab === 'books' ? (
           <div className="space-y-8 animate-fade-in text-left">
             {/* Header with Seed trigger */}

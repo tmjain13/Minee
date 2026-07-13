@@ -45,6 +45,7 @@ import TerapanthFooterNav from "./components/TerapanthFooterNav";
 import QuickActions from "./components/QuickActions";
 import { AdminGuard } from "./components/AdminGuard";
 import { LazyWrapper } from "./integrations/ComponentRegistry";
+import { devLog } from "./lib/devLog";
 
 // --- SAFE LAZY WRAPPER FOR CHUNK-LOAD SELF-HEALING ---
 const safeLazy = <T extends React.ComponentType<any>>(
@@ -168,7 +169,7 @@ export default function App() {
   const [forceProceed, setForceProceed] = useState(false);
 
   useEffect(() => {
-    console.log("[App] Mounted. Initializing 3-second safety force-proceed timer.");
+    devLog("[App] Mounted. Initializing 3-second safety force-proceed timer.");
     const timer = setTimeout(() => {
       console.warn("[App] 3-second safety timeout triggered! Forcing proceed to render the main dashboard.");
       setForceProceed(true);
@@ -561,7 +562,7 @@ export default function App() {
   };
 
   if (loading && !forceProceed) {
-    console.log("[App] Auth loading is true. Rendering full-screen LoadingScreen as initial experience gate.");
+    devLog("[App] Auth loading is true. Rendering full-screen LoadingScreen as initial experience gate.");
     return <LoadingScreen />;
   }
 

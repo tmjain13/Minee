@@ -4,6 +4,7 @@ import { db } from '../lib/firebase';
 import { cacheKnowledgeForOffline } from '../lib/offlineSearch';
 import { KNOWLEDGE_BASE } from '../data/knowledge';
 import { quizMaster } from '../data/quizMaster';
+import { devLog } from '../lib/devLog';
 
 export interface KnowledgeItem {
   id: string;
@@ -92,7 +93,7 @@ export const useSyncKnowledgeBase = () => {
           if (success) {
             localStorage.setItem('knowledge_base_sync_progress', '100');
             localStorage.setItem('knowledge_base_sync_status', 'completed');
-            console.log("Offline Knowledge Base indexing complete!");
+            devLog("Offline Knowledge Base indexing complete!");
           } else {
             localStorage.setItem('knowledge_base_sync_status', 'failed');
           }

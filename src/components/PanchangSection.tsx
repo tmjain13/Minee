@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Calendar, Info, Clock, CalendarDays, Link2, Check, Bell, BellRing, Loader2, Sparkles, ChevronRight, MapPin, Download, Sun, Moon, Trash2 } from 'lucide-react';
-import { FESTIVALS_2026_2027 } from '../data/panchang';
+import { Calendar, Info, Clock, CalendarDays, Link2, Check, Bell, BellRing, Loader2, Sparkles, ChevronRight, MapPin, Download, Sun, Moon, Trash2, Award } from 'lucide-react';
+import { FESTIVALS_2026_2027, Festival } from '../data/panchang';
 import SunCalc from 'suncalc';
 import { safeStringify } from '../lib/safe-json';
 import * as ics from 'ics';
@@ -365,6 +365,15 @@ const PanchangSection = React.memo(function PanchangSection() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [viewType, setViewType] = useState<'list' | 'calendar'>('list');
+  const [notificationPrefs, setNotificationPrefs] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem('panchang_notifs');
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [selectedFestival, setSelectedFestival] = useState<Festival | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem('panchang_notifs', JSON.stringify(notificationPrefs));
+  }, [notificationPrefs]);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   
   const [selectedMonth, setSelectedMonth] = useState('All');
@@ -1174,7 +1183,10 @@ const PanchangSection = React.memo(function PanchangSection() {
                   key={day}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setSelectedDate(date)}
+                  onClick={() => {
+                    setSelectedDate(date);
+                    if (festivals.length > 0) setSelectedFestival(festivals[0]);
+                  }}
                   className={`relative aspect-square rounded-xl sm:rounded-2xl flex flex-col items-center justify-center transition-all p-1 group border ${
                     isSelected 
                       ? 'bg-spiritual text-[var(--bg-cream)] border-transparent shadow-lg z-10' 
@@ -1578,6 +1590,28 @@ const PanchangSection = React.memo(function PanchangSection() {
           ))}
         </div>
       </div>
+      
+      {selectedFestival && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setSelectedFestival(null)}>
+          <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl max-w-sm w-full border border-black/10 dark:border-zinc-800 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="font-bold text-lg text-spiritual">{selectedFestival.name}</h3>
+              <button onClick={() => setSelectedFestival(null)} className="text-gray-400 hover:text-black dark:hover:text-white">✕</button>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{selectedFestival.description}</p>
+            <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-xl">
+              <p className="text-[10px] font-black uppercase text-orange-600 mb-1">Sadhana Tip</p>
+              <p className="text-xs text-orange-800 dark:text-orange-200">{selectedFestival.sadhanaTip}</p>
+            </div>
+            <div className="mt-4 flex gap-2">
+               <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                  <input type="checkbox" checked={!!notificationPrefs[selectedFestival.id]} onChange={(e) => setNotificationPrefs(prev => ({...prev, [selectedFestival.id]: e.target.checked}))} />
+                  Enable Notifications
+               </label>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 });

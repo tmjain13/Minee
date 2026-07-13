@@ -5,6 +5,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { ShieldAlert, Loader2, ArrowLeft } from 'lucide-react';
 import { logAccess } from '../utils/auditLogger';
 import { SkeletonLoader } from './SkeletonLoader';
+import { devLog } from '../lib/devLog';
 
 interface AdminGuardProps {
   children: React.ReactNode;
@@ -43,7 +44,7 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children, onBack }) => {
       return;
     }
 
-    console.log("[AdminGuard] Subscribing to user role in real-time for:", user.uid);
+    devLog("[AdminGuard] Subscribing to user role in real-time for:", user.uid);
     const userRef = doc(db, 'users', user.uid);
     
     const unsubscribe = onSnapshot(
@@ -52,14 +53,14 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children, onBack }) => {
         if (snap.exists()) {
           const data = snap.data();
           const currentRole = data?.role;
-          console.log("[AdminGuard] Real-time role check:", currentRole);
+          devLog("[AdminGuard] Real-time role check:", currentRole);
           setUserRole(currentRole);
           
           // Execute Audit Logging
           const status = currentRole === 'admin' ? 'granted' : 'denied';
           logAccess(user.uid, status, window.location.pathname);
         } else {
-          console.log("[AdminGuard] No user document found for UID:", user.uid);
+          devLog("[AdminGuard] No user document found for UID:", user.uid);
           setUserRole(undefined);
           logAccess(user.uid, 'denied', window.location.pathname);
         }
