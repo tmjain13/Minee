@@ -46,6 +46,7 @@ import QuickActions from "./components/QuickActions";
 import { AdminGuard } from "./components/AdminGuard";
 import { LazyWrapper } from "./integrations/ComponentRegistry";
 import { devLog } from "./lib/devLog";
+import LoginModal from "./components/LoginModal";
 
 // --- SAFE LAZY WRAPPER FOR CHUNK-LOAD SELF-HEALING ---
 const safeLazy = <T extends React.ComponentType<any>>(
@@ -107,7 +108,6 @@ const TerapanthMasterHub2026 = safeLazy(() =>
 );
 
 // --- MODALS & WRAPPERS ---
-const LoginModal = safeLazy(() => import("./components/LoginModal"));
 const ThemeCustomizer = safeLazy(() => import("./components/ThemeCustomizer"));
 const ChaturmasRegistry = safeLazy(() => import("./components/ChaturmasRegistry"));
 const UnifiedPermissionsModal = safeLazy(() => import("./components/UnifiedPermissionsModal"));

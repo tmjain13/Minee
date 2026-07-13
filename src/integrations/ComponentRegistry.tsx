@@ -1,4 +1,5 @@
 import React, { Suspense } from 'react';
+import StaticLoginModal from '../components/LoginModal';
 
 // 1. Feature Flags Configuration
 export const FEATURE_FLAGS = {
@@ -133,7 +134,7 @@ export const Registry = {
   
   // SHELL & OVERLAYS
   AdminPanel: lazyWrap(() => import('../components/AdminPanel')),
-  LoginModal: lazyWrap(() => import('../components/LoginModal')),
+  LoginModal: (props: any) => <StaticLoginModal {...props} />,
   Onboarding: lazyWrap(() => import('../components/Onboarding')),
   ThemeCustomizer: lazyWrap(() => import('../components/ThemeCustomizer')),
   UnifiedPermissionsModal: lazyWrap(() => import('../components/UnifiedPermissionsModal')),

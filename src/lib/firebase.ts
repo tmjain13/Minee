@@ -14,8 +14,8 @@ import {
 import { devLog } from './devLog';
 
 // Securely resolve config: prioritize process/import.meta.env variables, fall back to JSON config if present
-const configs = import.meta.glob('../../firebase-applet-config.json', { eager: true });
-const firebaseConfigJson = (configs['../../firebase-applet-config.json'] as any)?.default || {};
+const configs = import.meta.glob('../../../firebase-applet-config.json', { eager: true });
+const firebaseConfigJson = (configs['../../../firebase-applet-config.json'] as any)?.default || {};
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseConfigJson.apiKey || "",
