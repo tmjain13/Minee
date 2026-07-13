@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Calendar, Info, Clock, CalendarDays, Link2, Check, Bell, BellRing, Loader2, Sparkles, ChevronRight, MapPin, Download, Sun, Moon, Trash2, Award } from 'lucide-react';
-import { FESTIVALS_2026_2027, Festival } from '../data/panchang';
+import { FESTIVALS_2026_2027, Festival, FESTIVAL_CONTEXTS } from '../data/panchang';
 import SunCalc from 'suncalc';
 import { safeStringify } from '../lib/safe-json';
 import * as ics from 'ics';
@@ -280,6 +280,67 @@ const generateICSContent = (festival: any, date: Date) => {
     'END:VEVENT',
     'END:VCALENDAR'
   ].join('\r\n');
+};
+
+export interface DayIndicator {
+  key: string;
+  color: string;
+  tooltip: string;
+  icon?: string;
+}
+
+export const getDayIndicators = (date: Date, festivals: Festival[], currentTithi: any): DayIndicator[] => {
+  const indicators: DayIndicator[] = [];
+  
+  // 1. Check Festivals
+  if (festivals && festivals.length > 0) {
+    festivals.forEach(f => {
+      let color = 'bg-orange-500';
+      if (f.category === 'maryada') {
+        color = 'bg-amber-500';
+      } else if (f.category === 'anniversary') {
+        color = 'bg-blue-500';
+      }
+      indicators.push({
+        key: `fest-${f.id}`,
+        color,
+        tooltip: `${f.name} (${f.tithi})`
+      });
+    });
+  }
+
+  // 2. Check key Tithis (Ashtami, Chaturdashi, Purnima, Amavasya)
+  const tithiName = (currentTithi && currentTithi.tithi) || '';
+  if (tithiName.includes('अष्टमी')) {
+    indicators.push({
+      key: `tithi-ashtami-${date.getDate()}`,
+      color: 'bg-emerald-500',
+      tooltip: 'अष्टमी (Ashtami Fasting/Sadhana Day)'
+    });
+  }
+  if (tithiName.includes('चतुर्दशी')) {
+    indicators.push({
+      key: `tithi-chaturdashi-${date.getDate()}`,
+      color: 'bg-teal-500',
+      tooltip: 'चतुर्दशी (Chaturdashi Sadhana Day)'
+    });
+  }
+  if (tithiName.includes('पूर्णिमा') || tithiName.includes('Purnima')) {
+    indicators.push({
+      key: `tithi-purnima-${date.getDate()}`,
+      color: 'bg-amber-400',
+      tooltip: 'पूर्णिमा (Purnima Full Moon)'
+    });
+  }
+  if (tithiName.includes('अमावास्या') || tithiName.includes('अमावस्या') || tithiName.includes('Amavasya')) {
+    indicators.push({
+      key: `tithi-amavasya-${date.getDate()}`,
+      color: 'bg-stone-500',
+      tooltip: 'अमावस्या (Amavasya New Moon)'
+    });
+  }
+
+  return indicators;
 };
 
 const PanchangSection = React.memo(function PanchangSection() {
@@ -1217,6 +1278,17 @@ const PanchangSection = React.memo(function PanchangSection() {
                   <div className={`text-[6px] sm:text-[8px] font-medium leading-tight mt-1 hidden sm:block ${isSelected ? 'opacity-70' : 'text-gray-400'}`}>
                     {currentTithi.tithi.split(',')[1] || currentTithi.tithi}
                   </div>
+
+                  {/* Dynamic Visual Dot Indicators for Key Tithis and Festivals */}
+                  <div className="absolute bottom-1.5 flex gap-1 justify-center items-center w-full">
+                    {getDayIndicators(date, festivals, currentTithi).map((ind) => (
+                      <span
+                        key={ind.key}
+                        className={`w-1 h-1 rounded-full ${ind.color} ring-[0.5px] ring-white dark:ring-zinc-950`}
+                        title={ind.tooltip}
+                      />
+                    ))}
+                  </div>
                 </motion.button>
               );
             })}
@@ -1412,8 +1484,12 @@ const PanchangSection = React.memo(function PanchangSection() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-20px" }}
                     transition={{ delay: index * 0.05 }}
-                    className={`group flex flex-col sm:flex-row sm:items-center justify-between p-6 transition-colors relative ${isCurrentDay ? 'bg-orange-50/50 dark:bg-orange-900/20 border-l-4 border-orange-500' : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'}`}
+                    className={`group flex flex-col sm:flex-row sm:items-center justify-between p-6 transition-all relative cursor-pointer hover:shadow-sm ${isCurrentDay ? 'bg-orange-50/50 dark:bg-orange-900/20 border-l-4 border-orange-500' : 'hover:bg-orange-500/[0.03] dark:hover:bg-orange-500/[0.05]'}`}
                     id={`festival-${festival.id}`}
+                    onClick={(e) => {
+                      if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('a')) return;
+                      setSelectedFestival(festival);
+                    }}
                   >
                     <div className="mb-3 sm:mb-0 sm:pr-4 flex-1">
                       <div className="flex items-center gap-2 mb-1.5">
@@ -1591,27 +1667,124 @@ const PanchangSection = React.memo(function PanchangSection() {
         </div>
       </div>
       
-      {selectedFestival && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setSelectedFestival(null)}>
-          <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl max-w-sm w-full border border-black/10 dark:border-zinc-800 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="font-bold text-lg text-spiritual">{selectedFestival.name}</h3>
-              <button onClick={() => setSelectedFestival(null)} className="text-gray-400 hover:text-black dark:hover:text-white">✕</button>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{selectedFestival.description}</p>
-            <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-xl">
-              <p className="text-[10px] font-black uppercase text-orange-600 mb-1">Sadhana Tip</p>
-              <p className="text-xs text-orange-800 dark:text-orange-200">{selectedFestival.sadhanaTip}</p>
-            </div>
-            <div className="mt-4 flex gap-2">
-               <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-                  <input type="checkbox" checked={!!notificationPrefs[selectedFestival.id]} onChange={(e) => setNotificationPrefs(prev => ({...prev, [selectedFestival.id]: e.target.checked}))} />
-                  Enable Notifications
-               </label>
+      {selectedFestival && (() => {
+        const context = FESTIVAL_CONTEXTS[selectedFestival.id];
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md" onClick={() => setSelectedFestival(null)}>
+            <div className="bg-white dark:bg-zinc-950 p-6 rounded-3xl max-w-md w-full border border-black/10 dark:border-zinc-800 shadow-2xl overflow-y-auto max-h-[90vh] space-y-5 animate-fade-in" onClick={e => e.stopPropagation()}>
+              
+              {/* Header */}
+              <div className="flex justify-between items-start border-b border-black/[0.04] dark:border-zinc-800/40 pb-3">
+                <div className="pr-4">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-700 dark:text-orange-400 text-[9px] uppercase font-bold tracking-wider mb-1.5">
+                    {selectedFestival.tithi}
+                  </span>
+                  <h3 className="serif-text text-xl font-black text-spiritual leading-tight">{selectedFestival.name}</h3>
+                  <p className="text-[10px] text-zinc-400 font-semibold mt-1">Calendar Date: {selectedFestival.date} ({selectedFestival.day})</p>
+                </div>
+                <button 
+                  onClick={() => setSelectedFestival(null)} 
+                  className="p-1 text-gray-400 hover:text-black dark:hover:text-white rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors shrink-0"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Basic Description */}
+              <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed font-medium bg-zinc-50 dark:bg-zinc-900/40 p-3 rounded-2xl border border-black/[0.02] dark:border-zinc-800/40">
+                {selectedFestival.description || "आध्यात्मिक अनुष्ठान और साधना का पावन दिवस।"}
+              </p>
+
+              {/* Historical Context & Spiritual Significance */}
+              {context ? (
+                <div className="space-y-4">
+                  {/* Historical Context */}
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black uppercase text-orange-600 tracking-widest block">
+                      Historical Context (ऐतिहासिक पृष्ठभूमि)
+                    </span>
+                    <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                      {context.historicalContext}
+                    </p>
+                  </div>
+
+                  {/* Spiritual Significance */}
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black uppercase text-amber-600 tracking-widest block">
+                      Spiritual Significance (आध्यात्मिक महत्व)
+                    </span>
+                    <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                      {context.spiritualSignificance}
+                    </p>
+                  </div>
+
+                  {/* Scriptural Reference */}
+                  {context.scripturalReference && (
+                    <div className="pt-2 border-t border-black/[0.03] dark:border-zinc-800/20 flex items-center gap-1 text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
+                      <Info size={10} className="text-orange-500" />
+                      Source: {context.scripturalReference}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Default Context based on category */}
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black uppercase text-orange-600 tracking-widest block">
+                      Historical Context (ऐतिहासिक पृष्ठभूमि)
+                    </span>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed italic">
+                      {selectedFestival.category === 'maryada' 
+                        ? 'तेरापंथ धर्मसंघ के महान इतिहास, गुरु आज्ञा एवं जयाचार्य प्रणीत अमूल्य मर्यादाओं से जुड़ा गौरवशाली ऐतिहासिक प्रसंग।' 
+                        : selectedFestival.category === 'anniversary' 
+                          ? 'धर्मसंघ के आचार्यों के जन्म, दीक्षा अथवा निर्वाण कल्याणक की पावन संस्मरण गाथा।' 
+                          : 'जैन आगमों, कल्पसूत्र एवं तीर्थंकरों के कल्याणक महोत्सवों से संबंद्ध सनातन आध्यात्मिक इतिहास।'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black uppercase text-amber-600 tracking-widest block">
+                      Spiritual Significance (आध्यात्मिक महत्व)
+                    </span>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed italic">
+                      इस दिन स्वाध्याय (शास्त्र वाचन), तपस्या (उपवास अथवा एकासन), सामायिक साधना, और मौन व्रत रखकर आत्मा की शुद्धि एवं कर्म निर्जरा की जाती है।
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Sadhana Tip */}
+              {selectedFestival.sadhanaTip && (
+                <div className="bg-orange-50 dark:bg-orange-950/40 p-4 rounded-2xl border border-orange-500/10">
+                  <span className="text-[10px] font-black uppercase text-orange-600 tracking-widest block mb-1">Sadhana Tip (साधना सूत्र)</span>
+                  <p className="text-xs text-orange-800 dark:text-orange-300 font-bold leading-relaxed">{selectedFestival.sadhanaTip}</p>
+                </div>
+              )}
+
+              {/* Controls */}
+              <div className="flex justify-between items-center pt-3 border-t border-black/[0.04] dark:border-zinc-800/40">
+                <label className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400 font-bold cursor-pointer select-none">
+                  <input 
+                    type="checkbox" 
+                    className="rounded text-orange-500 focus:ring-orange-500 w-4 h-4 border-black/10 dark:border-zinc-800"
+                    checked={!!notificationPrefs[selectedFestival.id]} 
+                    onChange={(e) => setNotificationPrefs(prev => ({...prev, [selectedFestival.id]: e.target.checked}))} 
+                  />
+                  Enable Alerts (सूचना चालू करें)
+                </label>
+                
+                <button
+                  onClick={() => setSelectedFestival(null)}
+                  className="px-4 py-2 bg-spiritual hover:bg-orange-600 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95"
+                >
+                  Close
+                </button>
+              </div>
+
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 });

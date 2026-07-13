@@ -407,7 +407,7 @@ Guidelines:
       setChatMessages(prev => [...prev, { sender: 'ai', text: '' }]);
 
       let responseBuffer = '';
-      const stream = streamGeminiResponse(userMsg, historyPayload, systemPrompt);
+      const stream = streamGeminiResponse(userMsg, historyPayload);
       for await (const chunk of stream) {
         responseBuffer += chunk;
         setChatMessages(prev => {

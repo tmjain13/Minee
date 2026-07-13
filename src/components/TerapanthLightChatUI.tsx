@@ -623,7 +623,7 @@ ${bestKnowledge.details}
           systemPrompt += ` Adopt a 'Simple' tone: explain complex spiritual concepts in highly simplified language suitable for absolute beginners. Avoid over-complicated Sanskrit/Prakrit terms unless explained simply. Use helpful examples so beginners can easily grasp the core values.`;
         }
 
-        const stream = streamGeminiResponse(rawQuery, historyContext, systemPrompt);
+        const stream = streamGeminiResponse(rawQuery, historyContext);
 
         for await (const chunk of stream) {
           responseStream += chunk;

@@ -73,10 +73,10 @@ function getGenAI() {
   return genAI;
 }
 
-// 3. streamGeminiResponse with optional offlineContext
-export async function* streamGeminiResponse(message: string, history: any[] = [], offlineContext?: string) {
+// 3. streamGeminiResponse with hardcoded system prompt
+export async function* streamGeminiResponse(message: string, history: any[] = []) {
   // Safety checks
-  if (!isSafe(message) || (offlineContext && !isSafe(offlineContext))) {
+  if (!isSafe(message)) {
     yield "Jai Jinendra! I can only assist with authentic Jain Terapanth history, philosophy, and spiritual questions. Please rephrase your query respectfully.";
     return;
   }
@@ -95,7 +95,7 @@ export async function* streamGeminiResponse(message: string, history: any[] = []
   let filteredHistory = (history || [])
     .map(h => {
       const role = h.role === 'user' ? 'user' : 'model';
-      const text = (h.parts?.[0]?.text || h.text || "").substring(0, 4000);
+      const text = (h.parts?.[0]?.text || h.text || "").substring(0, 2000);
       return { role, text };
     })
     .filter(h => h.text && h.text.trim() !== "");
@@ -118,11 +118,8 @@ export async function* streamGeminiResponse(message: string, history: any[] = []
     }
   }
 
-  // Prepended system instructions if offlineContext is provided
-  let currentSystemInstruction = SYSTEM_INSTRUCTION;
-  if (offlineContext && offlineContext.trim() !== "") {
-    currentSystemInstruction = `VERIFIED CONTEXT FROM KNOWLEDGE BASE (prioritize this):\n${offlineContext}\n\n${SYSTEM_INSTRUCTION}`;
-  }
+  // Enforce system instruction is strictly a hardcoded constant
+  const currentSystemInstruction = SYSTEM_INSTRUCTION;
 
   const modelsToTry = ["gemini-3.5-flash", "gemini-3.1-flash-lite"];
   let lastError: any = null;

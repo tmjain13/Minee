@@ -137,6 +137,75 @@ export default function ProfileTab({
   const [privacyLang, setPrivacyLang] = useState<"en" | "hi">("hi");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // --- Festival Notification Preferences State ---
+  const [festivalPrefs, setFestivalPrefs] = useState<{
+    majorFestivals: boolean;
+    acharyaEvents: boolean;
+    maryadaMahotsav: boolean;
+    monthlyTithis: boolean;
+    chauviharSunset: boolean;
+  }>(() => {
+    try {
+      const saved = localStorage.getItem('festival_notification_prefs');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return {
+      majorFestivals: true,
+      acharyaEvents: true,
+      maryadaMahotsav: true,
+      monthlyTithis: true,
+      chauviharSunset: true,
+    };
+  });
+
+  // Load preferences from Firestore on mount/user change
+  useEffect(() => {
+    if (!user?.uid) return;
+    
+    const fetchPrefs = async () => {
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.festivalNotificationPrefs) {
+            setFestivalPrefs(data.festivalNotificationPrefs);
+            localStorage.setItem('festival_notification_prefs', JSON.stringify(data.festivalNotificationPrefs));
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching festival notification preferences:", err);
+      }
+    };
+    
+    fetchPrefs();
+  }, [user?.uid]);
+
+  const handleTogglePref = async (key: keyof typeof festivalPrefs) => {
+    const updated = {
+      ...festivalPrefs,
+      [key]: !festivalPrefs[key]
+    };
+    
+    setFestivalPrefs(updated);
+    localStorage.setItem('festival_notification_prefs', JSON.stringify(updated));
+    
+    if (user?.uid) {
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        await updateDoc(userRef, {
+          festivalNotificationPrefs: updated
+        });
+      } catch (err) {
+        console.error("Error updating festival notification preferences in Firestore:", err);
+      }
+    }
+  };
+
   // --- Storage & Cache Management State ---
   const [cacheSizes, setCacheSizes] = useState({
     registry: 2.15,
@@ -1686,6 +1755,141 @@ export default function ProfileTab({
                 </button>
               </div>
             )}
+
+            {/* Festival Notification Preferences Customizable Toggle System */}
+            <div className="pt-5 border-t border-black/[0.04] dark:border-zinc-800/20 space-y-4">
+              <div className="flex items-center gap-2">
+                <Bell className="text-orange-500" size={16} />
+                <span className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
+                  Festival Notification Settings (त्योहार सूचनाएं)
+                </span>
+              </div>
+              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-normal">
+                Customize your spiritual and calendar alerts. Changes are saved to your secure cloud profile and cached locally for instant access.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* 1. Major Festivals */}
+                <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-950 rounded-xl border border-black/[0.02] dark:border-zinc-800/40">
+                  <div>
+                    <span className="block text-xs font-bold text-zinc-800 dark:text-zinc-200">
+                      Major Jain Festivals (प्रमुख जैन त्योहार)
+                    </span>
+                    <span className="block text-[10px] text-zinc-400">
+                      Alerts for Paryushana, Samvatsari, Mahavir Jayanti, etc.
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => handleTogglePref('majorFestivals')}
+                    className={`w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all shrink-0 ${
+                      festivalPrefs.majorFestivals ? 'bg-orange-500' : 'bg-zinc-300 dark:bg-zinc-700'
+                    }`}
+                  >
+                    <div
+                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-all ${
+                        festivalPrefs.majorFestivals ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* 2. Acharya Events */}
+                <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-950 rounded-xl border border-black/[0.02] dark:border-zinc-800/40">
+                  <div>
+                    <span className="block text-xs font-bold text-zinc-800 dark:text-zinc-200">
+                      Acharya Anniversaries (आचार्य स्मरण दिवस)
+                    </span>
+                    <span className="block text-[10px] text-zinc-400">
+                      Birth, Diksha, and Mahaprayan remembrance days.
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => handleTogglePref('acharyaEvents')}
+                    className={`w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all shrink-0 ${
+                      festivalPrefs.acharyaEvents ? 'bg-orange-500' : 'bg-zinc-300 dark:bg-zinc-700'
+                    }`}
+                  >
+                    <div
+                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-all ${
+                        festivalPrefs.acharyaEvents ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* 3. Maryada Mahotsav */}
+                <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-950 rounded-xl border border-black/[0.02] dark:border-zinc-800/40">
+                  <div>
+                    <span className="block text-xs font-bold text-zinc-800 dark:text-zinc-200">
+                      Maryada & Monastic (मर्यादा व संघ उत्सव)
+                    </span>
+                    <span className="block text-[10px] text-zinc-400">
+                      Maryada Mahotsav venue timelines and Deeksha milestones.
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => handleTogglePref('maryadaMahotsav')}
+                    className={`w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all shrink-0 ${
+                      festivalPrefs.maryadaMahotsav ? 'bg-orange-500' : 'bg-zinc-300 dark:bg-zinc-700'
+                    }`}
+                  >
+                    <div
+                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-all ${
+                        festivalPrefs.maryadaMahotsav ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* 4. Monthly Tithis */}
+                <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-950 rounded-xl border border-black/[0.02] dark:border-zinc-800/40">
+                  <div>
+                    <span className="block text-xs font-bold text-zinc-800 dark:text-zinc-200">
+                      Monthly Fasting Days (अष्टमी-चतुर्दशी व्रत)
+                    </span>
+                    <span className="block text-[10px] text-zinc-400">
+                      Reminders for Ashtami, Chaturdashi, and special fasting.
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => handleTogglePref('monthlyTithis')}
+                    className={`w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all shrink-0 ${
+                      festivalPrefs.monthlyTithis ? 'bg-orange-500' : 'bg-zinc-300 dark:bg-zinc-700'
+                    }`}
+                  >
+                    <div
+                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-all ${
+                        festivalPrefs.monthlyTithis ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* 5. Sunset Chauvihar */}
+                <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-950 rounded-xl border border-black/[0.02] dark:border-zinc-800/40">
+                  <div>
+                    <span className="block text-xs font-bold text-zinc-800 dark:text-zinc-200">
+                      Sunset Chauvihar Alerts (चौविहार अलर्ट)
+                    </span>
+                    <span className="block text-[10px] text-zinc-400">
+                      Warning triggers 48 minutes prior to local sunset.
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => handleTogglePref('chauviharSunset')}
+                    className={`w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all shrink-0 ${
+                      festivalPrefs.chauviharSunset ? 'bg-orange-500' : 'bg-zinc-300 dark:bg-zinc-700'
+                    }`}
+                  >
+                    <div
+                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-all ${
+                        festivalPrefs.chauviharSunset ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
 
             {/* Privacy Policy Trigger Button */}
             <div className="pt-4 border-t border-black/[0.04] dark:border-zinc-800/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">

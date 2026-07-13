@@ -1,38 +1,41 @@
 import { safeStringify } from '../lib/safe-json';
 import { auth } from '../lib/firebase';
 
-// Helper to safely truncate prompt and history inputs to prevent payload bloat (Fixing Issue 6)
-function preparePayload(message: string, history: any[] = [], offlineContext?: string) {
-  const safeHistory = history.slice(-20).map(h => {
-    if (!h || typeof h !== 'object') return h;
-    const cleanItem: any = { ...h };
-    if (typeof cleanItem.text === 'string') {
-      cleanItem.text = cleanItem.text.slice(0, 2000);
-    }
-    if (Array.isArray(cleanItem.parts)) {
-      cleanItem.parts = cleanItem.parts.map((p: any) => {
-        if (p && typeof p === 'object') {
-          const cleanPart = { ...p };
-          if (typeof cleanPart.text === 'string') {
-            cleanPart.text = cleanPart.text.slice(0, 2000);
-          }
-          return cleanPart;
-        }
-        return p;
-      });
-    }
-    return cleanItem;
-  });
+// Helper to safely truncate prompt and history inputs to prevent payload bloat (Fixing Issue 6 / 19 / 20)
+function preparePayload(message: string, history: any[] = []) {
+  if (message.length > 3000) {
+    throw new Error('Message exceeds the 3000 character limit.');
+  }
+
+  const safeHistory = (history || [])
+    .slice(-20)
+    .filter(h => h && (h.role === 'user' || h.role === 'model' || h.role === 'assistant'))
+    .map(h => {
+      const role = h.role === 'assistant' ? 'model' : h.role;
+      let text = '';
+      if (typeof h.text === 'string') {
+        text = h.text;
+      } else if (Array.isArray(h.parts) && typeof h.parts[0]?.text === 'string') {
+        text = h.parts[0].text;
+      }
+      return {
+        role,
+        text: text.slice(0, 2000)
+      };
+    });
 
   return {
-    message: message.slice(0, 2000),
-    history: safeHistory,
-    offlineContext: offlineContext ? offlineContext.slice(0, 2000) : undefined
+    message: message.slice(0, 3000),
+    history: safeHistory
   };
 }
 
-export async function getGeminiResponse(message: string, history: any[] = [], offlineContext?: string) {
+export async function getGeminiResponse(message: string, history: any[] = []) {
   try {
+    if (message.length > 3000) {
+      throw new Error('Message is too long (maximum 3000 characters).');
+    }
+
     let enhancedMessage = message;
     if (typeof window !== 'undefined') {
       const savedPersona = localStorage.getItem('terapanth_persona')?.toLowerCase();
@@ -52,7 +55,7 @@ export async function getGeminiResponse(message: string, history: any[] = [], of
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers,
-      body: safeStringify(preparePayload(enhancedMessage, history, offlineContext))
+      body: safeStringify(preparePayload(enhancedMessage, history))
     });
 
     if (!response.ok) {
@@ -88,14 +91,18 @@ export async function getGeminiResponse(message: string, history: any[] = [], of
     }
 
     return fullText;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Gemini Error:", error);
-    return "I apologize, but I am unable to connect to the knowledge source at the moment. Please try again later.";
+    return error?.message || "I apologize, but I am unable to connect to the knowledge source at the moment. Please try again later.";
   }
 }
 
-export async function* streamGeminiResponse(message: string, history: any[] = [], offlineContext?: string) {
+export async function* streamGeminiResponse(message: string, history: any[] = []) {
   try {
+    if (message.length > 3000) {
+      throw new Error('Message is too long (maximum 3000 characters).');
+    }
+
     let enhancedMessage = message;
     if (typeof window !== 'undefined') {
       const savedPersona = localStorage.getItem('terapanth_persona')?.toLowerCase();
@@ -115,7 +122,7 @@ export async function* streamGeminiResponse(message: string, history: any[] = []
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers,
-      body: safeStringify(preparePayload(enhancedMessage, history, offlineContext))
+      body: safeStringify(preparePayload(enhancedMessage, history))
     });
 
     if (!response.ok) {
@@ -156,8 +163,8 @@ export async function* streamGeminiResponse(message: string, history: any[] = []
         }
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Gemini Stream Error:", error);
-    yield "I apologize, but I am unable to connect to the knowledge source at the moment. Please try again later.";
+    yield error?.message || "I apologize, but I am unable to connect to the knowledge source at the moment. Please try again later.";
   }
 }

@@ -20,40 +20,50 @@ service firebase.storage {
     // User Avatars / Profile Images — owner only, 3MB max, specific images only
     match /avatars/{userId}/{fileName} {
       allow read: if true;
-      allow write: if isOwner(userId)
+      allow create, update: if isOwner(userId)
+                   && request.resource != null
                    && request.resource.size < 3 * 1024 * 1024
                    && request.resource.contentType.matches('image/(jpeg|png|webp|gif)');
+      allow delete: if isOwner(userId);
     }
 
     match /profile_images/{userId}/{fileName} {
-      allow read: if true;
-      allow write: if isOwner(userId)
-                   && request.resource.size < 3 * 1024 * 1024
-                   && request.resource.contentType.matches('image/(jpeg|png|webp|gif)');
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+                   && request.resource != null
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+      allow delete: if isOwner(userId);
     }
 
     // Community / User Gallery — owner or admin write, 10MB max, images and videos only
     match /gallery/{userId}/{fileName} {
       allow read: if true;
-      allow write: if (isOwner(userId) || isAdmin())
+      allow create, update: if (isOwner(userId) || isAdmin())
+                   && request.resource != null
                    && request.resource.size < 10 * 1024 * 1024
                    && (request.resource.contentType.matches('image/.*') || request.resource.contentType.matches('video/.*'));
+      allow delete: if isOwner(userId) || isAdmin();
     }
 
     // Books / Digital Library — admin write, public read, 100MB max, PDF only
     match /books/{allPaths=**} {
       allow read: if true;
-      allow write: if isAdmin()
+      allow create, update: if isAdmin()
+                   && request.resource != null
                    && request.resource.size < 100 * 1024 * 1024
                    && request.resource.contentType == 'application/pdf';
+      allow delete: if isAdmin();
     }
 
     // Admin media uploads (gallery images, audio files)
     match /media/{allPaths=**} {
       allow read: if true;
-      allow write: if isAdmin()
+      allow create, update: if isAdmin()
+                   && request.resource != null
                    && request.resource.size < 100 * 1024 * 1024
                    && (request.resource.contentType.matches('image/.*') || request.resource.contentType.matches('audio/.*') || request.resource.contentType.matches('video/.*'));
+      allow delete: if isAdmin();
     }
 
     // Default deny — explicit catch-all, nothing else is accessible

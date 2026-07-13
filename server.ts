@@ -49,16 +49,17 @@ async function startServer() {
   });
 
   app.use(helmet({
-    contentSecurityPolicy: process.env.NODE_ENV === "production" ? {
+    contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
         frameAncestors: ["'self'", "https://studio.google.com", "https://*.google.com", "https://*.googleusercontent.com", "https://*.run.app"],
-        "script-src": ["'self'", "'unsafe-inline'", "https://apis.google.com"],
-        "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        "img-src": ["'self'", "data:", "https://firebasestorage.googleapis.com", "https://postimg.cc", "https://i.postimg.cc"],
-        "connect-src": [
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://apis.google.com"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:", "https://firebasestorage.googleapis.com", "https://postimg.cc", "https://*.postimg.cc", "https://i.postimg.cc"],
+        connectSrc: [
           "'self'", 
           "https://firestore.googleapis.com", 
+          "https://*.googleapis.com",
           "https://generativelanguage.googleapis.com", 
           "https://api.sunrise-sunset.org",
           "https://identitytoolkit.googleapis.com",
@@ -70,7 +71,7 @@ async function startServer() {
           "ws://0.0.0.0:*"
         ]
       }
-    } : false,
+    },
     frameguard: false,
     noSniff: true,
     dnsPrefetchControl: { allow: false }
@@ -78,7 +79,6 @@ async function startServer() {
 
   // Force-override headers after Helmet to guarantee absolute iframe embedding compatibility
   app.use((req, res, next) => {
-    res.setHeader("Content-Security-Policy", "frame-ancestors 'self' https://studio.google.com https://*.google.com https://*.googleusercontent.com https://*.run.app;");
     res.setHeader('Permissions-Policy', 'geolocation=(), camera=(), microphone=()');
     res.removeHeader("X-Frame-Options");
     next();
@@ -140,17 +140,21 @@ async function startServer() {
     message: { error: "Too many requests, please try again later" }
   });
 
-  const chatRateLimiter = rateLimit({
+  const authChatRateLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
-    max: 8,
+    max: (req) => {
+      if ((req as any).user?.uid) {
+        return 15; // 15 requests per minute for authenticated users
+      }
+      return 8; // 8 requests per minute for anonymous users
+    },
     keyGenerator: (req) => {
-      const uid = (req as any).user?.uid || 'anonymous';
-      const ip = req.ip || 'unknown_ip';
-      return `${uid}_${ip}`;
+      return (req as any).user?.uid || req.ip || 'unknown_ip';
     },
     validate: { default: false },
     handler: (req, res, next, options) => {
-      logSecurityEvent('rate_limit_hit', { endpoint: '/api/chat', limit: options.max }, req);
+      const currentLimit = typeof options.max === 'function' ? options.max(req, res) : options.max;
+      logSecurityEvent('rate_limit_hit', { endpoint: '/api/chat', limit: currentLimit }, req);
       res.status(options.statusCode).json(options.message);
     },
     message: { error: "🙏 आपने बहुत जल्दी-जल्दी कई सवाल पूछे हैं। सिस्टम की सुरक्षा के लिए कृपया 1 मिनट प्रतीक्षा करें।" }
@@ -285,7 +289,7 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
-  app.post("/api/define", promptLimiter, ssrfAndSanitizer, aiLimiter, optionalFirebaseToken, async (req, res) => {
+  app.post("/api/define", optionalFirebaseToken, promptLimiter, ssrfAndSanitizer, aiLimiter, async (req, res) => {
     const { term } = req.body;
     if (!term) {
       return res.status(400).json({ error: "Term query is required" });
@@ -299,7 +303,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/summarize", promptLimiter, ssrfAndSanitizer, aiLimiter, optionalFirebaseToken, async (req, res) => {
+  app.post("/api/summarize", optionalFirebaseToken, promptLimiter, ssrfAndSanitizer, aiLimiter, async (req, res) => {
     const { title, details } = req.body;
     if (!title || !details) {
       return res.status(400).json({ error: "Title and details are required" });
@@ -313,34 +317,36 @@ async function startServer() {
     }
   });
 
-  app.post("/api/chat", promptLimiter, ssrfAndSanitizer, chatRateLimiter, optionalFirebaseToken, async (req, res) => {
-    // ❌ DANGER: req.body.system (or any prompt injection vector) must never be trusted from client
-    
-    // Strict Body Validation
-    const allowedKeys = ['message', 'history', 'offlineContext'];
+  app.post("/api/chat", optionalFirebaseToken, promptLimiter, ssrfAndSanitizer, authChatRateLimiter, async (req, res) => {
+    // Strict Body Validation: Only message and history are allowed
+    const allowedKeys = ['message', 'history'];
     const bodyKeys = Object.keys(req.body);
     const extraKeys = bodyKeys.filter(key => !allowedKeys.includes(key));
     
     if (extraKeys.length > 0) {
       logSecurityEvent('validation_failed', { reason: 'extra_keys', extraKeys }, req);
-      return res.status(400).json({ error: "Invalid request payload. Only message, history, and offlineContext are permitted." });
+      return res.status(400).json({ error: "Invalid request payload. Only message and history are permitted." });
     }
 
-    const { message, history, offlineContext } = req.body;
+    const { message, history } = req.body;
     
-    if (typeof message !== "string" || message.length > 4000) {
+    if (typeof message !== "string" || message.trim().length === 0 || message.length > 3000) {
       logSecurityEvent('validation_failed', { reason: 'invalid_message', length: message?.length }, req);
-      return res.status(400).json({ error: "Message must be a string up to 4000 characters." });
+      return res.status(400).json({ error: "Message must be a non-empty string up to 3000 characters." });
     }
 
-    if (history && (!Array.isArray(history) || history.length > 50)) {
+    if (history && (!Array.isArray(history) || history.length > 20)) {
       logSecurityEvent('validation_failed', { reason: 'invalid_history', length: history?.length }, req);
-      return res.status(400).json({ error: "History must be an array up to 50 items." });
+      return res.status(400).json({ error: "History must be an array up to 20 items." });
     }
 
-    if (offlineContext && (typeof offlineContext !== "string" || offlineContext.length > 4000)) {
-      logSecurityEvent('validation_failed', { reason: 'invalid_offlineContext', length: offlineContext?.length }, req);
-      return res.status(400).json({ error: "Offline context must be a string up to 4000 characters." });
+    let sanitizedHistory: any[] = [];
+    if (history && Array.isArray(history)) {
+      sanitizedHistory = history.map(h => {
+        const role = h.role === 'model' ? 'model' : 'user';
+        const text = (h.parts?.[0]?.text || h.text || "").substring(0, 2000);
+        return { role, text };
+      }).filter(h => h.text && h.text.trim() !== "");
     }
 
     // Set headers for streaming and bypass proxy buffering (e.g. Nginx)
@@ -350,7 +356,7 @@ async function startServer() {
     res.setHeader('X-Accel-Buffering', 'no');
 
     try {
-      const stream = streamGeminiResponse(message, history || [], offlineContext);
+      const stream = streamGeminiResponse(message, sanitizedHistory);
       
       for await (const chunk of stream) {
         res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
@@ -359,7 +365,7 @@ async function startServer() {
       res.end();
     } catch (error: any) {
       console.error("Gemini Error:", error);
-      res.write(`data: ${JSON.stringify({ error: "Stream error occurred" })}\n\n`);
+      res.write(`data: ${JSON.stringify({ error: "सॉरी, तकनीकी त्रुटि हुई है। कृपया पुनः प्रयास करें। (A stream error occurred. Please try again.)" })}\n\n`);
       res.end();
     }
   });

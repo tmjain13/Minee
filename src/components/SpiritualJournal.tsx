@@ -216,8 +216,7 @@ export default function SpiritualJournal({ onBack }: SpiritualJournalProps) {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          message: "Please trigger a new spiritual daily reflection prompt.",
-          offlineContext: systemPrompt.slice(0, 2000)
+          message: `Please trigger a new spiritual daily reflection prompt. (Instructions: ${systemPrompt})`
         })
       });
 
@@ -436,14 +435,13 @@ export default function SpiritualJournal({ onBack }: SpiritualJournalProps) {
 
       const systemPrompt = "You are a Jain Terapanth spiritual guide. When a user shares their journal entry, respond with a brief spiritual reflection (3-4 sentences) based on Terapanth teachings — cite relevant teachings from Acharya Mahapragya or Acharya Mahashraman. Respond in Hindi only. Be warm, encouraging, and practical.";
 
-      const payloadMessage = `User mood is "${selectedMood}"${emotionalState ? ` (emotional state during study/meditation: ${emotionalState})` : ''}. Reflection journal text is:\n"${text}"`;
+      const payloadMessage = `User mood is "${selectedMood}"${emotionalState ? ` (emotional state during study/meditation: ${emotionalState})` : ''}. Reflection journal text is:\n"${text}"\n\n(Instructions: ${systemPrompt})`;
 
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          message: payloadMessage.slice(0, 2000),
-          offlineContext: systemPrompt.slice(0, 2000)
+          message: payloadMessage.slice(0, 3000)
         })
       });
 
