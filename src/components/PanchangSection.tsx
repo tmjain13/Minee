@@ -1192,7 +1192,15 @@ const PanchangSection = React.memo(function PanchangSection() {
                     </div>
                   )}
                   {festivals.length > 0 && !isSelected && !dayFasting && (
-                    <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse" />
+                    <div className="absolute top-1 right-1">
+                      {festivals[0].category === 'maryada' ? (
+                        <Award size={8} className="text-amber-500 animate-pulse" />
+                      ) : festivals[0].category === 'anniversary' ? (
+                        <Sparkles size={8} className="text-blue-500 animate-pulse" />
+                      ) : (
+                        <Sparkles size={8} className="text-orange-500 animate-pulse" />
+                      )}
+                    </div>
                   )}
                   <div className={`text-[6px] sm:text-[8px] font-medium leading-tight mt-1 hidden sm:block ${isSelected ? 'opacity-70' : 'text-gray-400'}`}>
                     {currentTithi.tithi.split(',')[1] || currentTithi.tithi}
@@ -1282,7 +1290,7 @@ const PanchangSection = React.memo(function PanchangSection() {
                       <div key={f.id} className="space-y-1">
                         <p className="font-black text-orange-600 dark:text-orange-400">{f.name}</p>
                         <p className="text-[10px] text-orange-800/60 dark:text-orange-200/60 leading-relaxed">
-                          Important spiritual observation day. Check with local mandal for specific session timings and Guru Darshan details.
+                          {f.sadhanaTip || "Important spiritual observation day. Check with local mandal for specific session timings and Guru Darshan details."}
                         </p>
                       </div>
                     ))}
