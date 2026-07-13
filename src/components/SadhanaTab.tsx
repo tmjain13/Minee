@@ -7,6 +7,13 @@ import { useAuth } from '../context/AuthContext';
 import { db } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp, query, orderBy, limit, onSnapshot, doc, setDoc } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../lib/firebase-utils';
+import { 
+  getLocalData, 
+  saveLocalData, 
+  createSadhanaRecord, 
+  syncPendingRecords, 
+  isOnline 
+} from '../services/sadhanaOfflineSync';
 import { Registry } from '../integrations/ComponentRegistry';
 
 // Lazy-loaded components from the Component Registry
@@ -790,6 +797,14 @@ const SadhanaTab = memo(({
 
   useEffect(() => {
     if (!user) return;
+
+    // Load fasting logs from IndexedDB first to render instantly offline
+    getLocalData('fastingLogs').then(cachedLogs => {
+      if (cachedLogs && cachedLogs.length > 0) {
+        setFastingLogs(cachedLogs as FastingLog[]);
+      }
+    });
+
     const path = `users/${user.uid}/fastingLogs`;
     const q = query(
       collection(db, path),
@@ -797,11 +812,30 @@ const SadhanaTab = memo(({
       limit(20)
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setFastingLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FastingLog)));
+      const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FastingLog));
+      setFastingLogs(logs);
+      
+      // Update IndexedDB cache in the background
+      logs.forEach(log => {
+        saveLocalData('fastingLogs', log);
+      });
     }, (err) => {
       handleFirestoreError(err, OperationType.GET, path);
     });
-    return () => unsubscribe();
+
+    // Handle auto-reconnect sync for all queued records
+    const handleOnline = () => {
+      syncPendingRecords(user.uid);
+    };
+    window.addEventListener('online', handleOnline);
+    if (isOnline()) {
+      syncPendingRecords(user.uid);
+    }
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('online', handleOnline);
+    };
   }, [user]);
 
   const formatTime = (seconds: number) => {
@@ -812,58 +846,58 @@ const SadhanaTab = memo(({
 
   const handleLogFast = async () => {
     if (!user) return;
-    const path = `users/${user.uid}/fastingLogs`;
     try {
-      await addDoc(collection(db, path), {
+      const newLog = {
         type: selectedFast,
         duration: fastingDuration,
-        date: new Date().toISOString().split('T')[0],
-        timestamp: serverTimestamp()
-      });
+        date: new Date().toISOString().split('T')[0]
+      };
+      await createSadhanaRecord(user.uid, 'fastingLogs', newLog);
+      
+      // Update local state immediately for instant feedback
+      const localLog: FastingLog = {
+        id: `local_${Date.now()}`,
+        ...newLog,
+        timestamp: Date.now()
+      };
+      setFastingLogs(prev => [localLog, ...prev]);
       setFastingDuration(1); // Reset
     } catch (err) {
-      handleFirestoreError(err, OperationType.CREATE, path);
+      console.error('[SadhanaTab] Error logging fast:', err);
     }
   };
 
   const logMeditation = async (minutes: number) => {
     if (!user) return;
-    const path = `users/${user.uid}/meditationLogs`;
     try {
-      await addDoc(collection(db, path), {
+      await createSadhanaRecord(user.uid, 'meditationLogs', {
         minutes,
-        date: new Date().toISOString().split('T')[0],
-        timestamp: serverTimestamp()
+        date: new Date().toISOString().split('T')[0]
       });
     } catch (err) {
-      handleFirestoreError(err, OperationType.CREATE, path);
+      console.error('[SadhanaTab] Error logging meditation:', err);
     }
   };
 
   const handleSaveSadhanaJournal = async () => {
     if (!user) return;
     setIsSavingJournal(true);
-    const journalPath = `users/${user.uid}/spiritualJournal`;
-    const medPath = `users/${user.uid}/meditationLogs`;
     try {
-      // 1. Log meditation duration
-      await addDoc(collection(db, medPath), {
+      // 1. Log meditation duration offline-first
+      await createSadhanaRecord(user.uid, 'meditationLogs', {
         minutes: Number(sessionDuration) || 1,
-        date: new Date().toISOString().split('T')[0],
-        timestamp: serverTimestamp()
+        date: new Date().toISOString().split('T')[0]
       });
 
-      // 2. Save spiritual journal entry
+      // 2. Save spiritual journal entry offline-first in local diary store
       const dateId = new Date().toISOString().split('T')[0];
-      const recordRef = doc(db, journalPath, dateId);
+      const journalEntry = {
+        id: dateId,
+        text: `🧘 साधना सत्र अवधि: ${sessionDuration} मिनट\nमूड: ${sessionMood}\n${sessionJournalText || "मौन और आत्म-निरीक्षण।"}\n\n✨ "साधना संपन्न। निरंतर अभ्यास से आत्म-शुद्धि होती है और कषायों का शमन होता है।"`,
+        date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+      };
       
-      await setDoc(recordRef, {
-        text: sessionJournalText,
-        mood: sessionMood,
-        emotionalState: sessionEmotionalState || `साधना सत्र अवधि: ${sessionDuration} मिनट`,
-        aiReflection: "साधना सत्र संपन्न। निरंतर अभ्यास से आत्म-शुद्धि होती है और कषायों का शमन होता है।",
-        createdAt: new Date().toISOString()
-      }, { merge: true });
+      await createSadhanaRecord(user.uid, 'diary', journalEntry);
 
       // Trigger tactile vibration
       if ('vibrate' in navigator) {
@@ -887,7 +921,7 @@ const SadhanaTab = memo(({
       setIsActive(false);
 
     } catch (err) {
-      handleFirestoreError(err, OperationType.CREATE, journalPath);
+      console.error('[SadhanaTab] Error saving sadhana journal:', err);
     } finally {
       setIsSavingJournal(false);
     }
@@ -965,17 +999,15 @@ const SadhanaTab = memo(({
     }));
     
     if (user) {
-      const path = `users/${user.uid}/mantraLogs`;
       try {
-        await addDoc(collection(db, path), {
+        await createSadhanaRecord(user.uid, 'mantraLogs', {
           mantraId: id,
           count: isFullMala ? 108 : 1,
           isFullMala,
-          date: new Date().toISOString().split('T')[0],
-          timestamp: serverTimestamp()
+          date: new Date().toISOString().split('T')[0]
         });
       } catch (err) {
-        // Silently fail jaap logging to not interrupt flow
+        console.warn('[SadhanaTab] Silently cached mantra log offline');
       }
     }
   };

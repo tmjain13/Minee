@@ -234,72 +234,79 @@ export default function TerapanthHeader({
           {/* 1. Refresh Icon */}
           <button 
             onClick={onRefreshClick || (() => window.location.reload())}
-            className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
-            title="Refresh App"
+            className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer bg-transparent border-none outline-none flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-brand-500"
+            title={language === 'hi' ? 'रीफ्रेश करें' : 'Refresh App'}
+            aria-label={language === 'hi' ? 'आध्यात्मिक ऐप कंटेंट को रीफ्रेश करें' : 'Refresh spiritual app content'}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
           </button>
-
+ 
           {/* 2. Edit Dashboard Layout Icon (Pen) */}
           <button 
             onClick={(e) => {
               e.stopPropagation();
               onPenClick?.();
             }}
-            className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
+            className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer bg-transparent border-none outline-none flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-brand-500"
             title={language === 'hi' ? 'डैशबोर्ड कस्टमाइज़ करें' : 'Edit Dashboard Layout'}
+            aria-label={language === 'hi' ? 'डैशबोर्ड विजेट लेआउट को कस्टमाइज़ और रीऑर्डर करें' : 'Customize and reorder dashboard widget layout'}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
           </button>
-
+ 
           {/* 3. Theme & Preferences (Lotus Flower) */}
           <button 
             onClick={(e) => {
               e.stopPropagation();
               onThemePreferencesClick?.();
             }}
-            className={`p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer bg-transparent border-none outline-none flex items-center justify-center relative ${
+            className={`p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer bg-transparent border-none outline-none flex items-center justify-center relative focus:outline-none focus:ring-2 focus:ring-brand-500 ${
               scrolled ? 'text-stone-600 dark:text-stone-300' : 'text-white'
             }`}
             title={language === 'hi' ? 'थीम और प्राथमिकताएं' : 'Theme & Preferences'}
+            aria-label={language === 'hi' ? 'ऐप की थीम और आध्यात्मिक प्राथमिकताओं को बदलें' : 'Open application theme and spiritual preferences settings'}
           >
             <Flower 
               size={16} 
               className="transition-all duration-300" 
+              aria-hidden="true"
             />
           </button>
-
+ 
           {/* 4. Theme Toggle (Moon/Sun) */}
           <button 
             onClick={toggleTheme} 
-            className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
+            className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer bg-transparent border-none outline-none flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-brand-500"
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            aria-label={theme === 'dark' ? (language === 'hi' ? 'लाइट मोड सक्रिय करें' : 'Switch to light layout mode') : (language === 'hi' ? 'डार्क मोड सक्रिय करें' : 'Switch to dark layout mode')}
           >
             {theme === 'dark' ? (
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
             ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
             )}
           </button>
-
+ 
           {/* 5. Language Toggle (हि / EN) */}
           <button 
             onClick={toggleLanguage}
-            className="w-6.5 h-6.5 flex items-center justify-center rounded-full hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all text-xs font-bold cursor-pointer bg-transparent border-none outline-none"
+            className="w-6.5 h-6.5 flex items-center justify-center rounded-full hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all text-xs font-bold cursor-pointer bg-transparent border-none outline-none focus:outline-none focus:ring-2 focus:ring-brand-500"
             title={language === 'hi' ? 'Switch to English' : 'हिंदी में बदलें'}
+            aria-label={language === 'hi' ? 'अंग्रेजी भाषा का चयन करें' : 'हिंदी भाषा का चयन करें'}
           >
             {language === 'hi' ? 'EN' : 'हि'}
           </button>
-
+ 
           {/* 6. Profile/Seal */}
           {user ? (
             <button 
               onClick={onProfileClick}
-              className="w-8 h-8 rounded-full bg-amber-600 border border-white/20 overflow-hidden active:scale-95 transition-all cursor-pointer flex items-center justify-center shrink-0"
+              className="w-8 h-8 rounded-full bg-amber-600 border border-white/20 overflow-hidden active:scale-95 transition-all cursor-pointer flex items-center justify-center shrink-0 focus:outline-none focus:ring-2 focus:ring-brand-500"
               title="Spiritual Profile & Settings"
+              aria-label={language === 'hi' ? 'अपनी आध्यात्मिक प्रोफ़ाइल और सेटिंग्स देखें' : 'View your spiritual profile and account settings'}
             >
               {avatarLoading ? (
-                <div className="w-full h-full animate-pulse bg-slate-700" />
+                <div className="w-full h-full animate-pulse bg-slate-700" aria-hidden="true" />
               ) : avatarUrl ? (
                 <motion.img 
                   initial={{ opacity: 0 }}
@@ -317,10 +324,11 @@ export default function TerapanthHeader({
           ) : (
             <button 
               onClick={onLoginClick}
-              className="w-8 h-8 rounded-full bg-stone-700/50 border border-white/20 overflow-hidden active:scale-95 transition-all cursor-pointer flex items-center justify-center shrink-0"
+              className="w-8 h-8 rounded-full bg-stone-700/50 border border-white/20 overflow-hidden active:scale-95 transition-all cursor-pointer flex items-center justify-center shrink-0 focus:outline-none focus:ring-2 focus:ring-brand-500"
               title="Login"
+              aria-label={language === 'hi' ? 'अपने खाते में लॉगिन करें' : 'Login to your spiritual account'}
             >
-              <LogIn size={16} className="text-white" />
+              <LogIn size={16} className="text-white" aria-hidden="true" />
             </button>
           )}
         </div>

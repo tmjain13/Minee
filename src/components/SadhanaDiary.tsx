@@ -19,6 +19,15 @@ import {
 } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { handleFirestoreError, OperationType } from '../lib/firebase-utils';
+import { 
+  getLocalData, 
+  saveLocalData, 
+  createSadhanaRecord, 
+  updateSadhanaRecord, 
+  deleteSadhanaRecord, 
+  syncPendingRecords, 
+  isOnline 
+} from '../services/sadhanaOfflineSync';
 import ConfirmationModal from './ConfirmationModal';
 
 interface DiaryEntry {
@@ -173,22 +182,18 @@ const SadhanaDiary = memo(() => {
     const dateStr = new Date(fastEnd).toISOString().split('T')[0];
 
     try {
-      // 1. Log to FastingLogs
-      const fastingPath = `users/${user.uid}/fastingLogs`;
-      await addDoc(collection(db, fastingPath), {
+      // 1. Log to FastingLogs offline-first
+      await createSadhanaRecord(user.uid, 'fastingLogs', {
         type: `paryushan_${fastVowType}`,
         duration: calculatedDuration.days >= 1 ? Math.round(calculatedDuration.days) : 1,
-        date: dateStr,
-        timestamp: serverTimestamp()
+        date: dateStr
       });
 
-      // 2. Log to Diary
+      // 2. Log to Diary offline-first
       const diaryText = `🌸 पर्युषण तप आराधना (Paryushana Fasting): ${vowName}\n⏱️ कुल अवधि: ${calculatedDuration.hours} घंटे (${calculatedDuration.days} दिन)\n📅 प्रारंभ: ${new Date(fastStart).toLocaleString('hi-IN')}\n🏁 समापन (पारणा): ${new Date(fastEnd).toLocaleString('hi-IN')}\n🙏 मिच्छामि दुक्कड़ं! इस महा तप से हमारे समस्त दुष्कर्मों और कषायों की निर्जरा हो।`;
       
-      const diaryPath = `users/${user.uid}/diary`;
-      await addDoc(collection(db, diaryPath), {
+      await createSadhanaRecord(user.uid, 'diary', {
         text: diaryText,
-        timestamp: serverTimestamp(),
         date: new Date(fastEnd).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
       });
 
@@ -337,27 +342,51 @@ const SadhanaDiary = memo(() => {
 
   const incrementDailyMantra = async (countToAdd: number) => {
     if (!user) return;
-    const path = `users/${user.uid}/mantraLogs`;
     try {
-      await addDoc(collection(db, path), {
+      await createSadhanaRecord(user.uid, 'mantraLogs', {
         mantraId: 'daily_diary_tracker',
         count: countToAdd,
         isFullMala: countToAdd === 108,
-        date: new Date().toISOString().split('T')[0],
-        timestamp: serverTimestamp()
+        date: new Date().toISOString().split('T')[0]
       });
     } catch (err) {
-      handleFirestoreError(err, OperationType.CREATE, path);
+      console.error('[SadhanaDiary] Error incrementing mantra offline:', err);
     }
   };
 
   useEffect(() => {
     if (!user) return;
+
+    // Load diary, fasting logs and mantra logs from IndexedDB first for instant offline rendering
+    getLocalData('diary').then(cachedEntries => {
+      if (cachedEntries && cachedEntries.length > 0) {
+        setEntries(cachedEntries as DiaryEntry[]);
+      }
+    });
+
+    getLocalData('fastingLogs').then(cachedFasts => {
+      if (cachedFasts && cachedFasts.length > 0) {
+        setFastingLogs(cachedFasts);
+      }
+    });
+
+    getLocalData('mantraLogs').then(cachedMantras => {
+      if (cachedMantras && cachedMantras.length > 0) {
+        setMantraLogs(cachedMantras);
+      }
+    });
+
     const diaryPath = `users/${user.uid}/diary`;
     const diaryQ = query(collection(db, diaryPath), orderBy('timestamp', 'desc'), limit(20));
     
     const unsubscribeDiary = onSnapshot(diaryQ, (snapshot) => {
-      setEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DiaryEntry)));
+      const diaryData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DiaryEntry));
+      setEntries(diaryData);
+      
+      // Update local IndexedDB cache in background
+      diaryData.forEach(entry => {
+        saveLocalData('diary', entry);
+      });
     }, (err) => {
       handleFirestoreError(err, OperationType.LIST, diaryPath);
     });
@@ -365,7 +394,13 @@ const SadhanaDiary = memo(() => {
     const fastingPath = `users/${user.uid}/fastingLogs`;
     const fastingQ = query(collection(db, fastingPath), orderBy('timestamp', 'desc'), limit(50));
     const unsubscribeFasting = onSnapshot(fastingQ, (snapshot) => {
-      setFastingLogs(snapshot.docs.map(doc => doc.data()));
+      const fastingData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setFastingLogs(fastingData);
+      
+      // Update local IndexedDB cache in background
+      fastingData.forEach(log => {
+        saveLocalData('fastingLogs', log);
+      });
     }, (err) => {
       handleFirestoreError(err, OperationType.LIST, fastingPath);
     });
@@ -373,15 +408,31 @@ const SadhanaDiary = memo(() => {
     const mantraPath = `users/${user.uid}/mantraLogs`;
     const mantraQ = query(collection(db, mantraPath), orderBy('timestamp', 'desc'), limit(50));
     const unsubscribeMantra = onSnapshot(mantraQ, (snapshot) => {
-      setMantraLogs(snapshot.docs.map(doc => doc.data()));
+      const mantraData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setMantraLogs(mantraData);
+      
+      // Update local IndexedDB cache in background
+      mantraData.forEach(log => {
+        saveLocalData('mantraLogs', log);
+      });
     }, (err) => {
       handleFirestoreError(err, OperationType.LIST, mantraPath);
     });
+
+    // Handle auto-reconnect sync for all queued records
+    const handleOnline = () => {
+      syncPendingRecords(user.uid);
+    };
+    window.addEventListener('online', handleOnline);
+    if (isOnline()) {
+      syncPendingRecords(user.uid);
+    }
 
     return () => {
       unsubscribeDiary();
       unsubscribeFasting();
       unsubscribeMantra();
+      window.removeEventListener('online', handleOnline);
     };
   }, [user]);
 
@@ -421,55 +472,58 @@ const SadhanaDiary = memo(() => {
 
   const handleAddEntry = async () => {
     if (!user || !inputText.trim()) return;
-    const path = `users/${user.uid}/diary`;
     try {
-      await addDoc(collection(db, path), {
+      const entryId = `local_${Date.now()}`;
+      const newEntry = {
+        id: entryId,
         text: inputText,
-        timestamp: serverTimestamp(),
         date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-      });
+      };
+      
+      await createSadhanaRecord(user.uid, 'diary', newEntry);
+
+      // Optimistically update local UI state immediately for responsive interaction
+      setEntries(prev => [{ id: entryId, ...newEntry, timestamp: Date.now() } as any, ...prev]);
       setInputText('');
       setIsAdding(false);
     } catch (err) {
-      handleFirestoreError(err, OperationType.CREATE, path);
+      console.error('[SadhanaDiary] Error adding diary entry:', err);
     }
   };
 
   const handleDeleteEntry = async (id: string) => {
     if (!user) return;
-    const path = `users/${user.uid}/diary/${id}`;
     try {
-      await deleteDoc(doc(db, `users/${user.uid}/diary`, id));
+      await deleteSadhanaRecord(user.uid, 'diary', id);
+      setEntries(prev => prev.filter(e => e.id !== id));
     } catch (err) {
-      handleFirestoreError(err, OperationType.DELETE, path);
+      console.error('[SadhanaDiary] Error deleting entry:', err);
     }
   };
 
   const handleClearAllEntries = async () => {
     if (!user || entries.length === 0) return;
-    const path = `users/${user.uid}/diary`;
     try {
-      const promises = entries.map(entry => 
-        deleteDoc(doc(db, `users/${user.uid}/diary`, entry.id))
-      );
-      await Promise.all(promises);
+      for (const entry of entries) {
+        await deleteSadhanaRecord(user.uid, 'diary', entry.id);
+      }
+      setEntries([]);
     } catch (err) {
-      handleFirestoreError(err, OperationType.DELETE, path);
+      console.error('[SadhanaDiary] Error clearing entries:', err);
     }
   };
 
   const handleUpdateEntry = async () => {
     if (!user || !editingId || !editText.trim()) return;
-    const path = `users/${user.uid}/diary/${editingId}`;
     try {
-      await updateDoc(doc(db, `users/${user.uid}/diary`, editingId), {
-        text: editText,
-        updatedAt: serverTimestamp(),
+      await updateSadhanaRecord(user.uid, 'diary', editingId, {
+        text: editText
       });
+      setEntries(prev => prev.map(e => e.id === editingId ? { ...e, text: editText } : e));
       setEditingId(null);
       setEditText('');
     } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, path);
+      console.error('[SadhanaDiary] Error updating entry:', err);
     }
   };
 
