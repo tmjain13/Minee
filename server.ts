@@ -11,6 +11,7 @@ import fs from "fs";
 import { z } from "zod";
 import { streamGeminiResponse, getInstantDefinition, generateRecordSummary } from "./server/gemini";
 import { logSecurityEvent } from "./server/securityLogger";
+import { isSafe, stripUnsafeText, isScrapeDomainAllowed, isOriginAllowed } from "./server/security";
 
 async function startServer() {
   const app = express();
@@ -86,40 +87,7 @@ async function startServer() {
 
   app.use(cors({
     origin: (origin, callback) => {
-      if (!origin) {
-        callback(null, true);
-        return;
-      }
-      
-      const allowedOrigins: string[] = ['http://localhost:3000'];
-      if (process.env.APP_URL) {
-        allowedOrigins.push(process.env.APP_URL);
-        try {
-          const appUrlParsed = new URL(process.env.APP_URL);
-          allowedOrigins.push(appUrlParsed.origin);
-          
-          const match = appUrlParsed.hostname.match(/^[a-z0-9-]+-([a-z0-9]+-[0-9]+)\..+$/);
-          if (match && match[1]) {
-            const projectSuffix = match[1];
-            // Use strict anchored regex to prevent crafted domains
-            const regex = new RegExp(`^https:\\/\\/([a-zA-Z0-9-]+\\.)?${projectSuffix}\\.run\\.app$`);
-            if (regex.test(origin)) {
-              callback(null, true);
-              return;
-            }
-          }
-        } catch (e) {
-          console.error("CORS APP_URL parse error:", e);
-        }
-      }
-      
-      const firebaseRegex = /^https:\/\/[a-zA-Z0-9-]+\.firebaseapp\.com$/;
-      if (firebaseRegex.test(origin)) {
-        callback(null, true);
-        return;
-      }
-      
-      if (allowedOrigins.includes(origin)) {
+      if (isOriginAllowed(origin, process.env.APP_URL)) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
@@ -215,13 +183,6 @@ async function startServer() {
   });
 
   // 4. SSRF Private IP Block & Sanitizer Middleware
-  const INJECTION_RE = /(ignore\s+previous\s+instructions|system\s+prompt|you\s+are\s+now\s+a|new\s+instructions|ignore\s+all\s+guidelines|bypass\s+rules|jailbreak|dan\s+mode|prompt\s+injection|do\s+anything\s+now|forget\s+your\s+identity|override\s+instructions|you\s+must\s+now\s+act|system\s+message|developer\s+mode)/i;
-
-  const isSafe = (text: string): boolean => {
-    if (!text) return true;
-    return !INJECTION_RE.test(text);
-  };
-
   const ssrfAndSanitizer = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     // 1. Strip null bytes from the request body (Fixing Issue 11)
     if (req.body && typeof req.body === 'string') {
@@ -236,34 +197,34 @@ async function startServer() {
     }
 
     const ip = req.ip || req.socket?.remoteAddress || '';
-    
+
     // Null-byte & HTML Sanitizer
     if (req.body.message) {
-      req.body.message = req.body.message.replace(/\0/g, '').replace(/<[^>]*>?/gm, '');
+      req.body.message = stripUnsafeText(req.body.message);
     }
     if (req.body.term) {
-      req.body.term = req.body.term.replace(/\0/g, '').replace(/<[^>]*>?/gm, '');
+      req.body.term = stripUnsafeText(req.body.term);
     }
     if (req.body.details) {
-      req.body.details = req.body.details.replace(/\0/g, '').replace(/<[^>]*>?/gm, '');
+      req.body.details = stripUnsafeText(req.body.details);
     }
     if (req.body.offlineContext) {
-      req.body.offlineContext = req.body.offlineContext.replace(/\0/g, '').replace(/<[^>]*>?/gm, '');
+      req.body.offlineContext = stripUnsafeText(req.body.offlineContext);
     }
-    
+
     // Sanitize and check history text parts to block injections nested in chat history
     let historyText = "";
     if (req.body.history && Array.isArray(req.body.history)) {
       for (const h of req.body.history) {
         if (h && typeof h === 'object') {
           if (h.text && typeof h.text === 'string') {
-            h.text = h.text.replace(/\0/g, '').replace(/<[^>]*>?/gm, '');
+            h.text = stripUnsafeText(h.text);
             historyText += " " + h.text;
           }
           if (h.parts && Array.isArray(h.parts)) {
             for (const part of h.parts) {
               if (part && part.text && typeof part.text === 'string') {
-                part.text = part.text.replace(/\0/g, '').replace(/<[^>]*>?/gm, '');
+                part.text = stripUnsafeText(part.text);
                 historyText += " " + part.text;
               }
             }
@@ -376,16 +337,15 @@ async function startServer() {
 
     try {
       // Security: Strict Domain Validation to prevent SSRF
-      const allowedDomains = new Set(['herenow4u.net', 'www.herenow4u.net', 'terapanth.com', 'jainworld.com']);
       let parsedUrl;
       try {
         parsedUrl = new URL(url);
       } catch (e) {
         return res.status(400).json({ error: "Invalid URL format" });
       }
-      
+
       // Exact hostname match
-      if (!allowedDomains.has(parsedUrl.hostname)) {
+      if (!isScrapeDomainAllowed(parsedUrl.hostname)) {
         logSecurityEvent('ssrf_blocked', { url, hostname: parsedUrl.hostname }, req);
         return res.status(403).json({ error: "Domain not authorized for extraction" });
       }
