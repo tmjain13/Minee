@@ -54,13 +54,49 @@
   }
 })();
 
-import {StrictMode} from 'react';
-import {createRoot} from 'react-dom/client';
+import React, { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import * as Sentry from "@sentry/react";
 import App from './App.tsx';
 import './index.css';
 import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { ChatFocusProvider } from './context/ChatFocusContext';
+import { auth } from './lib/firebase';
+
+// ─── SENTRY INITIALIZATION (Production Only) ───
+const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
+
+if (import.meta.env.PROD && SENTRY_DSN) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    integrations: [
+      Sentry.browserTracingIntegration(),
+      Sentry.replayIntegration({
+        maskAllText: false,
+        blockAllMedia: false,
+      }),
+    ],
+    // Performance Monitoring
+    tracesSampleRate: 1.0,
+    // Session Replay
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1.0,
+    environment: import.meta.env.MODE,
+    release: import.meta.env.VITE_APP_VERSION || "1.0.0",
+    beforeSend(event) {
+      // Attach Firebase user context if available
+      const user = auth?.currentUser;
+      if (user) {
+        event.user = {
+          id: user.uid,
+          email: user.email || undefined,
+        };
+      }
+      return event;
+    },
+  });
+}
 
 // Safely register PWA Service Worker with update detection
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
@@ -93,13 +129,104 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AuthProvider>
-      <LanguageProvider>
-        <ChatFocusProvider>
-          {/* Removed ParyushanaMode from root to prevent global crashes */}
-          <App />
-        </ChatFocusProvider>
-      </LanguageProvider>
-    </AuthProvider>
+    <Sentry.ErrorBoundary
+      fallback={({ error, resetError }) => (
+        <div
+          style={{
+            minHeight: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%)",
+            padding: "24px",
+            fontFamily: "system-ui, sans-serif",
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: "20px",
+              padding: "40px",
+              maxWidth: "420px",
+              width: "100%",
+              textAlign: "center",
+              boxShadow: "0 20px 60px rgba(234, 88, 12, 0.15)",
+            }}
+          >
+            <div style={{ fontSize: "48px", marginBottom: "16px" }}>🙏</div>
+            <h2
+              style={{
+                color: "#c2410c",
+                fontSize: "20px",
+                fontWeight: 700,
+                marginBottom: "8px",
+                lineHeight: 1.4,
+              }}
+            >
+              क्षमा करें, कुछ गलत हो गया
+            </h2>
+            <p
+              style={{
+                color: "#78716c",
+                fontSize: "14px",
+                marginBottom: "20px",
+                lineHeight: 1.6,
+              }}
+            >
+              Something went wrong. Please refresh the page.
+              <br />
+              <span style={{ fontSize: "12px", opacity: 0.7 }}>
+                यदि समस्या बनी रहती है, कृपया ऐप पुनः खोलें।
+              </span>
+            </p>
+            <button
+              onClick={() => {
+                resetError();
+                window.location.reload();
+              }}
+              style={{
+                background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+                color: "white",
+                border: "none",
+                padding: "12px 32px",
+                borderRadius: "12px",
+                fontSize: "14px",
+                fontWeight: 600,
+                cursor: "pointer",
+                boxShadow: "0 4px 12px rgba(234, 88, 12, 0.3)",
+              }}
+            >
+              Refresh Page / पेज रिफ्रेश करें
+            </button>
+            {import.meta.env.DEV && error && (
+              <pre
+                style={{
+                  marginTop: "20px",
+                  textAlign: "left",
+                  fontSize: "11px",
+                  color: "#a8a29e",
+                  background: "#fafaf9",
+                  padding: "12px",
+                  borderRadius: "8px",
+                  overflow: "auto",
+                  maxHeight: "200px",
+                }}
+              >
+                {error.toString()}
+              </pre>
+            )}
+          </div>
+        </div>
+      )}
+    >
+      <AuthProvider>
+        <LanguageProvider>
+          <ChatFocusProvider>
+            {/* Removed ParyushanaMode from root to prevent global crashes */}
+            <App />
+          </ChatFocusProvider>
+        </LanguageProvider>
+      </AuthProvider>
+    </Sentry.ErrorBoundary>
   </StrictMode>,
 );
