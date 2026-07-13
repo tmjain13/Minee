@@ -5,6 +5,7 @@ import { db } from '../lib/firebase';
 import { collection, addDoc, query, orderBy, limit, onSnapshot, doc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { handleFirestoreError, OperationType } from '../lib/firestoreErrors';
+import { devLog } from '../lib/devLog';
 
 interface SuvicharType {
   text: string;
@@ -166,7 +167,7 @@ Shared via Terapanth AI Assistant.`;
           url: window.location.origin
         });
       } catch (e) {
-        console.log("Share canceled or skipped:", e);
+        devLog("Share canceled or skipped:", e);
       }
     } else {
       try {

@@ -11,7 +11,8 @@ import {
   increment, 
   setDoc,
   orderBy,
-  limit
+  limit,
+  getCountFromServer
 } from 'firebase/firestore';
 import { Sparkles, CheckCircle2, Users, Clock, ChevronRight } from 'lucide-react';
 
@@ -38,6 +39,7 @@ interface CommunityPollsProps {
 const CommunityPolls = memo(({ user, setIsLoginModalOpen }: CommunityPollsProps) => {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [userVotes, setUserVotes] = useState<Record<string, string>>({});
+  const [pollCounts, setPollCounts] = useState<Record<string, { total: number; options: Record<string, number> }>>({});
 
   useEffect(() => {
     const q = query(
@@ -72,6 +74,50 @@ const CommunityPolls = memo(({ user, setIsLoginModalOpen }: CommunityPollsProps)
 
     return () => unsubscribes.forEach(unsub => unsub());
   }, [user, polls]);
+
+  useEffect(() => {
+    if (polls.length === 0) return;
+
+    let isMounted = true;
+    const fetchCounts = async () => {
+      const counts: Record<string, { total: number; options: Record<string, number> }> = {};
+      
+      for (const poll of polls) {
+        try {
+          const votesCol = collection(db, `polls/${poll.id}/votes`);
+          const totalSnapshot = await getCountFromServer(votesCol);
+          const totalVotes = totalSnapshot.data().count;
+          
+          const optionCounts: Record<string, number> = {};
+          for (const option of poll.options) {
+            const optQuery = query(votesCol, where('optionId', '==', option.id));
+            const optSnapshot = await getCountFromServer(optQuery);
+            optionCounts[option.id] = optSnapshot.data().count;
+          }
+          
+          counts[poll.id] = {
+            total: totalVotes,
+            options: optionCounts
+          };
+        } catch (error) {
+          console.error(`Error fetching vote counts for poll ${poll.id}:`, error);
+        }
+      }
+      
+      if (isMounted) {
+        setPollCounts(counts);
+      }
+    };
+
+    fetchCounts();
+
+    const interval = setInterval(fetchCounts, 15000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [polls, userVotes]);
 
   const handleVote = async (pollId: string, optionId: string) => {
     if (!user) {
@@ -108,6 +154,8 @@ const CommunityPolls = memo(({ user, setIsLoginModalOpen }: CommunityPollsProps)
 
       {polls.map(poll => {
         const hasVoted = !!userVotes[poll.id];
+        const counts = pollCounts[poll.id] || { total: 0, options: {} };
+        const totalVotes = counts.total;
         
         return (
           <motion.div 
@@ -125,7 +173,8 @@ const CommunityPolls = memo(({ user, setIsLoginModalOpen }: CommunityPollsProps)
 
             <div className="space-y-3">
               {poll.options.map(option => {
-                const percentage = poll.totalVotes > 0 ? Math.round((option.votes / poll.totalVotes) * 100) : 0;
+                const votesForOption = counts.options[option.id] || 0;
+                const percentage = totalVotes > 0 ? Math.round((votesForOption / totalVotes) * 100) : 0;
                 const isSelected = userVotes[poll.id] === option.id;
 
                 return (
@@ -163,7 +212,7 @@ const CommunityPolls = memo(({ user, setIsLoginModalOpen }: CommunityPollsProps)
             <div className="mt-6 pt-4 border-t border-black/5 dark:border-white/5 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400">
-                  <Users size={12} /> {poll.totalVotes} votes cast
+                  <Users size={12} /> {totalVotes} votes cast
                 </div>
                 {poll.expiresAt && (
                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400">

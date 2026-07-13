@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Download, ZoomIn, ZoomOut, RotateCcw, Sparkles, Check, Share2, Maximize2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { getCategoryStyles } from './GalleryTab';
+import { devLog } from '../lib/devLog';
 
 interface MonasticMember {
   id: string;
@@ -323,7 +324,7 @@ const FullScreenImageViewer: React.FC<FullScreenImageViewerProps> = ({
       navigator.share({
         title: member.name,
         text: shareText
-      }).catch(err => console.log('Share dismissed', err));
+      }).catch(err => devLog('Share dismissed', err));
     } else {
       navigator.clipboard.writeText(shareText).then(() => {
         setIsCopied(true);

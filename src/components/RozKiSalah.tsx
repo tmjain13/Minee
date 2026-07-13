@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { db } from '../lib/firebase';
 import { collection, addDoc, onSnapshot, query, serverTimestamp, deleteDoc, doc, orderBy } from 'firebase/firestore';
+import { devLog } from '../lib/devLog';
 
 export interface SalahItem {
   id: string;
@@ -288,7 +289,7 @@ export const RozKiSalah = memo(() => {
           url: window.location.origin
         });
       } catch (e) {
-        console.log("Web Share skipped:", e);
+        devLog("Web Share skipped:", e);
       }
     } else {
       try {

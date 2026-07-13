@@ -9,6 +9,7 @@ import confetti from 'canvas-confetti';
 import { auth, googleProvider } from '../../lib/firebase';
 import { signInWithPopup } from 'firebase/auth';
 import { useAuth } from '../../context/AuthContext';
+import { devLog } from '../../lib/devLog';
 
 interface LoginPageProps {
   onLoginSuccess?: (username: string, contact: string) => void;
@@ -160,7 +161,7 @@ export function LoginPage({ onLoginSuccess, isModal = false }: LoginPageProps) {
       await signInWithGoogle();
       const currentUser = auth.currentUser;
       if (currentUser) {
-        console.log("User logged in via Google:", currentUser.email);
+        devLog("User logged in via Google:", currentUser.email);
         setUserData({
           contact: currentUser.email || '',
           username: currentUser.displayName || 'Shravak'

@@ -7,6 +7,7 @@ import {
 import { db, auth } from '../lib/firebase';
 import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import FullScreenImageViewer from './FullScreenImageViewer';
+import { devLog } from '../lib/devLog';
 
 interface MonasticMember {
   id: string;
@@ -233,7 +234,7 @@ const GalleryTab = memo(({ setShareToast, isDarkMode = false }: GalleryTabProps)
       navigator.share({
         title: member.name,
         text: shareText
-      }).catch(err => console.log('Share dismissed', err));
+      }).catch(err => devLog('Share dismissed', err));
     } else {
       navigator.clipboard.writeText(shareText).then(() => {
         setCopiedId(member.id);

@@ -441,7 +441,7 @@ export const TerapanthLightChatUI: React.FC<TerapanthLightChatUIProps> = ({
   };
 
   // Submit User Message
-  const handleSendMessage = async (textToSend?: string) => {
+  const handleSendMessage = async (textToSend?: string, isReplay = false) => {
     const rawQuery = textToSend || chatInput;
     if (!rawQuery.trim()) return;
 
@@ -457,15 +457,17 @@ export const TerapanthLightChatUI: React.FC<TerapanthLightChatUIProps> = ({
     // Reset input box
     if (!textToSend) setChatInput('');
 
-    // Append User Message
-    const userMsg: Message = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      text: rawQuery,
-      timestamp: new Date()
-    };
+    if (!isReplay) {
+      // Append User Message
+      const userMsg: Message = {
+        id: `user-${Date.now()}`,
+        role: 'user',
+        text: rawQuery,
+        timestamp: new Date()
+      };
 
-    setMessages(prev => [...prev, userMsg]);
+      setMessages(prev => [...prev, userMsg]);
+    }
     
     if (isOffline) {
       setOfflineQueue(prev => [...prev, rawQuery]);
@@ -1283,17 +1285,11 @@ ${bestKnowledge.details}
       </div>
       
       {isOffline && (
-        <div style={{
-          background: '#ef4444',
-          color: 'white',
-          textAlign: 'center',
-          padding: '8px',
-          fontSize: '12px',
-          fontWeight: 'bold',
-          zIndex: 9991,
-          width: '100%'
-        }}>
-          You are offline. Messages will be sent when you reconnect.
+        <div 
+          id="offline-chat-banner"
+          className="bg-red-600 text-white text-center py-2 px-4 text-xs font-bold z-[9991] w-full"
+        >
+          You're offline — messages will send when you reconnect
         </div>
       )}
 

@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { db, auth } from "../lib/firebase";
 import { signOut } from "firebase/auth";
 import { doc, updateDoc, getDoc, onSnapshot } from "firebase/firestore";
+import { devLog } from "../lib/devLog";
 import {
   Loader2,
   Camera,
@@ -102,23 +103,23 @@ export default function ProfileTab({
 
   // Log detected role for debugging
   useEffect(() => {
-    console.log("Current User Role:", userRole);
+    devLog("Current User Role:", userRole);
   }, [userRole]);
 
   // Real-time Firestore snapshot listener to keep role updated without page refreshes
   useEffect(() => {
     if (!user?.uid) return;
-    console.log("Initiating real-time listener on user document:", user.uid);
+    devLog("Initiating real-time listener on user document:", user.uid);
     const userRef = doc(db, 'users', user.uid);
     const unsubscribe = onSnapshot(userRef, (snap) => {
       if (snap.exists()) {
         const data = snap.data();
-        console.log("Real-time Firestore user role update:", data?.role);
+        devLog("Real-time Firestore user role update:", data?.role);
         if (data?.role) {
           setUserRole(data.role);
         }
       } else {
-        console.log("No real-time user document found in Firestore for UID:", user.uid);
+        devLog("No real-time user document found in Firestore for UID:", user.uid);
       }
     }, (error) => {
       console.error("Error with real-time user role subscription:", error);
@@ -754,7 +755,7 @@ export default function ProfileTab({
     );
   }
 
-  console.log('Current User Role:', userRole);
+  devLog('Current User Role:', userRole);
 
   return (
     <div className="space-y-6 w-full max-w-4xl mx-auto p-4">
@@ -1743,9 +1744,9 @@ export default function ProfileTab({
                 <button
                   onClick={() => {
                     if (userRole !== "admin") {
-                      console.log("Admin Panel click: Access is blocked because userRole is not admin. Current role:", userRole);
+                      devLog("Admin Panel click: Access is blocked because userRole is not admin. Current role:", userRole);
                     } else {
-                      console.log("Admin Panel click: Access allowed for admin");
+                      devLog("Admin Panel click: Access allowed for admin");
                     }
                     onNavigateToAdminDashboard();
                   }}

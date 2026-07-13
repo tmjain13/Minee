@@ -62,15 +62,33 @@ import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { ChatFocusProvider } from './context/ChatFocusContext';
 
-// Safely register PWA Service Worker dynamically to avoid Cloud Preview resolution issues
+// Safely register PWA Service Worker with update detection
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  import('virtual:pwa-register')
-    .then(({ registerSW }) => {
-      registerSW({ immediate: true });
-    })
-    .catch((err) => {
-      console.warn('PWA dynamic registration skipped in dev/preview mode:', err);
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then((registration) => {
+      // Add updatefound listener
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed') {
+              if (navigator.serviceWorker.controller) {
+                // New update available, notify the app UI
+                window.dispatchEvent(new CustomEvent('sw-update-available', { detail: registration }));
+              }
+            }
+          });
+        }
+      });
+
+      // If a service worker is already waiting, trigger update event
+      if (registration.waiting) {
+        window.dispatchEvent(new CustomEvent('sw-update-available', { detail: registration }));
+      }
+    }).catch((err) => {
+      console.warn('PWA service worker registration failed/skipped:', err);
     });
+  });
 }
 
 createRoot(document.getElementById('root')!).render(

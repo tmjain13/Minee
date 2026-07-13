@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Newspaper, RefreshCw, Share2, Calendar, ArrowUpRight, Check, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth } from '../lib/firebase';
+import { devLog } from '../lib/devLog';
 
 interface NewsItem {
   title: string;
@@ -40,22 +41,27 @@ export default function TerapanthNewsFeed({ onBack }: { onBack?: () => void }) {
       const cache = localStorage.getItem('terapanth_news_cache');
       if (cache) {
         try {
-          const { items, timestamp } = JSON.parse(cache);
-          // Only use cache if less than 6 hours old
-          if (Date.now() - timestamp < 6 * 60 * 60 * 1000) {
-            setNewsItems(items);
-            const d = new Date(timestamp);
-            setLastRefreshedAt(d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) + ' (Offline)');
-            setLoading(false);
-            setIsRefreshing(false);
-            return;
+          const parsed = JSON.parse(cache);
+          const articles = parsed.articles;
+          const cachedAt = parsed.cachedAt;
+          
+          if (articles && Array.isArray(articles) && typeof cachedAt === 'number') {
+            // Only use cache if less than 6 hours old
+            if (Date.now() - cachedAt < 6 * 60 * 60 * 1000) {
+              setNewsItems(articles);
+              const d = new Date(cachedAt);
+              setLastRefreshedAt(d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) + ' (Offline Cache)');
+              setLoading(false);
+              setIsRefreshing(false);
+              return;
+            }
           }
         } catch (e) {
           console.error("News cache parsing failed", e);
         }
       }
-      // If offline and no valid cache, fallback
-      setNewsItems(FALLBACK_NEWS);
+      // If offline with no cache (or cache is older than 6 hours), show an empty state with offline message
+      setNewsItems([]);
       setLoading(false);
       setIsRefreshing(false);
       return;
@@ -145,10 +151,10 @@ export default function TerapanthNewsFeed({ onBack }: { onBack?: () => void }) {
       const now = new Date();
       setLastRefreshedAt(now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }));
       
-      // Save to cache
+      // Save to cache: store articles and cachedAt
       localStorage.setItem('terapanth_news_cache', JSON.stringify({
-        items: finalItems,
-        timestamp: Date.now()
+        articles: finalItems,
+        cachedAt: Date.now()
       }));
     } catch (err) {
       console.warn("Real-time scraper bypassed or failed. Sourcing standard news fallback stream:", err);
@@ -156,8 +162,8 @@ export default function TerapanthNewsFeed({ onBack }: { onBack?: () => void }) {
       setNewsItems(FALLBACK_NEWS);
       
       localStorage.setItem('terapanth_news_cache', JSON.stringify({
-        items: FALLBACK_NEWS,
-        timestamp: Date.now()
+        articles: FALLBACK_NEWS,
+        cachedAt: Date.now()
       }));
 
       if (!lastRefreshedAt) {
@@ -175,7 +181,7 @@ export default function TerapanthNewsFeed({ onBack }: { onBack?: () => void }) {
     fetchNews();
 
     const intervalId = setInterval(() => {
-      console.log("Triggering 30-minute automatic news refresh...");
+      devLog("Triggering 30-minute automatic news refresh...");
       fetchNews();
     }, 30 * 60 * 1000); // 30 minutes in milliseconds
 
@@ -200,7 +206,7 @@ Shared via Terapanth AI Assistant.`;
           url: item.url || window.location.origin
         });
       } catch (err) {
-        console.log("Share skipped:", err);
+        devLog("Share skipped:", err);
       }
     } else {
       try {
@@ -316,8 +322,17 @@ Shared via Terapanth AI Assistant.`;
               key="empty-view"
             >
               <AlertCircle size={24} className="text-gray-400" />
-              <p className="text-xs font-bold uppercase tracking-widest">No matching news found</p>
-              <p className="text-[10px] text-gray-400">Select another category or check back later.</p>
+              {typeof navigator !== 'undefined' && !navigator.onLine ? (
+                <>
+                  <p className="text-xs font-bold uppercase tracking-widest text-red-500">You're Offline</p>
+                  <p className="text-[10px] text-gray-400">No cached news available. Please connect to the internet to load news.</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs font-bold uppercase tracking-widest">No matching news found</p>
+                  <p className="text-[10px] text-gray-400">Select another category or check back later.</p>
+                </>
+              )}
             </motion.div>
           ) : (
             <motion.div

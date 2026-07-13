@@ -5,6 +5,7 @@ import { db } from '../lib/firebase';
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { devLog } from '../lib/devLog';
 
 interface DailyVachanType {
   id?: string;
@@ -146,7 +147,7 @@ export default function DailyVachan() {
         setCurrentIndex(getDailyIndex(loaded.length));
       }
     }, (error) => {
-      console.log("Firestore collection 'hukamnamas' not found or inaccessible. Using local authentic cache:", error);
+      devLog("Firestore collection 'hukamnamas' not found or inaccessible. Using local authentic cache:", error);
     });
 
     return () => unsubscribe();
@@ -222,7 +223,7 @@ export default function DailyVachan() {
           url: window.location.origin
         });
       } catch (e) {
-        console.log("Share skipped or canceled:", e);
+        devLog("Share skipped or canceled:", e);
       }
     } else {
       try {

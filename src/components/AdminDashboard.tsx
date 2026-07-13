@@ -43,6 +43,7 @@ import {
 import { db, auth } from '../lib/firebase';
 import ViharUpdateForm from './ViharUpdateForm';
 import { useAuth } from '../context/AuthContext';
+import { devLog } from '../lib/devLog';
 import { SkeletonLoader } from './SkeletonLoader';
 
 interface AdminDashboardProps {
@@ -138,7 +139,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 }
 
 const AdminDashboardContent: React.FC<AdminDashboardProps> = ({ onBackToProfile }) => {
-  console.log("Admin Dashboard Rendering with Expanded Security Panel");
+  devLog("Admin Dashboard Rendering with Expanded Security Panel");
 
   const { userData, loading: authLoading, user } = useAuth();
   const [activeSubView, setActiveSubView] = useState<'menu' | 'vihar' | 'users_mgmt'>('menu');
@@ -313,7 +314,7 @@ const AdminDashboardContent: React.FC<AdminDashboardProps> = ({ onBackToProfile 
         message: `उपयोगकर्ता "${displayName || 'Anonymous'}" सफलतापूर्वक हटा दिया गया। (User deleted successfully.)`,
         type: 'success'
       });
-      console.log(`Successfully deleted user: ${userId}`);
+      devLog(`Successfully deleted user: ${userId}`);
     } catch (error) {
       setFeedback({
         message: `त्रुटि: उपयोगकर्ता को हटाया नहीं जा सका। (Failed to delete user.)`,
@@ -338,7 +339,7 @@ const AdminDashboardContent: React.FC<AdminDashboardProps> = ({ onBackToProfile 
     if (activeSubView !== 'users_mgmt') return;
 
     const alertsPath = 'system_alerts';
-    console.log("[AdminDashboard] Subscribing to system alerts in real-time...");
+    devLog("[AdminDashboard] Subscribing to system alerts in real-time...");
     const q = query(collection(db, alertsPath), orderBy('timestamp', 'desc'));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -356,7 +357,7 @@ const AdminDashboardContent: React.FC<AdminDashboardProps> = ({ onBackToProfile 
     if (activeSubView !== 'users_mgmt') return;
 
     const usersPath = 'users';
-    console.log("[AdminDashboard] Subscribing to users collection in real-time...");
+    devLog("[AdminDashboard] Subscribing to users collection in real-time...");
     
     const unsubscribe = onSnapshot(collection(db, usersPath), (snapshot) => {
       const fetchedUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -377,7 +378,7 @@ const AdminDashboardContent: React.FC<AdminDashboardProps> = ({ onBackToProfile 
     try {
       const userRef = doc(db, 'users', userId);
       await updateDoc(userRef, { role: newRole });
-      console.log(`Successfully updated role for ${userId} to ${newRole}`);
+      devLog(`Successfully updated role for ${userId} to ${newRole}`);
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, userPath);
     } finally {
@@ -399,7 +400,7 @@ const AdminDashboardContent: React.FC<AdminDashboardProps> = ({ onBackToProfile 
         timestamp: serverTimestamp()
       });
       setAlertMessage('');
-      console.log("Successfully published new system alert to Firestore.");
+      devLog("Successfully published new system alert to Firestore.");
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, alertsPath);
     } finally {
@@ -412,7 +413,7 @@ const AdminDashboardContent: React.FC<AdminDashboardProps> = ({ onBackToProfile 
     const alertPath = `system_alerts/${alertId}`;
     try {
       await deleteDoc(doc(db, 'system_alerts', alertId));
-      console.log("Deleted system alert:", alertId);
+      devLog("Deleted system alert:", alertId);
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, alertPath);
     }

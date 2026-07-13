@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { X, Plus, Save, BookOpen, Quote as QuoteIcon, CheckCircle, Trash2, Pen, MessageCircle, ThumbsUp, ThumbsDown, Clock, BarChart2, ShieldAlert, Map, Database, RefreshCw, CloudUpload, Eye } from 'lucide-react';
 import { db, auth, storage } from '../lib/firebase';
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { collection, addDoc, serverTimestamp, doc, setDoc, deleteDoc, query, orderBy, onSnapshot, writeBatch, limit } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, setDoc, deleteDoc, query, orderBy, onSnapshot, writeBatch, limit, getCountFromServer } from 'firebase/firestore';
 import { KnowledgeItem } from '../data/knowledge';
 import { safeStringify } from '../lib/safe-json';
 import { CHATURMAS_MASTER_2026 } from '../data/chaturmas2026';
@@ -23,6 +23,7 @@ export default function AdminPanel({ isOpen, onClose, knowledgeItems, isAdmin }:
   const [success, setSuccess] = useState(false);
   const [feedback, setFeedback] = useState<any[]>([]);
   const [polls, setPolls] = useState<any[]>([]);
+  const [pollCounts, setPollCounts] = useState<Record<string, number>>({});
   const [securityLogs, setSecurityLogs] = useState<any[]>([]);
 
   // Analytics States
@@ -181,6 +182,31 @@ export default function AdminPanel({ isOpen, onClose, knowledgeItems, isAdmin }:
       unsubQueries();
     };
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || polls.length === 0) return;
+
+    let isMounted = true;
+    const fetchCounts = async () => {
+      const counts: Record<string, number> = {};
+      for (const poll of polls) {
+        try {
+          const totalSnapshot = await getCountFromServer(collection(db, `polls/${poll.id}/votes`));
+          counts[poll.id] = totalSnapshot.data().count;
+        } catch (error) {
+          console.error(`Error fetching votes count for admin poll ${poll.id}:`, error);
+        }
+      }
+      if (isMounted) {
+        setPollCounts(counts);
+      }
+    };
+
+    fetchCounts();
+    return () => {
+      isMounted = false;
+    };
+  }, [polls, isOpen]);
 
   const handleAddQuote = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -897,7 +923,7 @@ export default function AdminPanel({ isOpen, onClose, knowledgeItems, isAdmin }:
                        <div>
                          <p className="font-bold text-spiritual text-xs">{poll.question}</p>
                          <p className="text-[9px] text-gray-400 uppercase tracking-widest mt-1">
-                           {poll.totalVotes} Votes • {poll.isActive ? 'Active' : 'Closed'}
+                           {pollCounts[poll.id] ?? poll.totalVotes} Votes • {poll.isActive ? 'Active' : 'Closed'}
                          </p>
                        </div>
                        <div className="flex gap-2">

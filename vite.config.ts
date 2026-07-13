@@ -23,8 +23,10 @@ export default defineConfig(({mode}) => {
         })
       ] : []),
       VitePWA({
-        registerType: 'autoUpdate',
-        strategies: 'generateSW', // Changed from injectManifest to fix the crash
+        registerType: 'prompt',
+        strategies: 'injectManifest',
+        srcDir: 'src',
+        filename: 'sw.ts',
         manifest: {
           name: 'Terapanth AI Hub',
           short_name: 'Terapanth AI',
@@ -48,33 +50,8 @@ export default defineConfig(({mode}) => {
             }
           ]
         },
-        workbox: {
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-          runtimeCaching: [
-            {
-              urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'google-fonts-cache',
-                expiration: {
-                  maxEntries: 10,
-                  maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-                }
-              }
-            },
-            {
-              urlPattern: /\/api\/.*$/i,
-              handler: 'NetworkFirst',
-              options: {
-                cacheName: 'api-cache',
-                networkTimeoutSeconds: 5,
-                expiration: {
-                  maxEntries: 50,
-                  maxAgeSeconds: 60 * 60 * 24 // 24 hours
-                }
-              }
-            }
-          ]
+        injectManifest: {
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}']
         }
       })
     ],

@@ -5,6 +5,7 @@ import { db } from '../lib/firebase';
 import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp, orderBy } from 'firebase/firestore';
 import { chaturmasMasterRegistry } from '../data/chaturmasList';
 import { ACHARYAS } from '../data/acharyas';
+import { devLog } from '../lib/devLog';
 
 
 export interface ArchivePhoto {
@@ -324,7 +325,7 @@ export default function AcharyaArchiveModal({ isOpen, onClose, acharyaNr, achary
           setTimeout(() => setShareToast(''), 2500);
         })
         .catch(err => {
-          console.log("Native share failed, using clipboard copy", err);
+          devLog("Native share failed, using clipboard copy", err);
           copyToClipboard(`${acharyaInfo.name}: ${acharyaInfo.quote || ''}\n${window.location.href}`);
           setShareToast('Copied Profile details & link to Clipboard!');
           setTimeout(() => setShareToast(''), 3005);
@@ -436,7 +437,7 @@ export default function AcharyaArchiveModal({ isOpen, onClose, acharyaNr, achary
       try {
         await navigator.share(shareData);
       } catch (err) {
-        console.log('User dismissed or native share failed:', err);
+        devLog('User dismissed or native share failed:', err);
         copyToClipboard(photo.url);
       }
     } else {

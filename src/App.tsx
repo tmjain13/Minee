@@ -346,6 +346,40 @@ export default function App() {
   const [networkToastType, setNetworkToastType] = useState<"offline" | "online">("online");
   const [copiedLink, setCopiedLink] = useState(false);
 
+  // --- SERVICE WORKER UPDATE STATES ---
+  const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null);
+  const [showUpdateBanner, setShowUpdateBanner] = useState(false);
+
+  // --- SERVICE WORKER UPDATE LISTENER ---
+  useEffect(() => {
+    const handleSwUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<ServiceWorkerRegistration>;
+      if (customEvent.detail) {
+        setSwRegistration(customEvent.detail);
+        setShowUpdateBanner(true);
+      }
+    };
+
+    window.addEventListener('sw-update-available', handleSwUpdate);
+    return () => {
+      window.removeEventListener('sw-update-available', handleSwUpdate);
+    };
+  }, []);
+
+  const handleUpdateApp = () => {
+    if (swRegistration && swRegistration.waiting) {
+      swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    }
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+      });
+    }
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+  };
+
   // --- SWIPE GESTURE NAVIGATION SYSTEM ---
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
@@ -1163,6 +1197,57 @@ export default function App() {
               >
                 <X size={14} />
               </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* SERVICE WORKER UPDATE BANNER */}
+      <AnimatePresence>
+        {showUpdateBanner && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.3 }}
+            className="fixed bottom-[84px] left-4 right-4 md:left-auto md:right-4 md:w-96 z-50"
+          >
+            <div className="p-4 rounded-xl shadow-xl flex flex-col gap-3 bg-stone-900 border border-orange-500/30 text-white">
+              <div className="flex items-start justify-between">
+                <div className="flex gap-3">
+                  <span className="text-orange-500 text-base">✨</span>
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-orange-400">
+                      {language === 'hi' ? 'नया संस्करण उपलब्ध है' : 'New Version Available'}
+                    </h4>
+                    <p className="text-[11px] text-zinc-300 mt-1 leading-relaxed">
+                      {language === 'hi' 
+                        ? 'नवीनतम आध्यात्मिक सुविधाओं और सुधारों का लाभ उठाने के लिए अभी अपडेट करें।' 
+                        : 'Update now to get the latest spiritual features and stability improvements.'}
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowUpdateBanner(false)}
+                  className="p-1 hover:bg-white/10 rounded-full transition-colors text-zinc-400 hover:text-white"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setShowUpdateBanner(false)}
+                  className="px-3 py-1 text-[10px] uppercase font-bold tracking-wider text-zinc-400 hover:text-white transition-colors"
+                >
+                  {language === 'hi' ? 'बाद में' : 'Later'}
+                </button>
+                <button
+                  onClick={handleUpdateApp}
+                  className="px-4 py-1.5 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-extrabold uppercase tracking-widest text-[10px] rounded-lg transition-all duration-300 shadow-md shadow-orange-500/20"
+                >
+                  {language === 'hi' ? 'अभी अपडेट करें' : 'Update Now'}
+                </button>
+              </div>
             </div>
           </motion.div>
         )}

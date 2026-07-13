@@ -1,5 +1,6 @@
 import { db } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { devLog } from '../lib/devLog';
 
 /**
  * Logs security audit entries securely to Firestore.
@@ -20,7 +21,7 @@ export const logAccess = async (uid: string, status: 'granted' | 'denied', path:
       userAgent: navigator.userAgent || 'unknown',
       clientLanguage: navigator.language || 'unknown'
     });
-    console.log(`[AuditLogger] Access ${status.toUpperCase()} recorded for UID: ${uid}`);
+    devLog(`[AuditLogger] Access ${status.toUpperCase()} recorded for UID: ${uid}`);
   } catch (error) {
     console.error("[AuditLogger] Security audit writing failed:", error);
   }

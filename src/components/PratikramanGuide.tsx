@@ -5,6 +5,7 @@ import { db } from '../lib/firebase';
 import { collection, addDoc, query, orderBy, limit, onSnapshot, doc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { handleFirestoreError, OperationType } from '../lib/firebase-utils';
+import { devLog } from '../lib/devLog';
 
 interface PratikramanStep {
   name: string;
@@ -202,7 +203,7 @@ export default function PratikramanGuide({ onBack }: { onBack?: () => void }) {
     setJustCompletedMode(completedMode);
 
     if (!user) {
-      console.log("No authenticated user profile loaded: Skipping cloud database sync.");
+      devLog("No authenticated user profile loaded: Skipping cloud database sync.");
       return;
     }
 
