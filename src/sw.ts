@@ -44,17 +44,12 @@ registerRoute(
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  const allowedCaches = [
-    PRECACHE_NAME,
-    RUNTIME_CACHE_NAME,
-    `google-fonts-cache-${CACHE_VERSION}`,
-    `api-cache-${CACHE_VERSION}`
-  ];
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (!allowedCaches.includes(cacheName) && (cacheName.startsWith('terapanth-') || cacheName.includes('cache'))) {
+          // Delete any cache that does not match the current version suffix
+          if (!cacheName.includes(CACHE_VERSION)) {
             return caches.delete(cacheName);
           }
         })

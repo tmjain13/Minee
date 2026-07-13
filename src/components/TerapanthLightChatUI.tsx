@@ -268,7 +268,7 @@ export const TerapanthLightChatUI: React.FC<TerapanthLightChatUIProps> = ({
       setOfflineQueue([]);
       // Send them sequentially
       msgs.forEach(msg => {
-         handleSendMessage(msg);
+         handleSendMessage(msg, true);
       });
     }
   }, [isOffline, offlineQueue]);
