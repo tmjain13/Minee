@@ -33,27 +33,27 @@ export default defineConfig(({mode}) => {
         })
       ] : []),
       VitePWA({
-        registerType: 'prompt',
+        registerType: 'autoUpdate',
         strategies: 'injectManifest',
         srcDir: 'src',
         filename: 'sw.ts',
+        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
         manifest: {
           name: 'Terapanth AI Hub',
-          short_name: 'Terapanth AI',
-          description: 'Unified spiritual engine for Terapanth',
-          theme_color: '#FCF8F2',
-          background_color: '#FCF8F2',
+          short_name: 'TerapanthAI',
+          description: 'Unified Knowledge and Community Hub',
+          theme_color: '#f97316',
+          background_color: '#ffffff',
           display: 'standalone',
           orientation: 'portrait',
           icons: [
             {
-              src: '/assets/logos/icon-192x192.png',
+              src: '/pwa-192x192.png',
               sizes: '192x192',
-              type: 'image/png',
-              purpose: 'any maskable'
+              type: 'image/png'
             },
             {
-              src: '/assets/logos/icon-512x512.png',
+              src: '/pwa-512x512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any maskable'
@@ -62,6 +62,9 @@ export default defineConfig(({mode}) => {
         },
         injectManifest: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}']
+        },
+        devOptions: {
+          enabled: true
         }
       })
     ],
@@ -71,14 +74,16 @@ export default defineConfig(({mode}) => {
       },
     },
     build: {
-      chunkSizeWarningLimit: 3000,
+      sourcemap: false,
+      chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
               if (id.includes('@xenova/transformers')) return 'transformers';
               if (id.includes('html2canvas') || id.includes('jspdf')) return 'export-tools';
-              if (id.includes('firebase')) return 'firebase';
+              if (id.includes('firebase')) return 'firebase-vendor';
+              if (id.includes('lucide-react')) return 'icons-vendor';
               return 'vendor';
             }
           },
