@@ -69,7 +69,8 @@ export const analyticsService = {
     if (!existingData) return [];
     
     const logs: SadhanaLog[] = JSON.parse(existingData);
-    // Sort by date and return the last 7 days
+    // Sort by date and return the 7 most recent logged days (regardless of
+    // how far back they reach — days with no practice have no entry)
     return logs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 7);
   }
 };

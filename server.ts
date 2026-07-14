@@ -8,9 +8,9 @@ import cors from "cors";
 import { rateLimit } from "express-rate-limit";
 import admin from "firebase-admin";
 import fs from "fs";
-import { z } from "zod";
 import { streamGeminiResponse, getInstantDefinition, generateRecordSummary } from "./server/gemini";
 import { logSecurityEvent } from "./server/securityLogger";
+import { isSafe, stripUnsafeText, isScrapeDomainAllowed, isOriginAllowed, postBodySchema, validateChatBody, sanitizeChatHistory } from "./server/security";
 
 async function startServer() {
   const app = express();
@@ -24,16 +24,6 @@ async function startServer() {
   }
 
   app.use(express.json({ limit: "20kb" }));
-
-  const postBodySchema = z.object({
-    message: z.string().max(4000).optional(),
-    history: z.array(z.record(z.string(), z.any())).optional(),
-    term: z.string().optional(),
-    url: z.string().optional(),
-    title: z.string().optional(),
-    details: z.string().optional(),
-    offlineContext: z.string().max(4000).optional(),
-  }).strict();
 
   app.use((req, res, next) => {
     if (req.method === "POST") {
@@ -86,40 +76,7 @@ async function startServer() {
 
   app.use(cors({
     origin: (origin, callback) => {
-      if (!origin) {
-        callback(null, true);
-        return;
-      }
-      
-      const allowedOrigins: string[] = ['http://localhost:3000'];
-      if (process.env.APP_URL) {
-        allowedOrigins.push(process.env.APP_URL);
-        try {
-          const appUrlParsed = new URL(process.env.APP_URL);
-          allowedOrigins.push(appUrlParsed.origin);
-          
-          const match = appUrlParsed.hostname.match(/^[a-z0-9-]+-([a-z0-9]+-[0-9]+)\..+$/);
-          if (match && match[1]) {
-            const projectSuffix = match[1];
-            // Use strict anchored regex to prevent crafted domains
-            const regex = new RegExp(`^https:\\/\\/([a-zA-Z0-9-]+\\.)?${projectSuffix}\\.run\\.app$`);
-            if (regex.test(origin)) {
-              callback(null, true);
-              return;
-            }
-          }
-        } catch (e) {
-          console.error("CORS APP_URL parse error:", e);
-        }
-      }
-      
-      const firebaseRegex = /^https:\/\/[a-zA-Z0-9-]+\.firebaseapp\.com$/;
-      if (firebaseRegex.test(origin)) {
-        callback(null, true);
-        return;
-      }
-      
-      if (allowedOrigins.includes(origin)) {
+      if (isOriginAllowed(origin, process.env.APP_URL)) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
@@ -219,13 +176,6 @@ async function startServer() {
   });
 
   // 4. SSRF Private IP Block & Sanitizer Middleware
-  const INJECTION_RE = /(ignore\s+previous\s+instructions|system\s+prompt|you\s+are\s+now\s+a|new\s+instructions|ignore\s+all\s+guidelines|bypass\s+rules|jailbreak|dan\s+mode|prompt\s+injection|do\s+anything\s+now|forget\s+your\s+identity|override\s+instructions|you\s+must\s+now\s+act|system\s+message|developer\s+mode)/i;
-
-  const isSafe = (text: string): boolean => {
-    if (!text) return true;
-    return !INJECTION_RE.test(text);
-  };
-
   const ssrfAndSanitizer = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     // 1. Strip null bytes from the request body (Fixing Issue 11)
     if (req.body && typeof req.body === 'string') {
@@ -243,31 +193,31 @@ async function startServer() {
     
     // Null-byte & HTML Sanitizer
     if (req.body.message) {
-      req.body.message = req.body.message.replace(/\0/g, '').replace(/<[^>]*>?/gm, '');
+      req.body.message = stripUnsafeText(req.body.message);
     }
     if (req.body.term) {
-      req.body.term = req.body.term.replace(/\0/g, '').replace(/<[^>]*>?/gm, '');
+      req.body.term = stripUnsafeText(req.body.term);
     }
     if (req.body.details) {
-      req.body.details = req.body.details.replace(/\0/g, '').replace(/<[^>]*>?/gm, '');
+      req.body.details = stripUnsafeText(req.body.details);
     }
     if (req.body.offlineContext) {
-      req.body.offlineContext = req.body.offlineContext.replace(/\0/g, '').replace(/<[^>]*>?/gm, '');
+      req.body.offlineContext = stripUnsafeText(req.body.offlineContext);
     }
-    
+
     // Sanitize and check history text parts to block injections nested in chat history
     let historyText = "";
     if (req.body.history && Array.isArray(req.body.history)) {
       for (const h of req.body.history) {
         if (h && typeof h === 'object') {
           if (h.text && typeof h.text === 'string') {
-            h.text = h.text.replace(/\0/g, '').replace(/<[^>]*>?/gm, '');
+            h.text = stripUnsafeText(h.text);
             historyText += " " + h.text;
           }
           if (h.parts && Array.isArray(h.parts)) {
             for (const part of h.parts) {
               if (part && part.text && typeof part.text === 'string') {
-                part.text = part.text.replace(/\0/g, '').replace(/<[^>]*>?/gm, '');
+                part.text = stripUnsafeText(part.text);
                 historyText += " " + part.text;
               }
             }
@@ -319,35 +269,19 @@ async function startServer() {
 
   app.post("/api/chat", optionalFirebaseToken, promptLimiter, ssrfAndSanitizer, authChatRateLimiter, async (req, res) => {
     // Strict Body Validation: Only message and history are allowed
-    const allowedKeys = ['message', 'history'];
-    const bodyKeys = Object.keys(req.body);
-    const extraKeys = bodyKeys.filter(key => !allowedKeys.includes(key));
-    
-    if (extraKeys.length > 0) {
-      logSecurityEvent('validation_failed', { reason: 'extra_keys', extraKeys }, req);
-      return res.status(400).json({ error: "Invalid request payload. Only message and history are permitted." });
+    const validation = validateChatBody(req.body);
+    if (!validation.valid) {
+      // Firestore rejects undefined values, so only include the fields this
+      // failure reason actually populated.
+      const details: Record<string, any> = { reason: validation.reason };
+      if (validation.extraKeys !== undefined) details.extraKeys = validation.extraKeys;
+      if (validation.length !== undefined) details.length = validation.length;
+      logSecurityEvent('validation_failed', details, req);
+      return res.status(400).json({ error: validation.error });
     }
 
     const { message, history } = req.body;
-    
-    if (typeof message !== "string" || message.trim().length === 0 || message.length > 3000) {
-      logSecurityEvent('validation_failed', { reason: 'invalid_message', length: message?.length }, req);
-      return res.status(400).json({ error: "Message must be a non-empty string up to 3000 characters." });
-    }
-
-    if (history && (!Array.isArray(history) || history.length > 20)) {
-      logSecurityEvent('validation_failed', { reason: 'invalid_history', length: history?.length }, req);
-      return res.status(400).json({ error: "History must be an array up to 20 items." });
-    }
-
-    let sanitizedHistory: any[] = [];
-    if (history && Array.isArray(history)) {
-      sanitizedHistory = history.map(h => {
-        const role = h.role === 'model' ? 'model' : 'user';
-        const text = (h.parts?.[0]?.text || h.text || "").substring(0, 2000);
-        return { role, text };
-      }).filter(h => h.text && h.text.trim() !== "");
-    }
+    const sanitizedHistory = sanitizeChatHistory(history);
 
     // Set headers for streaming and bypass proxy buffering (e.g. Nginx)
     res.setHeader('Content-Type', 'text/event-stream');
@@ -382,16 +316,15 @@ async function startServer() {
 
     try {
       // Security: Strict Domain Validation to prevent SSRF
-      const allowedDomains = new Set(['herenow4u.net', 'www.herenow4u.net', 'terapanth.com', 'jainworld.com']);
       let parsedUrl;
       try {
         parsedUrl = new URL(url);
       } catch (e) {
         return res.status(400).json({ error: "Invalid URL format" });
       }
-      
+
       // Exact hostname match
-      if (!allowedDomains.has(parsedUrl.hostname)) {
+      if (!isScrapeDomainAllowed(parsedUrl.hostname)) {
         logSecurityEvent('ssrf_blocked', { url, hostname: parsedUrl.hostname }, req);
         return res.status(403).json({ error: "Domain not authorized for extraction" });
       }
