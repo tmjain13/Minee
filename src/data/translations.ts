@@ -10,7 +10,11 @@ export const translations = {
     welcome: 'Welcome', logout: 'Logout', login: 'Login',
     appSubtitle: 'Unified Knowledge Engine',
     navkar: 'Navkar Mantra', pratikraman: 'Pratikraman',
-    tapa: 'Tapa (Fasting)', samayik: 'Samayik', diary: 'Diary'
+    tapa: 'Tapa (Fasting)', samayik: 'Samayik', diary: 'Diary',
+    error: 'Error', offline: 'Offline', retry: 'Retry',
+    offlineMode: 'Offline Mode', syncing: 'Syncing...', synced: 'Synced',
+    settings: 'Settings', notifications: 'Notifications', faq: 'FAQ',
+    help: 'Help', about: 'About', privacy: 'Privacy', terms: 'Terms'
   },
   hi: {
     home: 'होम', chat: 'चैट', gallery: 'गैलरी', knowledge: 'ज्ञान',
@@ -23,6 +27,10 @@ export const translations = {
     welcome: 'स्वागत है', logout: 'लॉगआउट', login: 'लॉगिन',
     appSubtitle: 'एकीकृत ज्ञान केंद्र',
     navkar: 'नवकार मंत्र', pratikraman: 'प्रतिक्रमण',
-    tapa: 'तप (उपवास)', samayik: 'सामायिक', diary: 'डायरी'
+    tapa: 'तप (उपवास)', samayik: 'सामायिक', diary: 'डायरी',
+    error: 'त्रुटि', offline: 'ऑफ़लाइन', retry: 'पुनः प्रयास करें',
+    offlineMode: 'ऑफ़लाइन मोड', syncing: 'सिंक हो रहा है...', synced: 'सिंक किया गया',
+    settings: 'सेटिंग्स', notifications: 'सूचनाएं', faq: 'सामान्य प्रश्न',
+    help: 'सहायता', about: 'हमारे बारे में', privacy: 'गोपनीयता', terms: 'शर्तें'
   }
 };

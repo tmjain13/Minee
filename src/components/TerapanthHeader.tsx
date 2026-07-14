@@ -1,13 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { Download, Moon, Sun, Volume2, Bell, User, Flower, LogIn } from 'lucide-react';
-import { useLanguage } from '../context/LanguageContext';
-import { motion, AnimatePresence } from 'motion/react';
-import { useAuth } from '../context/AuthContext';
-import { getStorage, ref, getDownloadURL } from 'firebase/storage';
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  RefreshCcw,
+  PenTool,
+  Grid3X3,
+  Moon,
+  Sun,
+  Settings,
+  User,
+  LogOut,
+} from "lucide-react";
+import { getAuth } from "firebase/auth";
+import { useLanguage } from "../context/LanguageContext";
 
-interface TerapanthHeaderProps {
-  theme: string;
-  toggleTheme: () => void;
+export interface TerapanthHeaderProps {
+  theme?: string;
+  toggleTheme?: () => void;
   streak?: number;
   onRefreshClick?: () => void;
   onThemePreferencesClick?: () => void;
@@ -15,345 +22,269 @@ interface TerapanthHeaderProps {
   onProfileClick?: () => void;
   onLoginClick?: () => void;
   zenMode?: boolean;
+
+  // Props requested by Kimi / user
+  onRefresh?: () => void;
+  onOpenCustomizer?: () => void;
+  onToggleTheme?: () => void;
+  streakDays?: number;
+  isDarkMode?: boolean;
+  language?: "hi" | "en";
+  onToggleLanguage?: () => void;
 }
 
-export default function TerapanthHeader({ 
-  theme, 
-  toggleTheme, 
-  streak = 5,
+export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
+  theme = "light",
+  toggleTheme,
+  streak = 0,
   onRefreshClick,
   onThemePreferencesClick,
   onPenClick,
   onProfileClick,
   onLoginClick,
-  zenMode = false
-}: TerapanthHeaderProps) {
-  const { language, toggleLanguage } = useLanguage();
-  const { user, userData } = useAuth();
+  zenMode = false,
+
+  onRefresh,
+  onOpenCustomizer,
+  onToggleTheme,
+  streakDays,
+  isDarkMode,
+  language: customLanguage,
+  onToggleLanguage,
+}) => {
+  // Setup unified values with fallback
+  const isDarkActive = isDarkMode !== undefined ? isDarkMode : theme === "dark";
+  const activeStreak = streakDays !== undefined ? streakDays : streak;
+  const triggerRefresh = onRefresh || onRefreshClick || (() => window.location.reload());
+  const triggerOpenCustomizer = onOpenCustomizer || onThemePreferencesClick;
+  const triggerToggleTheme = onToggleTheme || toggleTheme;
+
+  // Language context fallback
+  const contextLang = useLanguage();
+  const activeLanguage = customLanguage || contextLang.language;
+  const triggerToggleLanguage = onToggleLanguage || contextLang.toggleLanguage;
+
   const [scrolled, setScrolled] = useState(false);
-  const [animateStreak, setAnimateStreak] = useState(false);
-  const [confettiParticles, setConfettiParticles] = useState<{ id: number; x: number; y: number; color: string; size: number }[]>([]);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [avatarLoading, setAvatarLoading] = useState(false);
-
-  useEffect(() => {
-    if (user?.uid) {
-      setAvatarLoading(true);
-      const storage = getStorage();
-      const avatarRef = ref(storage, `avatars/${user.uid}/profile.jpg`);
-      getDownloadURL(avatarRef)
-        .then(url => {
-          setAvatarUrl(url);
-          setAvatarLoading(false);
-        })
-        .catch(() => {
-          setAvatarUrl(null);
-          setAvatarLoading(false);
-        });
-    } else {
-      setAvatarUrl(null);
-    }
-  }, [user?.uid]);
-
-  // Get milestone info based on daily streak length
-  const getStreakMilestone = (days: number) => {
-    if (days >= 100) {
-      return {
-        label: language === 'hi' ? 'प्रेक्षा मनीषी' : 'Preksha Master',
-        color: scrolled ? 'bg-purple-500/10 text-purple-600 border-purple-500/30' : 'bg-purple-900/40 text-purple-200 border-purple-400/40',
-        icon: '👑'
-      };
-    } else if (days >= 30) {
-      return {
-        label: language === 'hi' ? 'ध्यान योगी' : 'Dhyan Yogi',
-        color: scrolled ? 'bg-indigo-500/10 text-indigo-600 border-indigo-500/30' : 'bg-indigo-900/40 text-indigo-200 border-indigo-400/40',
-        icon: '🔮'
-      };
-    } else if (days >= 7) {
-      return {
-        label: language === 'hi' ? 'उदयमान तारा' : 'Rising Star',
-        color: scrolled ? 'bg-amber-500/10 text-amber-600 border-amber-500/30' : 'bg-amber-900/40 text-amber-200 border-amber-400/40',
-        icon: '🌟'
-      };
-    } else {
-      return {
-        label: language === 'hi' ? 'साधना साधक' : 'Sadhana Seeker',
-        color: scrolled ? 'bg-stone-500/10 text-stone-600 border-stone-500/20' : 'bg-white/10 text-stone-200 border-white/10',
-        icon: '🌱'
-      };
-    }
-  };
-
-  const milestone = getStreakMilestone(streak);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [greeting, setGreeting] = useState("");
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   useEffect(() => {
-    const handleCompleted = () => {
-      setAnimateStreak(true);
-      
-      // Generate micro-particles for a beautiful localized confetti pop around the badge
-      const colors = ['#f59e0b', '#f97316', '#ef4444', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6'];
-      const particles = Array.from({ length: 24 }).map((_, i) => ({
-        id: Date.now() + i,
-        x: (Math.random() - 0.5) * 80, // Horizontal dispersion
-        y: -Math.random() * 60 - 20,    // Float upwards
-        color: colors[Math.floor(Math.random() * colors.length)],
-        size: Math.random() * 5 + 3     // Random size between 3px and 8px
-      }));
-      setConfettiParticles(particles);
-
-      // Reset animation state after 3 seconds
-      const timer = setTimeout(() => {
-        setAnimateStreak(false);
-        setConfettiParticles([]);
-      }, 3000);
-      
-      // Haptic confirmation if available
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate([100, 50, 100]);
-      }
-
-      return () => clearTimeout(timer);
-    };
-
-    window.addEventListener('sadhana-streak-completed', handleCompleted);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
     return () => {
-      window.removeEventListener('sadhana-streak-completed', handleCompleted);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, []);
 
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (activeLanguage === "hi") {
+      if (hour < 12) setGreeting("सुप्रभात");
+      else if (hour < 17) setGreeting("शुभ अपराह्न");
+      else setGreeting("शुभ संध्या");
+    } else {
+      if (hour < 12) setGreeting("Good Morning");
+      else if (hour < 17) setGreeting("Good Afternoon");
+      else setGreeting("Good Evening");
+    }
+  }, [activeLanguage]);
+
+  const handleRefresh = useCallback(() => {
+    triggerRefresh?.();
+  }, [triggerRefresh]);
+
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
+
   return (
-    <header 
-      onClick={(e) => e.stopPropagation()}
-      className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/80 dark:bg-[#141210]/80 backdrop-blur-md shadow-sm' : 'bg-gradient-to-r from-orange-500 to-amber-500'}`}
-    >
-      
-      {/* Top Branding Bar */}
-      <div className="flex items-center justify-between px-4 h-[56px] max-w-md mx-auto">
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <div className="w-8 h-8 bg-white rounded-full p-0.5">
-               <img src="https://i.postimg.cc/vmrrKKDp/4f9ba4b7a8d6fd8a83f711595c3f3242-3.jpg" alt="Logo" className="w-full h-full rounded-full object-cover" />
-            </div>
-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
-          </div>
-          <div className={`flex flex-col ${scrolled ? 'text-stone-900 dark:text-stone-100' : 'text-white'}`}>
-            <h1 className="font-serif text-sm font-bold leading-tight">Terapanth AI</h1>
-            <p className="text-[8px] font-bold tracking-wider uppercase opacity-90">Unified Knowledge</p>
-          </div>
-        </div>
-
-        {/* Action Icons & Streak Badge */}
-        <div className={`flex items-center gap-2.5 ${scrolled ? 'text-stone-600 dark:text-stone-300' : 'text-white/95'}`}>
-          
-          {/* HIGH-RETENTION DYNAMIC STREAK BADGE */}
-          <div className="relative flex items-center justify-center">
-            <motion.div 
-              animate={animateStreak ? {
-                scale: [1, 1.35, 0.95, 1.2, 0.98, 1.05, 1],
-                rotate: [0, -12, 12, -6, 6, 0],
-                boxShadow: scrolled
-                  ? ["0px 0px 0px rgba(249,115,22,0)", "0px 0px 20px rgba(249,115,22,0.65)", "0px 0px 2px rgba(249,115,22,0.1)"]
-                  : ["0px 0px 0px rgba(255,255,255,0)", "0px 0px 25px rgba(255,255,255,0.85)", "0px 0px 4px rgba(255,255,255,0.15)"],
-              } : {}}
-              transition={{ duration: 1.5, ease: "easeInOut" }}
-              className={`relative flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black font-sans tracking-tight transition-all duration-300 border select-none cursor-pointer ${
-                animateStreak
-                  ? scrolled 
-                    ? 'bg-orange-500/20 border-orange-500/50 text-orange-600 scale-110 shadow-md' 
-                    : 'bg-white/30 border-white text-white scale-110 shadow-lg'
-                  : scrolled 
-                    ? 'bg-orange-500/10 border-orange-500/20 text-orange-600 hover:bg-orange-500/15' 
-                    : 'bg-white/15 border-white/20 text-white hover:bg-white/20'
-              }`}
-              title={`Daily Sadhana Streak: ${streak} Days - Rank: ${milestone.label}`}
-              onClick={onThemePreferencesClick}
-            >
-              <motion.span 
-                animate={animateStreak ? {
-                  scale: [1, 1.6, 1.1, 1.4, 1],
-                  y: [0, -5, 0]
-                } : {}}
-                transition={{ duration: 1 }}
-                className="text-xs"
+    <>
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          scrolled
+            ? isDarkActive
+              ? "bg-black/80 backdrop-blur-xl border-b border-white/10 shadow-lg text-white"
+              : "bg-white/90 backdrop-blur-xl border-b border-orange-100 shadow-md text-gray-800"
+            : "bg-gradient-to-r from-orange-500 via-orange-400 to-amber-500 text-white"
+        }`}
+      >
+        <div className="max-w-lg mx-auto px-3 py-2 flex items-center justify-between">
+          {/* Group 1: Logo and Brand */}
+          <div className="flex items-center gap-2.5">
+            <div className="relative">
+              <div
+                className={`w-9 h-9 rounded-full overflow-hidden flex items-center justify-center border-2 ${
+                  scrolled && !isDarkActive ? "border-orange-200" : "border-white/30"
+                }`}
               >
-                {milestone.icon}
-              </motion.span>
-              <span>{streak} Days</span>
-              <span className="hidden sm:inline-block text-[8px] opacity-90 px-1 rounded-sm bg-black/5 dark:bg-white/5 border border-stone-400/20 font-bold">
-                {milestone.label}
-              </span>
-
-              {/* Multi-layered Glowing expansion ring */}
-              {animateStreak && (
-                <motion.span
-                  initial={{ scale: 0.85, opacity: 0.9 }}
-                  animate={{ scale: 1.9, opacity: 0 }}
-                  transition={{ duration: 1.2, repeat: 1, ease: "easeOut" }}
-                  className={`absolute inset-0 rounded-full border pointer-events-none ${scrolled ? 'border-orange-500' : 'border-white'}`}
+                <img
+                  src="https://i.postimg.cc/1zKwTGB8/4f9ba4b7a8d6fd8a83f711595c3f3242-(2).jpg"
+                  alt="Terapanth Logo"
+                  className="w-full h-full object-cover"
+                  loading="eager"
+                  referrerPolicy="no-referrer"
                 />
-              )}
-            </motion.div>
-
-            {/* Particle Confetti Sparkles Pop */}
-            <AnimatePresence>
-              {animateStreak && confettiParticles.map((p) => (
-                <motion.span
-                  key={p.id}
-                  initial={{ x: 0, y: 0, scale: 0, opacity: 1 }}
-                  animate={{ 
-                    x: p.x, 
-                    y: p.y, 
-                    scale: [1, 1.3, 0], 
-                    opacity: [1, 0.85, 0],
-                    rotate: Math.random() * 360 
-                  }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 1.6, ease: "easeOut" }}
-                  className="absolute pointer-events-none rounded-full"
-                  style={{
-                    backgroundColor: p.color,
-                    width: p.size,
-                    height: p.size,
-                    left: '50%',
-                    top: '50%',
-                    marginLeft: -p.size/2,
-                    marginTop: -p.size/2,
-                    zIndex: 100
-                  }}
-                />
-              ))}
-            </AnimatePresence>
+              </div>
+              <div
+                className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 ${
+                  scrolled ? (isDarkActive ? "border-black" : "border-white") : "border-orange-500"
+                } ${isOnline ? "bg-green-400" : "bg-red-400"}`}
+                title={isOnline ? "Online" : "Offline"}
+              />
+            </div>
+            <div>
+              <h1 className={`font-bold text-sm leading-tight ${scrolled && !isDarkActive ? "text-gray-900" : "text-white"}`}>
+                Terapanth AI
+              </h1>
+              <p className={`text-[9px] uppercase tracking-widest font-semibold ${scrolled && !isDarkActive ? "text-orange-600" : "text-white/80"}`}>
+                Unified Knowledge
+              </p>
+            </div>
           </div>
 
-          {/* 1. Refresh Icon */}
-          <button 
-            onClick={onRefreshClick || (() => window.location.reload())}
-            className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer bg-transparent border-none outline-none flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-brand-500"
-            title={language === 'hi' ? 'रीफ्रेश करें' : 'Refresh App'}
-            aria-label={language === 'hi' ? 'आध्यात्मिक ऐप कंटेंट को रीफ्रेश करें' : 'Refresh spiritual app content'}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-          </button>
- 
-          {/* 2. Edit Dashboard Layout Icon (Pen) */}
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onPenClick?.();
-            }}
-            className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer bg-transparent border-none outline-none flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-brand-500"
-            title={language === 'hi' ? 'डैशबोर्ड कस्टमाइज़ करें' : 'Edit Dashboard Layout'}
-            aria-label={language === 'hi' ? 'डैशबोर्ड विजेट लेआउट को कस्टमाइज़ और रीऑर्डर करें' : 'Customize and reorder dashboard widget layout'}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
-          </button>
- 
-          {/* 3. Theme & Preferences (Lotus Flower) */}
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onThemePreferencesClick?.();
-            }}
-            className={`p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer bg-transparent border-none outline-none flex items-center justify-center relative focus:outline-none focus:ring-2 focus:ring-brand-500 ${
-              scrolled ? 'text-stone-600 dark:text-stone-300' : 'text-white'
-            }`}
-            title={language === 'hi' ? 'थीम और प्राथमिकताएं' : 'Theme & Preferences'}
-            aria-label={language === 'hi' ? 'ऐप की थीम और आध्यात्मिक प्राथमिकताओं को बदलें' : 'Open application theme and spiritual preferences settings'}
-          >
-            <Flower 
-              size={16} 
-              className="transition-all duration-300" 
-              aria-hidden="true"
-            />
-          </button>
- 
-          {/* 4. Theme Toggle (Moon/Sun) */}
-          <button 
-            onClick={toggleTheme} 
-            className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer bg-transparent border-none outline-none flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-brand-500"
-            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            aria-label={theme === 'dark' ? (language === 'hi' ? 'लाइट मोड सक्रिय करें' : 'Switch to light layout mode') : (language === 'hi' ? 'डार्क मोड सक्रिय करें' : 'Switch to dark layout mode')}
-          >
-            {theme === 'dark' ? (
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
-            )}
-          </button>
- 
-          {/* 5. Language Toggle (हि / EN) */}
-          <button 
-            onClick={toggleLanguage}
-            className="w-6.5 h-6.5 flex items-center justify-center rounded-full hover:bg-black/10 dark:hover:bg-white/10 active:scale-95 transition-all text-xs font-bold cursor-pointer bg-transparent border-none outline-none focus:outline-none focus:ring-2 focus:ring-brand-500"
-            title={language === 'hi' ? 'Switch to English' : 'हिंदी में बदलें'}
-            aria-label={language === 'hi' ? 'अंग्रेजी भाषा का चयन करें' : 'हिंदी भाषा का चयन करें'}
-          >
-            {language === 'hi' ? 'EN' : 'हि'}
-          </button>
- 
-          {/* 6. Profile/Seal */}
-          {user ? (
-            <button 
-              onClick={onProfileClick}
-              className="w-8 h-8 rounded-full bg-amber-600 border border-white/20 overflow-hidden active:scale-95 transition-all cursor-pointer flex items-center justify-center shrink-0 focus:outline-none focus:ring-2 focus:ring-brand-500"
-              title="Spiritual Profile & Settings"
-              aria-label={language === 'hi' ? 'अपनी आध्यात्मिक प्रोफ़ाइल और सेटिंग्स देखें' : 'View your spiritual profile and account settings'}
+          {/* Group 2: Action Icons */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleRefresh}
+              className={`p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer ${
+                scrolled && !isDarkActive ? "hover:bg-orange-50 text-gray-700" : "hover:bg-white/20 text-white"
+              }`}
+              title="Refresh App"
             >
-              {avatarLoading ? (
-                <div className="w-full h-full animate-pulse bg-slate-700" aria-hidden="true" />
-              ) : avatarUrl ? (
-                <motion.img 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  src={avatarUrl}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-xs font-bold text-white">
-                  {userData?.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}
-                </span>
-              )}
+              <RefreshCcw size={16} />
             </button>
-          ) : (
-            <button 
-              onClick={onLoginClick}
-              className="w-8 h-8 rounded-full bg-stone-700/50 border border-white/20 overflow-hidden active:scale-95 transition-all cursor-pointer flex items-center justify-center shrink-0 focus:outline-none focus:ring-2 focus:ring-brand-500"
-              title="Login"
-              aria-label={language === 'hi' ? 'अपने खाते में लॉगिन करें' : 'Login to your spiritual account'}
+            
+            <button
+              onClick={onPenClick}
+              className={`p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer ${
+                scrolled && !isDarkActive ? "hover:bg-orange-50 text-gray-700" : "hover:bg-white/20 text-white"
+              }`}
+              title="Quick Notes/Customizer"
             >
-              <LogIn size={16} className="text-white" aria-hidden="true" />
+              <PenTool size={16} />
             </button>
-          )}
-        </div>
-      </div>
 
-      {/* Sticky Scroll Greeting */}
-      <div className={`overflow-hidden transition-all duration-300 max-w-md mx-auto ${scrolled ? 'h-8 opacity-100 border-b border-stone-200/50 dark:border-stone-800' : 'h-0 opacity-0'}`}>
-        <div className="flex items-center justify-center h-full text-[10px] font-bold text-stone-600 dark:text-stone-300 bg-stone-50 dark:bg-stone-900/50 gap-1.5 px-3">
-          <span>सुप्रभात • जय जिनेन्द्र, {userData?.displayName || user?.displayName || 'साधक'}!</span>
-          <motion.span 
-            animate={animateStreak ? {
-              scale: [1, 1.25, 0.9, 1.15, 1],
-              color: ['#f97316', '#ef4444', '#f59e0b', '#f97316'],
-            } : {}}
-            transition={{ duration: 1.2 }}
-            className="text-orange-500 ml-1 font-extrabold flex items-center gap-0.5"
-          >
-            🔥 {streak} Days
-          </motion.span>
-          <span className={`px-1.5 py-0.5 rounded-md text-[8px] font-black tracking-wider uppercase border flex items-center gap-1 ${milestone.color}`}>
-            <span>{milestone.icon}</span>
-            <span>{milestone.label}</span>
-          </span>
+            <button
+              onClick={triggerOpenCustomizer}
+              className={`p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer ${
+                scrolled && !isDarkActive ? "hover:bg-orange-50 text-gray-700" : "hover:bg-white/20 text-white"
+              }`}
+              title="Dashboard Settings"
+            >
+              <Grid3X3 size={16} />
+            </button>
+
+            <button
+              onClick={triggerToggleTheme}
+              className={`p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer ${
+                scrolled && !isDarkActive ? "hover:bg-orange-50 text-gray-700" : "hover:bg-white/20 text-white"
+              }`}
+              title="Toggle Theme"
+            >
+              {isDarkActive ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+
+            <button
+              onClick={triggerToggleLanguage}
+              className={`px-1.5 py-1 rounded-lg text-xs font-bold transition-all active:scale-95 cursor-pointer ${
+                scrolled && !isDarkActive ? "hover:bg-orange-50 text-orange-600" : "hover:bg-white/20 text-white"
+              }`}
+              title="Toggle Language"
+            >
+              {activeLanguage === "hi" ? "EN" : "हि"}
+            </button>
+
+            <div className="relative">
+              <button
+                onClick={() => {
+                  if (currentUser) {
+                    setShowProfileMenu(!showProfileMenu);
+                  } else if (onLoginClick) {
+                    onLoginClick();
+                  } else if (onProfileClick) {
+                    onProfileClick();
+                  }
+                }}
+                className={`p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer relative ${
+                  scrolled && !isDarkActive ? "hover:bg-orange-50 text-gray-700" : "hover:bg-white/20 text-white"
+                }`}
+                title={currentUser ? "User Profile" : "Login"}
+              >
+                <User size={16} />
+                {currentUser && (
+                  <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-orange-500 rounded-full" />
+                )}
+              </button>
+
+              {showProfileMenu && currentUser && (
+                <div
+                  className={`absolute right-0 top-full mt-2 w-48 rounded-xl shadow-xl border overflow-hidden z-50 ${
+                    isDarkActive ? "bg-gray-900 border-gray-700 text-white" : "bg-white border-gray-100 text-gray-900"
+                  }`}
+                >
+                  <div className="p-3 border-b border-gray-100 dark:border-gray-700">
+                    <p className="text-xs text-orange-500 font-semibold uppercase tracking-wider">जय जिनेन्द्र!</p>
+                    <p className="text-sm font-medium truncate">{currentUser.displayName || currentUser.email || "Sravaka"}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      triggerOpenCustomizer?.();
+                      setShowProfileMenu(false);
+                    }}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-orange-50 dark:hover:bg-gray-800 flex items-center gap-2"
+                  >
+                    <Settings size={14} /> Dashboard Settings
+                  </button>
+                  <button
+                    onClick={() => {
+                      onProfileClick?.();
+                      setShowProfileMenu(false);
+                    }}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-orange-50 dark:hover:bg-gray-800 flex items-center gap-2"
+                  >
+                    <User size={14} /> View Profile
+                  </button>
+                  <button
+                    onClick={() => {
+                      auth.signOut();
+                      setShowProfileMenu(false);
+                    }}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-red-50 dark:hover:bg-red-950/20 text-red-600 flex items-center gap-2"
+                  >
+                    <LogOut size={14} /> Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
-    </header>
+
+        {/* Sub-header Greeting Banner */}
+        {scrolled && !zenMode && (
+          <div
+            className={`px-4 py-1 text-center text-[11px] font-medium transition-all duration-300 ${
+              isDarkActive ? "bg-black/50 text-orange-300" : "bg-orange-50 text-orange-700"
+            }`}
+          >
+            <span>{greeting} • जय जिनेन्द्र!</span>
+            {activeStreak > 0 && (
+              <span className="ml-2 text-amber-500 font-bold animate-pulse">🔥 {activeStreak} Days Streak</span>
+            )}
+          </div>
+        )}
+      </header>
+      <div className="h-12" />
+    </>
   );
-}
+};
+
+export default TerapanthHeader;

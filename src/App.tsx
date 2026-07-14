@@ -44,6 +44,7 @@ import TerapanthHeader from "./components/TerapanthHeader";
 import TerapanthFooterNav from "./components/TerapanthFooterNav";
 import QuickActions from "./components/QuickActions";
 import { AdminGuard } from "./components/AdminGuard";
+import UnifiedPermissionsModal from "./components/UnifiedPermissionsModal";
 import { LazyWrapper } from "./integrations/ComponentRegistry";
 import { devLog } from "./lib/devLog";
 import LoginModal from "./components/LoginModal";
@@ -112,7 +113,6 @@ const TerapanthMasterHub2026 = safeLazy(() =>
 // --- MODALS & WRAPPERS ---
 const ThemeCustomizer = (props: any) => <StaticThemeCustomizer {...props} />;
 const ChaturmasRegistry = safeLazy(() => import("./components/ChaturmasRegistry"));
-const UnifiedPermissionsModal = safeLazy(() => import("./components/UnifiedPermissionsModal"));
 const NavigationController = safeLazy(() =>
   import("./components/NavigationController").then((m) => ({
     default: m.NavigationController,

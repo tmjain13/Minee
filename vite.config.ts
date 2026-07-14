@@ -4,6 +4,7 @@ import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { visualizer } from 'rollup-plugin-visualizer';
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
@@ -20,6 +21,15 @@ export default defineConfig(({mode}) => {
           filename: 'dist/stats.html',
           gzipSize: true,
           brotliSize: true,
+        })
+      ] : []),
+      ...(process.env.SENTRY_AUTH_TOKEN ? [
+        sentryVitePlugin({
+          org: "terapanth-ai",
+          project: "terapanth-ai-hub",
+          errorHandler(err) {
+            console.warn("Sentry upload failed, ignoring to prevent build failure:", err);
+          }
         })
       ] : []),
       VitePWA({
@@ -64,6 +74,14 @@ export default defineConfig(({mode}) => {
       chunkSizeWarningLimit: 3000,
       rollupOptions: {
         output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('@xenova/transformers')) return 'transformers';
+              if (id.includes('html2canvas') || id.includes('jspdf')) return 'export-tools';
+              if (id.includes('firebase')) return 'firebase';
+              return 'vendor';
+            }
+          },
           chunkFileNames: (chunkInfo) => {
             let name = chunkInfo.name;
             if (name && name.includes('Error')) {

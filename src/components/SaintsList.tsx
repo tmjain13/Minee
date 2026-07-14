@@ -1,28 +1,52 @@
 import React, { useState } from 'react';
 import { Phone, MapPin, Share2, Copy, Check, Heart, ShieldCheck, Search, Users, ExternalLink, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { viharPravasTodayData } from '../data/viharPravasToday';
+
+const formatContacts = (contactPerson?: string, contact?: string | null) => {
+  if (!contact) return [];
+  return [{ designation: contactPerson || 'प्रभारी', phone: contact }];
+};
+
+const mappedSaintsList = viharPravasTodayData.regions.Delhi_NCR.map((saint, index) => {
+  const nameMap: Record<string, { title: string, nameHi: string }> = {
+    "Munishri Vimal Kumar ji": { title: "शासनश्री", nameHi: "मुनिश्री विमल कुमारजी" },
+    "Munishri Udit Kumar ji": { title: "बहुश्रुत", nameHi: "मुनिश्री उदित कुमार जी" },
+    "Munishri Jay Kumar ji": { title: "", nameHi: "मुनिश्री जय कुमार जी" },
+    "Dr. Munishri Abhijit Kumar ji": { title: "डा.", nameHi: "मुनिश्री अभिजित कुमार जी" },
+    "Sadhvishri Sanghmitra ji": { title: "शासनश्री", nameHi: "साध्वीश्री संघमित्राजी" },
+    "Sadhvishri Suvrata ji": { title: "शासनश्री", nameHi: "साध्वीश्री सुव्रता जी" },
+    "Sadhvishri Sumanshri ji": { title: "शासनश्री", nameHi: "साध्वीश्री सुमनश्री जी" },
+    "Sadhvishri Raviprabha ji": { title: "शासनश्री", nameHi: "साध्वीश्री रविप्रभाजी" },
+    "Sadhvishri Dr. Kundanrekhaji": { title: "डा.", nameHi: "साध्वीश्री डा. कुन्दनरेखाजी" },
+    "Sadhvishri Labdhiprabhaji": { title: "", nameHi: "साध्वीश्री लब्धिप्रभाजी" }
+  };
+  const mapped = nameMap[saint.name] || { title: "", nameHi: saint.name };
+  const isHealth = saint.location.includes("हॉस्पिटल") || saint.location.includes("स्वास्थ्य लाभ");
+
+  return {
+    id: index + 1,
+    title: mapped.title,
+    name: mapped.nameHi,
+    thana: `ठाणा-${saint.thana || 3}`,
+    status: isHealth ? "स्वास्थ्य लाभ हेतु" : "",
+    stay_place: saint.location,
+    contacts: formatContacts(saint.contact_person, saint.contact)
+  };
+});
 
 const data = {
   meta_info: {
-    date: "27 June 2026",
+    date: viharPravasTodayData.date,
     title: "दिल्ली एन.सी.आर. में विराजित चारित्रात्माएं",
-    acharya_location: "परम पूज्य युगप्रधान आचार्यश्री महाश्रमणजी अपनी धवलसेना के साथ जैन विश्व भारती लाडनूं (राजस्थान) में सानन्द सुखसातापूर्वक विराजमान हैं।",
-    shivir_office_contact: { name: "हेमन्त बैद", phone: "7044448888" },
+    acharya_location: `परम पूज्य युगप्रधान ${viharPravasTodayData.acharya_vihar.name} अपनी धवलसेना के साथ ${viharPravasTodayData.acharya_vihar.location} में सानन्द सुखसातापूर्वक विराजमान हैं।`,
+    shivir_office_contact: { 
+      name: viharPravasTodayData.acharya_vihar.contact.split(':')[0]?.trim() || "हेमन्त बैद", 
+      phone: viharPravasTodayData.acharya_vihar.contact.split(':')[1]?.trim() || "7044448888" 
+    },
     organization: "जैन श्वेताम्बर तेरापंथी सभा, दिल्ली"
   },
-  saints_list: [
-    { id: 1, title: "", name: "मुनिश्री विनय कुमार जी (आलोक)", thana: "ठाणा-2", status: "स्वास्थ्य लाभ हेतु", stay_place: "तेरापंथ भवन, के-13, मॉडल टाउन-2, दिल्ली-110009", contacts: [{ designation: "कासीद अशोक", phone: "9216024300" }, { designation: "संतोष कुमार", phone: "9210095347" }] },
-    { id: 2, title: "शासनश्री", name: "मुनिश्री विमल कुमारजी", thana: "ठाणा-4", status: "", stay_place: "श्री सुरेन्द्र नाहटा, ए-713, सैक्टर-19, नोएडा, उत्तर प्रदेश-201301", contacts: [{ designation: "कासीद राजेश", phone: "7827509290" }] },
-    { id: 3, title: "बहुश्रुत", name: "मुनिश्री उदित कुमार जी", thana: "ठाणा-3", status: "", stay_place: "गोयल आस्था भवन, ए.जी.-21, शालीमार बाग, दिल्ली-110088", contacts: [{ designation: "कासीद लक्ष्मण", phone: "9983478999" }] },
-    { id: 4, title: "", name: "मुनिश्री जय कुमार जी", thana: "ठाणा-3", status: "", stay_place: "गेल्डा प्रेक्षा सदन, ओ-62, लाजपत नगर, दिल्ली-110024", contacts: [{ designation: "कासीद अनिल", phone: "8340297415" }] },
-    { id: 5, title: "डा.", name: "मुनिश्री अभिजीत कुमार जी", thana: "ठाणा-2", status: "", stay_place: "श्री कैलाश गोयल, 41, आराधना एन्क्लेव, आर. के. पुरम, सैक्टर-13, दिल्ली-110066", contacts: [{ designation: "कासीद विनय", phone: "9721168623" }] },
-    { id: 6, title: "शासनश्री", name: "साध्वीश्री संघमित्राजी", thana: "ठाणा-5", status: "स्वास्थ्य लाभ हेतु", stay_place: "गोयल श्रद्धा निवास, सी-14, ग्रीन पार्क मेन, दिल्ली-110016", contacts: [{ designation: "कासीद लालराम", phone: "9950120242" }] },
-    { id: 7, title: "शासनश्री", name: "साध्वीश्री सुव्रता जी", thana: "ठाणा-4", status: "", stay_place: "अणुव्रत भवन, 210, दीनदयाल उपाध्याय मार्ग, नई दिल्ली-110002", contacts: [{ designation: "कासीद अरूण", phone: "8375941210" }] },
-    { id: 8, title: "शासनश्री", name: "साध्वीश्री सुमनश्री जी", thana: "ठाणा-4", status: "", stay_place: "तेरापंथ भवन, सैक्टर-05, रोहिणी, दिल्ली-110085", contacts: [{ designation: "कासीद पूरन", phone: "9915501240" }] },
-    { id: 9, title: "शासनश्री", name: "साध्वीश्री रविप्रभाजी", thana: "ठाणा-5", status: "", stay_place: "ओसवाल भवन, बी-69, विवेक विहार-2, दिल्ली-110095", contacts: [{ designation: "कासीद जयदेव", phone: "8104273773" }] },
-    { id: 10, title: "", name: "साध्वीश्री डा. कुन्दनरेखाजी", thana: "ठाणा-3", status: "", stay_place: "श्री अमरदीप जैन, बी-2/7, मॉडल टाउन-2, नई दिल्ली-110009", contacts: [{ designation: "कासीद दिनेश", phone: "9599060813" }] },
-    { id: 11, title: "", name: "साध्वीश्री लब्धिप्रभाजी", thana: "ठाणा-3", status: "", stay_place: "अध्यात्म साधना केन्द्र (महाश्रमण सदन), छतरपुर रोड़, दिल्ली-110074", contacts: [{ designation: "राजू", phone: "9310563356" }] }
-  ]
+  saints_list: mappedSaintsList
 };
 
 export default function SaintsList() {

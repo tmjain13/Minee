@@ -2,6 +2,7 @@ import React, { Suspense } from 'react';
 import StaticLoginModal from '../components/LoginModal';
 import StaticUnifiedHomeDashboard from '../components/UnifiedHomeDashboard';
 import StaticThemeCustomizer from '../components/ThemeCustomizer';
+import UnifiedPermissionsModal from '../components/UnifiedPermissionsModal';
 
 // 1. Feature Flags Configuration
 export const FEATURE_FLAGS = {
@@ -139,7 +140,7 @@ export const Registry = {
   LoginModal: (props: any) => <StaticLoginModal {...props} />,
   Onboarding: lazyWrap(() => import('../components/Onboarding')),
   ThemeCustomizer: (props: any) => <StaticThemeCustomizer {...props} />,
-  UnifiedPermissionsModal: lazyWrap(() => import('../components/UnifiedPermissionsModal')),
+  UnifiedPermissionsModal: (props: any) => <UnifiedPermissionsModal {...props} />,
   NavigationController: lazyWrap(() => import('../components/NavigationController'), 'NavigationController'),
   ChatAgentOverlay: lazyWrap(() => import('../components/ChatAgentOverlay')),
   TerapanthLightChatUI: lazyWrap(() => import('../components/TerapanthLightChatUI'), 'TerapanthLightChatUI'),

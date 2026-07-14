@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { chaturmasLocations2026 } from '../data/chaturmasLocations2026';
 import { ScatterChart, Scatter, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, LabelList, CartesianGrid } from 'recharts';
+import { viharPravasTodayData } from '../data/viharPravasToday';
 
 // --- Offline Map Caching Logic (IndexedDB) ---
 const initDB = (): Promise<IDBDatabase> => {
@@ -142,35 +143,33 @@ const acharyaViharTimeline = [
 export default function ViharTracker() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'monk' | 'nun'>('all');
+  const [selectedState, setSelectedState] = useState<string>('All');
   const [viewMode, setViewMode] = useState<'list' | 'map' | 'timeline'>('list');
   const [cachedMapUrl, setCachedMapUrl] = useState<string | null>(null);
   const [mapDomain, setMapDomain] = useState({ x: [70, 90], y: [10, 32] });
 
   const handleZoomCurrent = () => {
-    // Zoom around Kelwa / Delhi (current active region)
     setMapDomain({ x: [71, 78], y: [24, 30] });
   };
 
   const handleZoomFull = () => {
-    // Zoom out to full India path
     setMapDomain({ x: [70, 90], y: [10, 32] });
   };
 
   const masterPravasInfo = {
-    date: "27 जून 2026",
-    title: "दिल्ली एन.सी.आर. में विराजित चारित्रात्माएं",
-    acharyashriLocation: "परम पूज्य युगप्रधान आचार्यश्री महाश्रमणजी अपनी धवलसेना के साथ जैन विश्व भारती लाडनूं (राजस्थान) में सानन्द सुखसातापूर्वक विराजमान हैं।",
+    date: viharPravasTodayData.date,
+    title: "भारतवर्ष में विराजित चारित्रात्माएं",
+    acharyashriLocation: `परम पूज्य युगप्रधान ${viharPravasTodayData.acharya_vihar.name} अपनी धवलसेना के साथ ${viharPravasTodayData.acharya_vihar.location} में सानन्द सुखसातापूर्वक विराजमान हैं।`,
     shivirOfficeContact: {
-      name: "हेमन्त बैद",
-      phone: "7044448888"
+      name: viharPravasTodayData.acharya_vihar.contact.split(':')[0]?.trim() || "हेमन्त बैद",
+      phone: viharPravasTodayData.acharya_vihar.contact.split(':')[1]?.trim() || "7044448888"
     },
     organization: "जैन श्वेताम्बर तेरापंथी सभा, दिल्ली",
     headquarters: "अणुव्रत भवन, 210 दीनदयाल उपाध्याय मार्ग, नई दिल्ली-110002",
-    orgContacts: ["9868206966", "9911716974"]
+    orgContacts: viharPravasTodayData.delhi_sabha_general_contact
   };
 
   useEffect(() => {
-    // Fetch and cache a basic India bounds map for offline rendering
     const mapTileUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/India_location_map.svg/500px-India_location_map.svg.png';
     const initMapTile = async () => {
       const cachedBlob = await getCachedTile(mapTileUrl);
@@ -190,63 +189,169 @@ export default function ViharTracker() {
     initMapTile();
   }, []);
 
-  // 1. Filter and search logic
-  const filteredAscetics = chaturmasLocations2026.filter((ascetic) => {
-    // Search matching (name, location or address)
-    const matchesSearch = 
-      ascetic.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ascetic.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ascetic.address.toLowerCase().includes(searchQuery.toLowerCase());
+  const allAscetics = useMemo(() => {
+    const list: any[] = [];
+    let index = 1;
 
-    // Category filter matching
-    if (activeFilter === 'monk') {
-      return matchesSearch && (ascetic.name.includes('मुनि') || ascetic.name.includes('मुनिश्री'));
-    }
-    if (activeFilter === 'nun') {
-      return matchesSearch && (ascetic.name.includes('साध्वी') || ascetic.name.includes('साध्वीश्री'));
-    }
-    return matchesSearch;
-  });
+    const nameMap: Record<string, { title: string, nameHi: string }> = {
+      "Munishri Vimal Kumar ji": { title: "शासनश्री", nameHi: "मुनिश्री विमल कुमारजी" },
+      "Munishri Udit Kumar ji": { title: "बहुश्रुत", nameHi: "मुनिश्री उदित कुमार जी" },
+      "Munishri Jay Kumar ji": { title: "", nameHi: "मुनिश्री जय कुमार जी" },
+      "Dr. Munishri Abhijit Kumar ji": { title: "डा.", nameHi: "मुनिश्री अभिजित कुमार जी" },
+      "Sadhvishri Sanghmitra ji": { title: "शासनश्री", nameHi: "साध्वीश्री संघमित्राजी" },
+      "Sadhvishri Suvrata ji": { title: "शासनश्री", nameHi: "साध्वीश्री सुव्रता जी" },
+      "Sadhvishri Sumanshri ji": { title: "शासनश्री", nameHi: "साध्वीश्री सुमनश्री जी" },
+      "Sadhvishri Raviprabha ji": { title: "शासनश्री", nameHi: "साध्वीश्री रविप्रभाजी" },
+      "Sadhvishri Dr. Kundanrekhaji": { title: "डा.", nameHi: "साध्वीश्री डा. कुन्दनरेखाजी" },
+      "Sadhvishri Labdhiprabhaji": { title: "", nameHi: "साध्वीश्री लब्धिप्रभाजी" }
+    };
 
-  // Open location directly on Google Maps
+    const formatName = (enName: string) => {
+      if (nameMap[enName]) return nameMap[enName];
+      let title = "";
+      let nameHi = enName;
+      if (enName.startsWith("Munishri ")) {
+        nameHi = "मुनिश्री " + enName.replace("Munishri ", "").replace(" ji", " जी");
+      } else if (enName.startsWith("Sadhvishri ")) {
+        nameHi = "साध्वीश्री " + enName.replace("Sadhvishri ", "").replace(" ji", " जी");
+      } else if (enName.startsWith("Dr. Munishri ")) {
+        title = "डा.";
+        nameHi = "मुनिश्री " + enName.replace("Dr. Munishri ", "").replace(" ji", " जी");
+      } else if (enName.startsWith("Dr. Sadhvishri ")) {
+        title = "डा.";
+        nameHi = "साध्वीश्री " + enName.replace("Dr. Sadhvishri ", "").replace(" ji", " जी");
+      }
+      return { title, nameHi };
+    };
+
+    const standardRegions = ["Rajasthan", "Gujarat", "Maharashtra", "Karnataka", "TamilNadu", "Delhi_NCR"] as const;
+    const regionLabels: Record<string, string> = {
+      "Rajasthan": "राजस्थान",
+      "Gujarat": "गुजरात",
+      "Maharashtra": "महाराष्ट्र",
+      "Karnataka": "कर्नाटक",
+      "TamilNadu": "तमिलनाडु",
+      "Delhi_NCR": "दिल्ली-NCR"
+    };
+
+    standardRegions.forEach(regionKey => {
+      const regionList = viharPravasTodayData.regions[regionKey];
+      regionList.forEach(saint => {
+        const { title, nameHi } = formatName(saint.name);
+        list.push({
+          id: `saint_${index++}`,
+          title,
+          name: nameHi,
+          nameEn: saint.name,
+          thana: saint.thana || 3,
+          location: saint.location,
+          address: saint.location,
+          contacts: saint.contact ? `${saint.contact_person ? `कासीद ${saint.contact_person} ` : 'कासीद '}(${saint.contact})` : "कासीद विवरण अनुपलब्ध",
+          phone: saint.contact || "",
+          regionKey,
+          regionLabel: regionLabels[regionKey],
+          status: saint.location.includes("हॉस्पिटल") || saint.location.includes("स्वास्थ्य") ? "स्वास्थ्य लाभ हेतु" : "सक्रिय"
+        });
+      });
+    });
+
+    const otherRegions = viharPravasTodayData.regions.Other_Regions;
+    Object.entries(otherRegions).forEach(([subRegion, names]) => {
+      if (Array.isArray(names)) {
+        names.forEach(enName => {
+          const { title, nameHi } = formatName(enName);
+          list.push({
+            id: `saint_${index++}`,
+            title,
+            name: nameHi,
+            nameEn: enName,
+            thana: 2,
+            location: `${subRegion} प्रांत`,
+            address: `${subRegion} प्रांत`,
+            contacts: "कासीद विवरण अनुपलब्ध",
+            phone: "",
+            regionKey: "Other_Regions",
+            regionLabel: `अन्य (${subRegion})`,
+            status: "सक्रिय"
+          });
+        });
+      }
+    });
+
+    return list;
+  }, []);
+
+  const filteredAscetics = useMemo(() => {
+    return allAscetics.filter(ascetic => {
+      if (selectedState !== 'All' && ascetic.regionKey !== selectedState) {
+        return false;
+      }
+
+      const matchesSearch = 
+        ascetic.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ascetic.nameEn.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ascetic.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ascetic.regionLabel.toLowerCase().includes(searchQuery.toLowerCase());
+
+      if (activeFilter === 'monk') {
+        return matchesSearch && (ascetic.name.includes('मुनि') || ascetic.name.includes('मुनिश्री'));
+      }
+      if (activeFilter === 'nun') {
+        return matchesSearch && (ascetic.name.includes('साध्वी') || ascetic.name.includes('साध्वीश्री'));
+      }
+      return matchesSearch;
+    });
+  }, [allAscetics, selectedState, searchQuery, activeFilter]);
+
   const openInGoogleMaps = (address: string) => {
     const encodedAddress = encodeURIComponent(address);
     window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
   };
 
+  const regionsList = [
+    { id: 'All', label: 'संपूर्ण भारत' },
+    { id: 'Delhi_NCR', label: 'दिल्ली-NCR' },
+    { id: 'Rajasthan', label: 'राजस्थान' },
+    { id: 'Gujarat', label: 'गुजरात' },
+    { id: 'Maharashtra', label: 'महाराष्ट्र' },
+    { id: 'Karnataka', label: 'कर्नाटक' },
+    { id: 'TamilNadu', label: 'तमिलनाडु' },
+    { id: 'Other_Regions', label: 'अन्य क्षेत्र' }
+  ];
+
   return (
-    <div id="vihar_tracker_viewport" className="flex flex-col h-[100dvh] bg-gray-50 overflow-hidden">
+    <div id="vihar_tracker_viewport" className="flex flex-col h-[100dvh] bg-gray-50 dark:bg-zinc-950 overflow-hidden">
       
       {/* 1. TOP HEADER INFOBAR */}
       <div id="vihar_header_container" className="bg-white dark:bg-zinc-900 p-4 shadow-sm border-b dark:border-zinc-800 shrink-0">
         <div id="vihar_header_row" className="flex justify-between items-center mb-1">
-          <h2 id="vihar_header_title" className="text-lg sm:text-xl font-black text-gray-800 flex items-center gap-2">
-            <span>🗺️</span> {masterPravasInfo.title || "दिल्ली-NCR प्रवास बोर्ड"}
+          <h2 id="vihar_header_title" className="text-base sm:text-lg font-black text-gray-800 dark:text-zinc-100 flex items-center gap-2">
+            <span>🗺️</span> {masterPravasInfo.title}
           </h2>
-          <span id="vihar_update_badge" className="text-[10px] sm:text-xs bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full font-bold whitespace-nowrap">
+          <span id="vihar_update_badge" className="text-[10px] sm:text-xs bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 px-2.5 py-1 rounded-full font-bold whitespace-nowrap">
             {masterPravasInfo.date} अपडेट
           </span>
         </div>
-        <p id="vihar_acharyashri_location_text" className="text-xs text-amber-600 font-semibold leading-normal mb-2">
+        <p id="vihar_acharyashri_location_text" className="text-xs text-amber-600 dark:text-amber-400 font-semibold leading-normal mb-2">
           📢 {masterPravasInfo.acharyashriLocation}
         </p>
         
         {/* 🏢 Organization & Contacts info box */}
-        <div className="mt-2 pt-2 border-t border-gray-100 flex flex-col gap-1 text-[11px] text-gray-500">
+        <div className="mt-2 pt-2 border-t border-gray-100 dark:border-zinc-800 flex flex-col gap-1 text-[11px] text-gray-500 dark:text-zinc-400">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-            <span className="font-extrabold text-gray-700">🏛️ {masterPravasInfo.organization}</span>
-            <span className="text-gray-400 select-all font-medium sm:text-right">मुख्यालय: {masterPravasInfo.headquarters}</span>
+            <span className="font-extrabold text-gray-700 dark:text-zinc-300">🏛️ {masterPravasInfo.organization}</span>
+            <span className="text-gray-400 dark:text-zinc-400 select-all font-medium sm:text-right">मुख्यालय: {masterPravasInfo.headquarters}</span>
           </div>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
-            <span className="font-bold text-gray-650">📞 सभा संपर्क:</span>
+            <span className="font-bold text-gray-650 dark:text-zinc-300">📞 सभा संपर्क:</span>
             {masterPravasInfo.orgContacts.map((phone, idx) => (
-              <a key={phone} href={`tel:${phone}`} className="text-emerald-600 hover:underline font-mono font-black select-all">
+              <a key={phone} href={`tel:${phone}`} className="text-emerald-600 dark:text-emerald-400 hover:underline font-mono font-black select-all">
                 {phone}{idx < masterPravasInfo.orgContacts.length - 1 ? "," : ""}
               </a>
             ))}
-            <span className="text-gray-300 hidden sm:inline">|</span>
-            <span className="font-bold text-gray-650">शिविर प्रभारी:</span>
-            <a href={`tel:${masterPravasInfo.shivirOfficeContact.phone}`} className="text-emerald-600 hover:underline font-mono font-black">
+            <span className="text-gray-300 dark:text-zinc-700 hidden sm:inline">|</span>
+            <span className="font-bold text-gray-650 dark:text-zinc-300">शिविर प्रभारी:</span>
+            <a href={`tel:${masterPravasInfo.shivirOfficeContact.phone}`} className="text-emerald-600 dark:text-emerald-400 hover:underline font-mono font-black">
               {masterPravasInfo.shivirOfficeContact.name} ({masterPravasInfo.shivirOfficeContact.phone})
             </a>
           </div>
@@ -254,7 +359,7 @@ export default function ViharTracker() {
       </div>
 
       {/* 2. LIVE SEARCH & FILTER CONTROLS */}
-      <div id="vihar_controls_container" className="bg-white p-3 border-b shrink-0 space-y-3 z-10 shadow-sm">
+      <div id="vihar_controls_container" className="bg-white dark:bg-zinc-900 p-3 border-b dark:border-zinc-800 shrink-0 space-y-3 z-10 shadow-sm">
         {/* Search Bar */}
         <div id="vihar_search_wrapper" className="relative">
           <input
@@ -262,19 +367,36 @@ export default function ViharTracker() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="संत का नाम या क्षेत्र खोजें (जैसे: उदित कुमार, रोहिणी)..."
-            className="w-full p-3 pl-10 rounded-xl bg-gray-100 border border-gray-200 text-sm focus:outline-none focus:border-emerald-500 transition-colors"
+            placeholder="नाम, प्रांत या क्षेत्र खोजें (जैसे: उदित कुमार, गुजरात)..."
+            className="w-full p-3 pl-10 rounded-xl bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-sm focus:outline-none focus:border-emerald-500 dark:text-zinc-100 transition-colors"
           />
           <span id="vihar_search_icon_marker" className="absolute left-3 top-3.5 text-gray-400 text-sm">🔍</span>
           {searchQuery && (
             <button 
               id="vihar_search_clear_btn"
               onClick={() => setSearchQuery('')} 
-              className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600 font-bold"
+              className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600 dark:hover:text-zinc-300 font-bold"
             >
               ✕
             </button>
           )}
+        </div>
+
+        {/* State Selector Chip Row */}
+        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none shrink-0 border-t dark:border-zinc-800 pt-2.5 mt-1 -mx-3 px-3">
+          {regionsList.map((reg) => (
+            <button
+              key={reg.id}
+              onClick={() => setSelectedState(reg.id)}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg whitespace-nowrap transition-all cursor-pointer ${
+                selectedState === reg.id 
+                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-300 dark:border-amber-900/50' 
+                  : 'bg-stone-50 border border-stone-200 text-stone-600 dark:bg-zinc-850 dark:border-zinc-700 dark:text-zinc-350 hover:bg-stone-100 dark:hover:bg-zinc-800'
+              }`}
+            >
+              {reg.label}
+            </button>
+          ))}
         </div>
 
         {/* Tab Filters */}
@@ -283,16 +405,16 @@ export default function ViharTracker() {
             id="vihar_filter_btn_all"
             onClick={() => setActiveFilter('all')}
             className={`flex-1 py-2.5 text-xs font-black rounded-xl transition-all cursor-pointer ${
-              activeFilter === 'all' ? 'bg-emerald-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200/60'
+              activeFilter === 'all' ? 'bg-emerald-600 text-white shadow-md' : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200/60'
             }`}
           >
-            सभी ({chaturmasLocations2026.length})
+            सभी ({filteredAscetics.length})
           </button>
           <button
             id="vihar_filter_btn_monks"
             onClick={() => setActiveFilter('monk')}
             className={`flex-1 py-2.5 text-xs font-black rounded-xl transition-all cursor-pointer ${
-              activeFilter === 'monk' ? 'bg-emerald-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200/60'
+              activeFilter === 'monk' ? 'bg-emerald-600 text-white shadow-md' : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200/60'
             }`}
           >
             मुनिश्री
@@ -301,7 +423,7 @@ export default function ViharTracker() {
             id="vihar_filter_btn_nuns"
             onClick={() => setActiveFilter('nun')}
             className={`flex-1 py-2.5 text-xs font-black rounded-xl transition-all cursor-pointer ${
-              activeFilter === 'nun' ? 'bg-emerald-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200/60'
+              activeFilter === 'nun' ? 'bg-emerald-600 text-white shadow-md' : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200/60'
             }`}
           >
             साध्वीश्री
@@ -312,15 +434,15 @@ export default function ViharTracker() {
           <button
             onClick={() => setViewMode('list')}
             className={`py-2 text-[10px] font-black rounded-lg transition-all cursor-pointer text-center ${
-              viewMode === 'list' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              viewMode === 'list' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200'
             }`}
           >
-            📋 दिल्ली सूची
+            📋 चारित्रात्मा सूची
           </button>
           <button
             onClick={() => setViewMode('map')}
             className={`py-2 text-[10px] font-black rounded-lg transition-all cursor-pointer text-center ${
-              viewMode === 'map' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              viewMode === 'map' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200'
             }`}
           >
             🗺️ यात्रा नक़्शा
@@ -328,7 +450,7 @@ export default function ViharTracker() {
           <button
             onClick={() => setViewMode('timeline')}
             className={`py-2 text-[10px] font-black rounded-lg transition-all cursor-pointer text-center ${
-              viewMode === 'timeline' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              viewMode === 'timeline' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200'
             }`}
           >
             📈 आचार्यश्री विहार
@@ -337,11 +459,11 @@ export default function ViharTracker() {
       </div>
 
       {/* 3. MAIN CONTENT AREA */}
-      <main id="vihar_scroll_list_main" className="flex-1 overflow-y-auto bg-gray-50 relative pb-28">
+      <main id="vihar_scroll_list_main" className="flex-1 overflow-y-auto bg-gray-50 dark:bg-zinc-950 relative pb-28">
         {viewMode === 'map' ? (
           <div className="w-full h-full p-4 flex flex-col relative">
-            <h3 className="font-bold text-gray-800 mb-2">Ahimsa Yatra Historical Path (2015-2027)</h3>
-            <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-200 relative overflow-hidden">
+            <h3 className="font-bold text-gray-800 dark:text-zinc-100 mb-2">Ahimsa Yatra Historical Path (2015-2027)</h3>
+            <div className="flex-1 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-gray-200 dark:border-zinc-800 relative overflow-hidden">
               {/* Render Offline Map Background if cached */}
               {cachedMapUrl && (
                 <div 
@@ -380,19 +502,19 @@ export default function ViharTracker() {
               <div className="absolute top-4 right-4 flex flex-col gap-2">
                 <button
                   onClick={handleZoomCurrent}
-                  className="bg-white/90 backdrop-blur-sm p-2 rounded-lg shadow-md border border-gray-200 text-xs font-bold text-emerald-800 hover:bg-emerald-50 transition-colors"
+                  className="bg-white/90 dark:bg-zinc-850/90 backdrop-blur-sm p-2 rounded-lg shadow-md border border-gray-200 dark:border-zinc-700 text-xs font-bold text-emerald-800 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-zinc-800 transition-colors"
                 >
                   📍 Zoom to Current
                 </button>
                 <button
                   onClick={handleZoomFull}
-                  className="bg-white/90 backdrop-blur-sm p-2 rounded-lg shadow-md border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="bg-white/90 dark:bg-zinc-850/90 backdrop-blur-sm p-2 rounded-lg shadow-md border border-gray-200 dark:border-zinc-700 text-xs font-bold text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
                 >
                   🗺️ Zoom to Full Path
                 </button>
               </div>
             </div>
-            <p className="text-xs text-gray-500 mt-3 text-center">
+            <p className="text-xs text-gray-500 dark:text-zinc-400 mt-3 text-center">
               Note: Offline map tiles are automatically cached via IndexedDB.
             </p>
           </div>
@@ -409,27 +531,25 @@ export default function ViharTracker() {
             </div>
 
             {/* Vertical Step Timeline Container */}
-            <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-xs relative">
-              <div className="absolute left-[29px] top-8 bottom-8 w-0.5 border-l-2 border-dashed border-stone-250"></div>
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl p-5 border border-gray-100 dark:border-zinc-800 shadow-xs relative">
+              <div className="absolute left-[29px] top-8 bottom-8 w-0.5 border-l-2 border-dashed border-stone-250 dark:border-zinc-700"></div>
 
               <div className="space-y-6 relative">
                 {acharyaViharTimeline.map((step, idx) => (
                   <div key={idx} className="flex gap-4 items-start relative">
-                    {/* Circle Indicator */}
                     <div className="relative z-10 flex items-center justify-center">
                       <div className={`w-7 h-7 rounded-full flex items-center justify-center font-mono text-xs font-bold transition-all ${
                         step.status === 'Active'
-                          ? 'bg-orange-500 text-white animate-pulse ring-4 ring-orange-100'
+                          ? 'bg-orange-500 text-white animate-pulse ring-4 ring-orange-100 dark:ring-orange-950/40'
                           : 'bg-emerald-600 text-white'
                       }`}>
                         {idx + 1}
                       </div>
                     </div>
 
-                    {/* Step Content */}
-                    <div className="flex-1 min-w-0 bg-stone-50/50 hover:bg-stone-50/80 transition-colors p-4 rounded-xl border border-stone-100">
+                    <div className="flex-1 min-w-0 bg-stone-50/50 dark:bg-zinc-850/50 hover:bg-stone-50/80 dark:hover:bg-zinc-800/80 transition-colors p-4 rounded-xl border border-stone-100 dark:border-zinc-800">
                       <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1">
-                        <span className="font-mono text-[10px] font-extrabold text-stone-500 uppercase tracking-wider bg-stone-100 px-2 py-0.5 rounded">
+                        <span className="font-mono text-[10px] font-extrabold text-stone-500 dark:text-zinc-400 uppercase tracking-wider bg-stone-100 dark:bg-zinc-800 px-2 py-0.5 rounded">
                           {step.year}
                         </span>
                         {step.status === 'Active' && (
@@ -438,13 +558,13 @@ export default function ViharTracker() {
                           </span>
                         )}
                       </div>
-                      <h4 className="text-sm font-extrabold text-stone-900 leading-snug">
+                      <h4 className="text-sm font-extrabold text-stone-900 dark:text-zinc-100 leading-snug">
                         {step.location}
                       </h4>
-                      <p className="text-xs text-stone-600 leading-relaxed mt-1.5">
+                      <p className="text-xs text-stone-600 dark:text-zinc-350 leading-relaxed mt-1.5">
                         {step.event}
                       </p>
-                      <div className="mt-2 flex items-center gap-2 text-[10px] text-stone-400 font-mono">
+                      <div className="mt-2 flex items-center gap-2 text-[10px] text-stone-400 dark:text-zinc-500 font-mono">
                         <span>🗺️ Coordinates: {step.coordinates}</span>
                       </div>
                     </div>
@@ -457,77 +577,77 @@ export default function ViharTracker() {
           <div className="p-4 space-y-4">
             {filteredAscetics.length > 0 ? (
               filteredAscetics.map((ascetic) => (
-            <div 
-              id={`ascetic_card_${ascetic.id}`}
-              key={ascetic.id} 
-              className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden"
-            >
-              {/* Status Ribbon if medically applicable or special */}
-              {ascetic.status && ascetic.status.includes('स्वास्थ्य') && (
                 <div 
-                  id={`ascetic_status_ribbon_${ascetic.id}`}
-                  className="absolute top-0 right-0 bg-amber-500 text-white text-[10px] font-extrabold px-3 py-1 rounded-bl-xl shadow-sm"
+                  id={`ascetic_card_${ascetic.id}`}
+                  key={ascetic.id} 
+                  className="bg-white dark:bg-zinc-900 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-zinc-800 flex flex-col justify-between hover:shadow-md dark:hover:bg-zinc-850/80 transition-shadow relative overflow-hidden"
                 >
-                  ❤️ {ascetic.status}
-                </div>
-              )}
-
-              <div>
-                <div id={`ascetic_thana_heading_${ascetic.id}`} className="flex items-center gap-2 mb-2">
-                  <span className={`w-2 h-2 rounded-full ${ascetic.status && ascetic.status.includes('स्वास्थ्य') ? 'bg-amber-550' : 'bg-green-500'}`}></span>
-                  <span className="text-xs text-gray-400 font-bold">ठाणा: {ascetic.thana}</span>
-                </div>
-
-                <h3 id={`ascetic_name_title_${ascetic.id}`} className="text-lg font-black text-gray-800">
-                  {ascetic.title && (
-                    <span className="text-emerald-600 text-xs font-bold block mb-0.5">{ascetic.title}</span>
+                  {/* Status Ribbon if medically applicable or special */}
+                  {ascetic.status && ascetic.status.includes('स्वास्थ्य') && (
+                    <div 
+                      id={`ascetic_status_ribbon_${ascetic.id}`}
+                      className="absolute top-0 right-0 bg-amber-500 text-white text-[10px] font-extrabold px-3 py-1 rounded-bl-xl shadow-sm"
+                    >
+                      ❤️ {ascetic.status}
+                    </div>
                   )}
-                  {ascetic.name}
-                </h3>
 
-                <div id={`ascetic_info_grid_${ascetic.id}`} className="mt-3 space-y-2 text-sm text-gray-600">
-                  <p className="flex items-start gap-2 font-bold text-gray-800">
-                    <span className="shrink-0 text-base">🏢</span>
-                    <span>{ascetic.location}</span>
-                  </p>
-                  <p className="flex items-start gap-2 text-xs text-gray-500 leading-normal">
-                    <span className="shrink-0 text-[14px]">📍</span>
-                    <span>{ascetic.address}</span>
-                  </p>
-                  <p className="flex items-start gap-2 text-xs text-gray-500">
-                    <span className="shrink-0 text-[14px]">📞</span>
-                    <span className="select-all font-mono">सेवादार नंबर: {ascetic.contacts}</span>
-                  </p>
+                  <div>
+                    <div id={`ascetic_thana_heading_${ascetic.id}`} className="flex items-center gap-2 mb-2">
+                      <span className={`w-2 h-2 rounded-full ${ascetic.status && ascetic.status.includes('स्वास्थ्य') ? 'bg-amber-500' : 'bg-green-500'}`}></span>
+                      <span className="text-xs text-gray-400 dark:text-zinc-500 font-bold">ठाणा: {ascetic.thana} • {ascetic.regionLabel}</span>
+                    </div>
+
+                    <h3 id={`ascetic_name_title_${ascetic.id}`} className="text-lg font-black text-gray-800 dark:text-zinc-100">
+                      {ascetic.title && (
+                        <span className="text-emerald-600 dark:text-emerald-400 text-xs font-bold block mb-0.5">{ascetic.title}</span>
+                      )}
+                      {ascetic.name}
+                    </h3>
+
+                    <div id={`ascetic_info_grid_${ascetic.id}`} className="mt-3 space-y-2 text-sm text-gray-600 dark:text-zinc-350">
+                      <p className="flex items-start gap-2 font-bold text-gray-800 dark:text-zinc-200">
+                        <span className="shrink-0 text-base">🏢</span>
+                        <span>{ascetic.location}</span>
+                      </p>
+                      <p className="flex items-start gap-2 text-xs text-gray-500 dark:text-zinc-400 leading-normal">
+                        <span className="shrink-0 text-[14px]">📍</span>
+                        <span>{ascetic.address}</span>
+                      </p>
+                      <p className="flex items-start gap-2 text-xs text-gray-500 dark:text-zinc-400">
+                        <span className="shrink-0 text-[14px]">📞</span>
+                        <span className="select-all font-mono">संपर्क: {ascetic.contacts}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* ACTION BUTTONS */}
+                  <div id={`ascetic_action_buttons_${ascetic.id}`} className="mt-5 pt-3 border-t border-gray-100 dark:border-zinc-800 flex gap-2">
+                    <button 
+                      id={`ascetic_maps_nav_btn_${ascetic.id}`}
+                      onClick={() => openInGoogleMaps(`${ascetic.location}, ${ascetic.address}`)}
+                      className="flex-1 bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      📍 मैप पर देखें
+                    </button>
+                    {ascetic.phone && (
+                      <a 
+                        id={`ascetic_call_driver_btn_${ascetic.id}`}
+                        href={`tel:${ascetic.phone}`}
+                        className="bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 font-bold p-2.5 rounded-xl text-xs flex items-center justify-center transition-colors px-4 cursor-pointer"
+                      >
+                        📞 कॉल संपर्क
+                      </a>
+                    )}
+                  </div>
                 </div>
+              ))
+            ) : (
+              <div id="no_ascetic_results_alert" className="text-center py-12 text-gray-400 dark:text-zinc-500 text-sm bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-dashed border-gray-200 dark:border-zinc-850">
+                ☀️ इस खोज के अनुकूल कोई चारित्रात्मा नहीं मिली।
               </div>
-
-              {/* ACTION BUTTONS */}
-              <div id={`ascetic_action_buttons_${ascetic.id}`} className="mt-5 pt-3 border-t border-gray-100 flex gap-2">
-                <button 
-                  id={`ascetic_maps_nav_btn_${ascetic.id}`}
-                  onClick={() => openInGoogleMaps(`${ascetic.location}, ${ascetic.address}`)}
-                  className="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  📍 मैप पर देखें
-                </button>
-                {ascetic.contacts && (
-                  <a 
-                    id={`ascetic_call_driver_btn_${ascetic.id}`}
-                    href={`tel:${ascetic.contacts.match(/\d+/)?.[0] || ''}`}
-                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold p-2.5 rounded-xl text-xs flex items-center justify-center transition-colors px-4 cursor-pointer"
-                  >
-                    📞 कॉल संपर्क
-                  </a>
-                )}
-              </div>
-            </div>
-          ))
-        ) : (
-          <div id="no_ascetic_results_alert" className="text-center py-12 text-gray-400 text-sm bg-white rounded-2xl shadow-sm border border-dashed border-gray-200">
-            ☀️ इस खोज के अनुकूल कोई चारित्रात्मा नहीं मिली।
+            )}
           </div>
-        )}
-        </div>
         )}
       </main>
 
