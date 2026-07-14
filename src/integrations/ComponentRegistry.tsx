@@ -1,5 +1,7 @@
 import React, { Suspense } from 'react';
 import StaticLoginModal from '../components/LoginModal';
+import StaticUnifiedHomeDashboard from '../components/UnifiedHomeDashboard';
+import StaticThemeCustomizer from '../components/ThemeCustomizer';
 
 // 1. Feature Flags Configuration
 export const FEATURE_FLAGS = {
@@ -55,7 +57,7 @@ export const Registry = {
   // HOME TAB
   DailyQuizChallenge: lazyWrap(() => import('../components/DailyQuizChallenge')),
   SunriseSunset: lazyWrap(() => import('../components/SunriseSunset')),
-  UnifiedHomeDashboard: lazyWrap(() => import('../components/UnifiedHomeDashboard')),
+  UnifiedHomeDashboard: (props: any) => <StaticUnifiedHomeDashboard {...props} />,
   DailyReflectionEngineV2: lazyWrap(() => import('../components/DailyReflectionEngineV2')),
   DailySuvichar: lazyWrap(() => import('../components/DailySuvichar')),
   TerapanthNewsFeed: lazyWrap(() => import('../components/TerapanthNewsFeed')),
@@ -136,7 +138,7 @@ export const Registry = {
   AdminPanel: lazyWrap(() => import('../components/AdminPanel')),
   LoginModal: (props: any) => <StaticLoginModal {...props} />,
   Onboarding: lazyWrap(() => import('../components/Onboarding')),
-  ThemeCustomizer: lazyWrap(() => import('../components/ThemeCustomizer')),
+  ThemeCustomizer: (props: any) => <StaticThemeCustomizer {...props} />,
   UnifiedPermissionsModal: lazyWrap(() => import('../components/UnifiedPermissionsModal')),
   NavigationController: lazyWrap(() => import('../components/NavigationController'), 'NavigationController'),
   ChatAgentOverlay: lazyWrap(() => import('../components/ChatAgentOverlay')),
@@ -149,7 +151,7 @@ export const Registry = {
   FeedbackModal: lazyWrap(() => import('../components/FeedbackModal')),
   FullScreenImageViewer: lazyWrap(() => import('../components/FullScreenImageViewer')),
   LoadingScreen: lazyWrap(() => import('../components/LoadingScreen')),
-  ThemeCustomizerModal: lazyWrap(() => import('../components/ThemeCustomizer')),
+  ThemeCustomizerModal: (props: any) => <StaticThemeCustomizer {...props} />,
   TerapanthOverview: lazyWrap(() => import('../components/TerapanthOverview')),
 };
 

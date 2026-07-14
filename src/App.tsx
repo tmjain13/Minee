@@ -47,6 +47,8 @@ import { AdminGuard } from "./components/AdminGuard";
 import { LazyWrapper } from "./integrations/ComponentRegistry";
 import { devLog } from "./lib/devLog";
 import LoginModal from "./components/LoginModal";
+import StaticUnifiedHomeDashboard from "./components/UnifiedHomeDashboard";
+import StaticThemeCustomizer from "./components/ThemeCustomizer";
 
 // --- SAFE LAZY WRAPPER FOR CHUNK-LOAD SELF-HEALING ---
 const safeLazy = <T extends React.ComponentType<any>>(
@@ -79,7 +81,7 @@ const MediaCenter = safeLazy(() => import("./components/MediaCenter"));
 const AudioCenter = safeLazy(() => import("./components/AudioCenter"));
 const DigitalLibrary = safeLazy(() => import("./components/DigitalLibrary"));
 const MaryadaQuiz = safeLazy(() => import("./components/MaryadaQuiz"));
-const UnifiedHomeDashboard = safeLazy(() => import("./components/UnifiedHomeDashboard"));
+const UnifiedHomeDashboard = (props: any) => <StaticUnifiedHomeDashboard {...props} />;
 const UnifiedQuizEngine = safeLazy(() => import("./components/UnifiedQuizEngine"));
 const AgamShorts = safeLazy(() => import("./components/AgamShorts"));
 const PrekshaVisualizer = safeLazy(() => import("./components/PrekshaVisualizer"));
@@ -108,7 +110,7 @@ const TerapanthMasterHub2026 = safeLazy(() =>
 );
 
 // --- MODALS & WRAPPERS ---
-const ThemeCustomizer = safeLazy(() => import("./components/ThemeCustomizer"));
+const ThemeCustomizer = (props: any) => <StaticThemeCustomizer {...props} />;
 const ChaturmasRegistry = safeLazy(() => import("./components/ChaturmasRegistry"));
 const UnifiedPermissionsModal = safeLazy(() => import("./components/UnifiedPermissionsModal"));
 const NavigationController = safeLazy(() =>

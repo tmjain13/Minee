@@ -8,6 +8,12 @@ import { User } from 'firebase/auth';
  */
 export const syncAdminStatus = async (user: User) => {
   try {
+    // If the browser is offline, skip trying to call Firebase Auth network API to prevent network errors
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      console.log("[auth-sync] Browser is offline. Skipping admin status sync.");
+      return;
+    }
+
     const idTokenResult = await user.getIdTokenResult();
     const isAdmin = idTokenResult.claims.admin === true;
 
@@ -22,7 +28,11 @@ export const syncAdminStatus = async (user: User) => {
         { merge: true }
       );
     }
-  } catch (error) {
-    console.error("Error syncing admin status:", error);
+  } catch (error: any) {
+    if (error?.code === 'auth/network-request-failed' || error?.message?.includes('network-request-failed')) {
+      console.warn("[auth-sync] Admin status sync skipped due to network connectivity issues:", error.message || error);
+    } else {
+      console.warn("[auth-sync] Could not sync admin status:", error?.message || error);
+    }
   }
 };
