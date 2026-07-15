@@ -27,6 +27,57 @@ interface PrayerRequest {
   createdAt: any;
 }
 
+const PrayerWallIllustration = () => (
+  <div className="relative w-32 h-32 mx-auto mb-4 flex items-center justify-center">
+    {/* Soft Pulsing Aura */}
+    <div className="absolute inset-0 bg-orange-500/5 rounded-full blur-2xl animate-pulse" />
+    <svg width="120" height="120" viewBox="0 0 120 120" className="relative z-10">
+      <defs>
+        <linearGradient id="handsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FED7AA" />
+          <stop offset="100%" stopColor="#F97316" />
+        </linearGradient>
+        <linearGradient id="auraGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FFFBEB" />
+          <stop offset="100%" stopColor="#FEE2E2" />
+        </linearGradient>
+      </defs>
+
+      {/* Decorative Outer Mandala circles */}
+      <circle cx="60" cy="60" r="54" fill="none" stroke="#FED7AA" strokeWidth="1" strokeDasharray="3 5" className="opacity-30" />
+      <circle cx="60" cy="60" r="48" fill="none" stroke="#F97316" strokeWidth="0.5" strokeDasharray="4 4" className="opacity-40 animate-spin" style={{ animationDuration: '30s' }} />
+
+      {/* Soft central sun */}
+      <circle cx="60" cy="65" r="32" fill="url(#auraGrad)" className="opacity-40" />
+
+      {/* Stylized Hands joined in Prayer / Namaskar */}
+      {/* Left Hand */}
+      <path 
+        d="M 53 85 C 47 75 42 62 47 48 C 48 45 51 45 52 48 C 55 58 57 72 57 85 Z" 
+        fill="url(#handsGrad)" 
+        className="origin-bottom-left"
+        style={{ transform: 'rotate(-4deg) translate(2px, 0px)' }}
+      />
+      {/* Right Hand */}
+      <path 
+        d="M 67 85 C 73 75 78 62 73 48 C 72 45 69 45 68 48 C 65 58 63 72 63 85 Z" 
+        fill="url(#handsGrad)" 
+        className="origin-bottom-right"
+        style={{ transform: 'rotate(4deg) translate(-2px, 0px)' }}
+      />
+
+      {/* Glowing Sparks rising up */}
+      <g className="animate-pulse">
+        {/* Spark 1 */}
+        <circle cx="60" cy="30" r="2.5" fill="#F59E0B" />
+        <circle cx="48" cy="40" r="1.5" fill="#F97316" opacity="0.8" />
+        <circle cx="72" cy="38" r="2" fill="#F59E0B" opacity="0.9" />
+        <circle cx="60" cy="45" r="1" fill="#EF4444" opacity="0.7" />
+      </g>
+    </svg>
+  </div>
+);
+
 export default function CommunityPrayerWall() {
   const { user, signInWithGoogle } = useAuth();
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
@@ -227,9 +278,12 @@ export default function CommunityPrayerWall() {
       {/* Prayers List */}
       <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1 no-scrollbar">
         {prayers.length === 0 ? (
-          <div className="text-center py-8 border border-dashed border-black/10 dark:border-zinc-800 rounded-2xl text-zinc-400">
-            <p className="text-xs font-semibold">No prayer requests posted yet.</p>
-            <p className="text-[10px] mt-0.5">Be the first to post a pure spiritual intention.</p>
+          <div className="text-center py-10 px-6 border-2 border-dashed border-orange-500/15 dark:border-zinc-800 rounded-3xl bg-gradient-to-b from-orange-500/[0.02] to-transparent text-zinc-500 dark:text-zinc-400 max-w-md mx-auto">
+            <PrayerWallIllustration />
+            <h4 className="serif-text text-sm font-bold text-orange-700 dark:text-orange-400 mb-1.5">प्रार्थना पट्ट रिक्त है</h4>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              अभी तक कोई प्रार्थना या मंगलभावना संदेश साझा नहीं किया गया है। समस्त जीवों के कल्याण व मंगलभावना हेतु पहली प्रविष्टि लिखकर इस शुद्ध भाव यात्रा की शुरुआत करें।
+            </p>
           </div>
         ) : (
           <AnimatePresence initial={false}>

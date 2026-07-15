@@ -16,10 +16,50 @@ async function startServer() {
   app.set("trust proxy", 1);
   const PORT = 3000;
 
+  let projectId = process.env.FIREBASE_PROJECT_ID;
+  let databaseId = process.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID;
+
+  try {
+    const configPath = path.join(process.cwd(), "firebase-applet-config.json");
+    if (fs.existsSync(configPath)) {
+      const configJson = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+      if (configJson.projectId) {
+        projectId = configJson.projectId;
+        process.env.FIREBASE_PROJECT_ID = projectId;
+      }
+      if (configJson.firestoreDatabaseId) {
+        databaseId = configJson.firestoreDatabaseId;
+      }
+      console.log(`[Firebase Admin] Loaded config from firebase-applet-config.json. Project: ${projectId}, Database: ${databaseId}`);
+    }
+  } catch (err) {
+    console.warn("[Firebase Admin] Error reading firebase-applet-config.json:", err);
+  }
+
+  if (databaseId && databaseId !== "None") {
+    process.env.FIRESTORE_DATABASE_ID = databaseId;
+  }
+
   if (admin.apps.length === 0) {
     admin.initializeApp({
-      projectId: process.env.FIREBASE_PROJECT_ID || "plucky-semiotics-7cf5x"
+      projectId: projectId || "plucky-semiotics-7cf5x"
     });
+  }
+
+  // Ensure the /config/admin document is seeded automatically on startup for dynamic owner email config
+  try {
+    const dbAdmin = admin.firestore();
+    const configRef = dbAdmin.doc('config/admin');
+    const docSnap = await configRef.get();
+    if (!docSnap.exists) {
+      await configRef.set({
+        ownerEmail: "jainkaran8999@gmail.com",
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      console.log("Successfully seeded Firestore /config/admin document.");
+    }
+  } catch (error) {
+    console.warn("Failed to check/seed Firestore /config/admin document:", error);
   }
 
   app.use(express.json({ limit: "20kb" }));
@@ -47,11 +87,15 @@ async function startServer() {
     }
   });
 
+  const allowEmbed = process.env.ALLOW_IFRAME_EMBED !== "false";
+
   app.use(helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        frameAncestors: ["'self'", "https://studio.google.com", "https://*.google.com", "https://*.googleusercontent.com", "https://*.run.app"],
+        frameAncestors: allowEmbed 
+          ? ["'self'", "https://studio.google.com", "https://*.google.com", "https://*.googleusercontent.com", "https://*.run.app"]
+          : ["'self'"],
         scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://apis.google.com"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
         imgSrc: ["'self'", "data:", "https://firebasestorage.googleapis.com", "https://postimg.cc", "https://*.postimg.cc", "https://i.postimg.cc"],
@@ -71,7 +115,7 @@ async function startServer() {
         ]
       }
     },
-    frameguard: false,
+    frameguard: allowEmbed ? false : { action: "deny" },
     noSniff: true,
     dnsPrefetchControl: { allow: false }
   }));
@@ -79,7 +123,9 @@ async function startServer() {
   // Force-override headers after Helmet to guarantee absolute iframe embedding compatibility
   app.use((req, res, next) => {
     res.setHeader('Permissions-Policy', 'geolocation=(), camera=(), microphone=()');
-    res.removeHeader("X-Frame-Options");
+    if (allowEmbed) {
+      res.removeHeader("X-Frame-Options");
+    }
     next();
   });
 

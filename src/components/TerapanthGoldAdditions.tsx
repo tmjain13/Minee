@@ -31,7 +31,7 @@ const confetti = (...args: any[]) => {};
 import { db } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, setDoc, onSnapshot, increment } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
-import { setSecureItem, getSecureItem } from '../utils/secureStorage';
+import { useSecureStorage } from '../hooks/useSecureStorage';
 
 interface PrepItem {
   id: string;
@@ -65,6 +65,7 @@ export interface TerapanthGoldAdditionsProps {
 }
 
 export const TerapanthGoldAdditions: React.FC<TerapanthGoldAdditionsProps> = ({ setShareToast }) => {
+  const { setItem: setSecureItem, getItem: getSecureItem } = useSecureStorage();
   const [activeTab, setActiveTabState] = useState<'MEDITATION' | 'SAMAN' | 'VOLUNTEER' | 'MUMUKSHU' | 'ANUVRAT'>(() => {
     try {
       const saved = localStorage.getItem('tp_gold_active_tab');
@@ -317,14 +318,17 @@ export const TerapanthGoldAdditions: React.FC<TerapanthGoldAdditionsProps> = ({ 
     }
     
     // Load secure local storage
-    try {
-      const savedPrep = getSecureItem('tp_mumukshu_prep_progress', user.uid);
-      if (savedPrep) setCompletedPrepIds(JSON.parse(savedPrep));
-      const savedVows = getSecureItem('tp_anuvrat_vows_today', user.uid);
-      if (savedVows) setCompletedVows(JSON.parse(savedVows));
-    } catch (e) {
-      console.error(e);
-    }
+    const loadSecureData = async () => {
+      try {
+        const savedPrep = await getSecureItem<string[]>('tp_mumukshu_prep_progress');
+        if (savedPrep) setCompletedPrepIds(savedPrep);
+        const savedVows = await getSecureItem<string[]>('tp_anuvrat_vows_today');
+        if (savedVows) setCompletedVows(savedVows);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    loadSecureData();
 
     const statsPath = `users/${user.uid}/dailyStats/${todayStr}`;
     const unsubscribe = onSnapshot(doc(db, statsPath), (docSnap) => {
@@ -420,7 +424,7 @@ export const TerapanthGoldAdditions: React.FC<TerapanthGoldAdditionsProps> = ({ 
   };
 
   // Mumukshu prep checkbox change
-  const handleCheckboxToggle = (itemId: string) => {
+  const handleCheckboxToggle = async (itemId: string) => {
     let updated: string[];
     if (completedPrepIds.includes(itemId)) {
       updated = completedPrepIds.filter(id => id !== itemId);
@@ -428,7 +432,7 @@ export const TerapanthGoldAdditions: React.FC<TerapanthGoldAdditionsProps> = ({ 
       updated = [...completedPrepIds, itemId];
     }
     setCompletedPrepIds(updated);
-    setSecureItem('tp_mumukshu_prep_progress', JSON.stringify(updated), user?.uid);
+    await setSecureItem('tp_mumukshu_prep_progress', updated);
 
     const totalWeight = mumukshuPrepData.reduce((acc, item) => acc + (updated.includes(item.id) ? item.weight : 0), 0);
     if (totalWeight === 100) {
@@ -455,7 +459,7 @@ export const TerapanthGoldAdditions: React.FC<TerapanthGoldAdditionsProps> = ({ 
   };
 
   // Toggle Anuvrat micro-vow tap completion
-  const handleVowToggle = (vowId: string) => {
+  const handleVowToggle = async (vowId: string) => {
     let updated: string[];
     if (completedVows.includes(vowId)) {
       updated = completedVows.filter(id => id !== vowId);
@@ -463,7 +467,7 @@ export const TerapanthGoldAdditions: React.FC<TerapanthGoldAdditionsProps> = ({ 
       updated = [...completedVows, vowId];
     }
     setCompletedVows(updated);
-    setSecureItem('tp_anuvrat_vows_today', JSON.stringify(updated), user?.uid);
+    await setSecureItem('tp_anuvrat_vows_today', updated);
 
     if (updated.length === anuvratVows.length) {
       confetti({

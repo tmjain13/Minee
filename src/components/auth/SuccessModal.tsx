@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Clock, ShieldAlert, Cpu, MapPin, Key, Globe, LogIn } from 'lucide-react';
-import { getDeviceFingerprint, getMockGeoIp } from './authSecurity';
+import { getDeviceFingerprint } from './authSecurity';
 
 interface SuccessModalProps {
   isOpen: boolean;
@@ -12,7 +12,6 @@ interface SuccessModalProps {
 export function SuccessModal({ isOpen, onClose, username, language }: SuccessModalProps) {
   const [secondsLeft, setSecondsLeft] = useState(300); // 5 minutes countdown
   const [sessionToken, setSessionToken] = useState('');
-  const geoIp = getMockGeoIp();
   const fingerprint = getDeviceFingerprint();
 
   // Generate a cryptographically random-like session token once on mount
@@ -111,16 +110,7 @@ export function SuccessModal({ isOpen, onClose, username, language }: SuccessMod
             </span>
           </div>
 
-          {/* Login Location */}
-          <div className="flex justify-between items-center text-xs">
-            <span className="text-slate-400 dark:text-slate-500 font-bold flex items-center gap-1.5 shrink-0">
-              <MapPin className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600" />
-              Login Location:
-            </span>
-            <span className="text-slate-700 dark:text-slate-300 font-bold">
-              {geoIp.city}, {geoIp.country} ({geoIp.ip})
-            </span>
-          </div>
+
 
           {/* Browser Info */}
           <div className="flex justify-between items-center text-xs">

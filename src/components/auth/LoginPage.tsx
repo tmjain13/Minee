@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { ContactStep } from './ContactStep';
 import { OtpStep } from './OtpStep';
 import { RegisterStep } from './RegisterStep';
-import { getDeviceFingerprint, maskContact, loginWithWebAuthnCredential } from './authSecurity';
+import { getDeviceFingerprint, maskContact } from './authSecurity';
 import { SuccessModal } from './SuccessModal';
-import { Sun, Moon, Languages, ShieldCheck, Cpu, MapPin, CheckCircle, Flame, Fingerprint, Loader2 } from 'lucide-react';
+import { Sun, Moon, Languages, ShieldCheck, Cpu, MapPin, CheckCircle, Flame, Loader2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { auth, googleProvider } from '../../lib/firebase';
 import { signInWithPopup } from 'firebase/auth';
@@ -28,8 +28,6 @@ export function LoginPage({ onLoginSuccess, isModal = false }: LoginPageProps) {
   const [simulatedCity, setSimulatedCity] = useState('Ladnun, Rajasthan');
 
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-  const [isBiometricAuthenticating, setIsBiometricAuthenticating] = useState(false);
-  const [biometricToast, setBiometricToast] = useState<string | null>(null);
   const [autoFillOtp, setAutoFillOtp] = useState(false);
   const [isGoogleAuthenticating, setIsGoogleAuthenticating] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
@@ -124,36 +122,6 @@ export function LoginPage({ onLoginSuccess, isModal = false }: LoginPageProps) {
     handleCompleteFlow();
   };
 
-  const handleBiometricLogin = async () => {
-    setIsBiometricAuthenticating(true);
-    setBiometricToast(null);
-    try {
-      const credentials = await loginWithWebAuthnCredential();
-      if (credentials) {
-        setBiometricToast(language === 'hi' ? 'बायोमेट्रिक सत्यापित!' : 'Biometric Verified');
-        
-        // Auto fill email/phone to bypass steps deterministically
-        const savedContact = "9876543210";
-        setUserData({
-          contact: savedContact,
-          username: "Muni_Jyotirmaay_Guest"
-        });
-
-        setTimeout(() => {
-          setBiometricToast(null);
-          setAutoFillOtp(true);
-          setStep(2); // Go to OTP step, which will auto-fill and submit!
-        }, 1200);
-      }
-    } catch (err: any) {
-      console.error("Biometric authentication error:", err);
-      setBiometricToast(language === 'hi' ? 'बायोमेट्रिक प्रमाणीकरण विफल!' : 'Biometric Verification Failed!');
-      setTimeout(() => setBiometricToast(null), 3000);
-    } finally {
-      setIsBiometricAuthenticating(false);
-    }
-  };
-
   const handleGoogleSignIn = async () => {
     setIsGoogleAuthenticating(true);
     setGoogleError(null);
@@ -188,12 +156,6 @@ export function LoginPage({ onLoginSuccess, isModal = false }: LoginPageProps) {
 
   const renderContent = () => (
     <div className={`w-full max-w-md ${isModal ? 'bg-white dark:bg-slate-900' : 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-100 dark:border-slate-800/60 shadow-2xl'} p-8 rounded-3xl transition-all relative`}>
-      {biometricToast && (
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-30 px-4 py-2 bg-emerald-500 text-white font-bold text-xs rounded-full shadow-lg flex items-center space-x-2 animate-bounce">
-          <ShieldCheck className="w-4 h-4 text-white" />
-          <span>{biometricToast}</span>
-        </div>
-      )}
 
       {/* Spiritual Seal / Brand Badge */}
       <div className="flex flex-col items-center mb-6">
@@ -256,24 +218,6 @@ export function LoginPage({ onLoginSuccess, isModal = false }: LoginPageProps) {
               {isGoogleAuthenticating 
                 ? (language === 'hi' ? 'गूगल प्रमाणित...' : 'Verifying with Google...') 
                 : (language === 'hi' ? 'गूगल के साथ लॉगिन करें' : 'Continue with Google')}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleBiometricLogin}
-            disabled={isBiometricAuthenticating}
-            className="w-full py-3 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950/40 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-bold rounded-xl flex items-center justify-center space-x-2 transition-all active:scale-98 cursor-pointer shadow-sm disabled:opacity-50"
-          >
-            {isBiometricAuthenticating ? (
-              <Loader2 className="w-4 h-4 animate-spin text-orange-500" />
-            ) : (
-              <Fingerprint className="w-4 h-4 text-orange-500 animate-pulse" />
-            )}
-            <span>
-              {isBiometricAuthenticating 
-                ? (language === 'hi' ? 'बायोमेट्रिक्स प्रमाणित...' : 'Verifying Biometrics...') 
-                : (language === 'hi' ? 'बायोमेट्रिक्स के साथ लॉगिन करें' : 'Login with Biometrics')}
             </span>
           </button>
         </>

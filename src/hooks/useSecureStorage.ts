@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 const inMemoryStorage = new Map<string, any>();
 
 // Simple helper to generate a key derived from password/UID
-const generateKey = async (uid: string): Promise<CryptoKey> => {
+export const generateKey = async (uid: string): Promise<CryptoKey> => {
   const enc = new TextEncoder();
   const keyMaterial = await window.crypto.subtle.importKey(
     "raw",
@@ -29,7 +29,7 @@ const generateKey = async (uid: string): Promise<CryptoKey> => {
   );
 };
 
-const encryptData = async (data: string, key: CryptoKey): Promise<string> => {
+export const encryptData = async (data: string, key: CryptoKey): Promise<string> => {
   const enc = new TextEncoder();
   const iv = window.crypto.getRandomValues(new Uint8Array(12));
   const encrypted = await window.crypto.subtle.encrypt(
@@ -47,7 +47,7 @@ const encryptData = async (data: string, key: CryptoKey): Promise<string> => {
   return btoa(String.fromCharCode(...combined));
 };
 
-const decryptData = async (encryptedBase64: string, key: CryptoKey): Promise<string | null> => {
+export const decryptData = async (encryptedBase64: string, key: CryptoKey): Promise<string | null> => {
   try {
     const combinedStr = atob(encryptedBase64);
     const combined = new Uint8Array(combinedStr.length);
@@ -92,29 +92,27 @@ export const clearAllUserData = (uid: string) => {
   }
 };
 
-export function useSecureStorage() {
-  const { user } = useAuth();
-
-  const setItem = useCallback(async (key: string, value: any, sensitive: boolean = false) => {
-    if (!user?.uid) return;
-    const namespacedKey = `terapanth_${user.uid}_${key}`;
+export const secureStorage = {
+  async set(uid: string, key: string, value: any, sensitive = false) {
+    if (!uid) return;
+    const namespacedKey = `terapanth_${uid}_${key}`;
     if (sensitive) {
       inMemoryStorage.set(namespacedKey, value);
       return;
     }
     try {
-      const cryptoKey = await generateKey(user.uid);
+      const cryptoKey = await generateKey(uid);
       const stringified = JSON.stringify(value);
       const encrypted = await encryptData(stringified, cryptoKey);
       localStorage.setItem(namespacedKey, encrypted);
     } catch (err) {
       console.error("Error securing item:", err);
     }
-  }, [user]);
+  },
 
-  const getItem = useCallback(async <T>(key: string, sensitive: boolean = false): Promise<T | null> => {
-    if (!user?.uid) return null;
-    const namespacedKey = `terapanth_${user.uid}_${key}`;
+  async get<T>(uid: string, key: string, sensitive = false): Promise<T | null> {
+    if (!uid) return null;
+    const namespacedKey = `terapanth_${uid}_${key}`;
     if (sensitive) {
       return (inMemoryStorage.get(namespacedKey) as T) ?? null;
     }
@@ -122,7 +120,7 @@ export function useSecureStorage() {
       const encrypted = localStorage.getItem(namespacedKey);
       if (!encrypted) return null;
       
-      const cryptoKey = await generateKey(user.uid);
+      const cryptoKey = await generateKey(uid);
       const decryptedStr = await decryptData(encrypted, cryptoKey);
       
       if (!decryptedStr) return null;
@@ -131,20 +129,43 @@ export function useSecureStorage() {
       console.error("Error retrieving secured item:", err);
       return null;
     }
-  }, [user]);
+  },
 
-  const removeItem = useCallback((key: string, sensitive: boolean = false) => {
-    if (!user?.uid) return;
-    const namespacedKey = `terapanth_${user.uid}_${key}`;
+  remove(uid: string, key: string, sensitive = false) {
+    if (!uid) return;
+    const namespacedKey = `terapanth_${uid}_${key}`;
     if (sensitive) {
       inMemoryStorage.delete(namespacedKey);
     } else {
       localStorage.removeItem(namespacedKey);
     }
+  },
+
+  clearAll(uid: string) {
+    if (uid) clearAllUserData(uid);
+  }
+};
+
+export function useSecureStorage() {
+  const { user } = useAuth();
+
+  const setItem = useCallback(async (key: string, value: any, sensitive: boolean = false) => {
+    if (!user?.uid) return;
+    await secureStorage.set(user.uid, key, value, sensitive);
+  }, [user]);
+
+  const getItem = useCallback(async <T>(key: string, sensitive: boolean = false): Promise<T | null> => {
+    if (!user?.uid) return null;
+    return await secureStorage.get<T>(user.uid, key, sensitive);
+  }, [user]);
+
+  const removeItem = useCallback((key: string, sensitive: boolean = false) => {
+    if (!user?.uid) return;
+    secureStorage.remove(user.uid, key, sensitive);
   }, [user]);
 
   const clearUserData = useCallback(() => {
-    if (user?.uid) clearAllUserData(user.uid);
+    if (user?.uid) secureStorage.clearAll(user.uid);
   }, [user]);
 
   return { setItem, getItem, removeItem, clearAllUserData: clearUserData };

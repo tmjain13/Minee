@@ -57,11 +57,65 @@ const DAILY_REFLECTIONS = [
 
 // Empty State Illustration for Sadhana Diary
 const SadhanaIllustration = () => (
-  <svg width="120" height="120" viewBox="0 0 120 120" className="mx-auto mb-4">
-    <circle cx="60" cy="60" r="50" fill="#FEF3C7" />
-    <path d="M60 30C40 30 30 40 30 60C30 80 40 90 60 90C80 90 90 80 90 60C90 40 80 30 60 30Z" fill="#FCD34D" />
-    <path d="M60 40L70 80H50L60 40Z" fill="#D97706" />
-  </svg>
+  <div className="relative w-32 h-32 mx-auto mb-4 flex items-center justify-center">
+    {/* Soft Ambient Glow */}
+    <div className="absolute inset-0 bg-amber-500/10 rounded-full blur-xl animate-pulse" />
+    <svg width="120" height="120" viewBox="0 0 120 120" className="relative z-10">
+      <defs>
+        <linearGradient id="bookGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FFFBEB" />
+          <stop offset="100%" stopColor="#FEF3C7" />
+        </linearGradient>
+        <linearGradient id="coverGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#F97316" />
+          <stop offset="100%" stopColor="#D97706" />
+        </linearGradient>
+        <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FCD34D" />
+          <stop offset="100%" stopColor="#F97316" />
+        </linearGradient>
+      </defs>
+      
+      {/* Decorative Outer Rings */}
+      <circle cx="60" cy="60" r="54" fill="none" stroke="url(#accentGrad)" strokeWidth="1" strokeDasharray="4 6" className="opacity-40 animate-spin" style={{ animationDuration: '40s' }} />
+      <circle cx="60" cy="60" r="48" fill="none" stroke="#F59E0B" strokeWidth="0.5" className="opacity-20" />
+
+      {/* Book Cover Backing */}
+      <rect x="25" y="35" width="70" height="52" rx="6" fill="url(#coverGrad)" opacity="0.9" />
+      
+      {/* Book Pages */}
+      <path d="M 60 40 Q 42 38 30 43 L 30 81 Q 42 76 60 78 Z" fill="url(#bookGrad)" />
+      <path d="M 60 40 Q 78 38 90 43 L 90 81 Q 78 76 60 78 Z" fill="url(#bookGrad)" />
+      
+      {/* Book Spine Shadow / Divider */}
+      <line x1="60" y1="40" x2="60" y2="78" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round" />
+      
+      {/* Page Lines (Left Page) */}
+      <line x1="38" y1="50" x2="52" y2="48" stroke="#D97706" strokeWidth="1" opacity="0.4" />
+      <line x1="38" y1="57" x2="52" y2="55" stroke="#D97706" strokeWidth="1" opacity="0.4" />
+      <line x1="38" y1="64" x2="52" y2="62" stroke="#D97706" strokeWidth="1" opacity="0.4" />
+      <line x1="38" y1="71" x2="52" y2="69" stroke="#D97706" strokeWidth="1" opacity="0.4" />
+      
+      {/* Page Lines (Right Page) */}
+      <line x1="68" y1="48" x2="82" y2="50" stroke="#D97706" strokeWidth="1" opacity="0.4" />
+      <line x1="68" y1="55" x2="82" y2="57" stroke="#D97706" strokeWidth="1" opacity="0.4" />
+      <line x1="68" y1="62" x2="82" y2="64" stroke="#D97706" strokeWidth="1" opacity="0.4" />
+      <line x1="68" y1="69" x2="82" y2="71" stroke="#D97706" strokeWidth="1" opacity="0.4" />
+
+      {/* Floating Sparkles & Stars */}
+      <g className="animate-pulse">
+        {/* Sparkle 1 */}
+        <path d="M 60 22 Q 60 28 66 28 Q 60 28 60 34 Q 60 28 54 28 Q 60 28 60 22 Z" fill="#FBBF24" />
+        {/* Sparkle 2 */}
+        <path d="M 22 55 Q 22 59 26 59 Q 22 59 22 63 Q 22 59 18 59 Q 22 59 22 55 Z" fill="#FBBF24" opacity="0.8" />
+        {/* Sparkle 3 */}
+        <path d="M 94 65 Q 94 68 97 68 Q 94 68 94 71 Q 94 68 91 68 Q 94 68 94 65 Z" fill="#F59E0B" opacity="0.9" />
+      </g>
+      
+      {/* A stylized quill or pen */}
+      <path d="M 72 26 Q 74 38 65 52 L 67 53 Q 77 38 74 26 Z" fill="url(#coverGrad)" />
+    </svg>
+  </div>
 );
 
 const SadhanaDiary = memo(() => {
@@ -1399,9 +1453,12 @@ const SadhanaDiary = memo(() => {
 
       <div className="space-y-4">
         {entries.length === 0 ? (
-          <div className="p-8 border-2 border-dashed border-black/5 dark:border-white/5 rounded-[2rem] text-center">
+          <div className="p-10 border-2 border-dashed border-orange-500/15 dark:border-zinc-800 rounded-[2.5rem] bg-gradient-to-b from-amber-500/[0.02] to-transparent text-center max-w-lg mx-auto">
             <SadhanaIllustration />
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">No reflections recorded yet</p>
+            <h4 className="serif-text text-sm font-bold text-amber-700 dark:text-amber-400 mb-1.5">अपनी पहली साधना प्रविष्टि दर्ज करें</h4>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto leading-relaxed">
+              यहाँ आपकी दैनिक स्वाध्याय, समता भाव और तप की अनुभूतियाँ सुरक्षित रहेंगी। अपनी पहली आध्यात्मिक प्रविष्टि लिखने के लिए ऊपर दिए गए "+" बटन पर क्लिक करें।
+            </p>
           </div>
         ) : (
           entries.map((entry) => (

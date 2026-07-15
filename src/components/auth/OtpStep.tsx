@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import confetti from 'canvas-confetti';
-import { ShieldAlert, Timer, Fingerprint, RefreshCw, CheckCircle, AlertTriangle, MessageSquare, ArrowDown } from 'lucide-react';
+import { ShieldAlert, Timer, RefreshCw, CheckCircle, AlertTriangle, MessageSquare, ArrowDown } from 'lucide-react';
 import { auth, db } from '../../lib/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
@@ -18,14 +18,13 @@ export function OtpStep({ onVerify, contact, language, autoFill = false }: OtpSt
   const [timer, setTimer] = useState(30);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [biometricLoading, setBiometricLoading] = useState(false);
   const [generatedOtp, setGeneratedOtp] = useState('');
   const [showSmsBanner, setShowSmsBanner] = useState(false);
   const [isOpNotAllowed, setIsOpNotAllowed] = useState(false);
   
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Auto-verify when biometrics is completed
+  // Auto-verify when auto-fill is triggered
   useEffect(() => {
     if (autoFill && generatedOtp) {
       setOtp(generatedOtp.split(''));
@@ -69,7 +68,7 @@ export function OtpStep({ onVerify, contact, language, autoFill = false }: OtpSt
                 phoneNumber: finalPhone || '',
                 displayName: userCredential.user.displayName || finalEmail.split('@')[0],
                 lastLoginAt: new Date().toISOString(),
-                loginMethod: 'biometric_autofill'
+                loginMethod: 'autofill'
               }, { merge: true });
             }
 
@@ -82,11 +81,11 @@ export function OtpStep({ onVerify, contact, language, autoFill = false }: OtpSt
 
             onVerify(isNewUser);
           } catch (err: any) {
-            console.error('Firebase Auth error during biometric OTP verification:', err);
+            console.error('Firebase Auth error during auto-verify OTP:', err);
             if (err?.code === 'auth/operation-not-allowed' || (err?.message && err.message.includes('operation-not-allowed'))) {
               setIsOpNotAllowed(true);
             }
-            setError(language === 'hi' ? 'बायोमेट्रिक प्रमाणीकरण विफल रहा।' : 'Biometric authentication failed.');
+            setError(language === 'hi' ? 'प्रमाणीकरण विफल रहा।' : 'Authentication failed.');
           } finally {
             setIsLoading(false);
           }
@@ -253,33 +252,6 @@ export function OtpStep({ onVerify, contact, language, autoFill = false }: OtpSt
       setError(language === 'hi' ? 'प्रमाणीकरण विफल रहा: ' + (err.message || err) : 'Authentication failed: ' + (err.message || err));
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  // Biometrics (WebAuthn / Passkeys simulation)
-  const handleBiometricLogin = async () => {
-    setBiometricLoading(true);
-    setError(null);
-    try {
-      if (window.PublicKeyCredential) {
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        
-        // Log in to Firebase with a secure guest / generic mock credential if no user existed, or let them enter OTP first.
-        // For existing users, search the DB or log in with our mock fallback.
-        confetti({
-          particleCount: 150,
-          spread: 80,
-          colors: ['#10b981', '#34d399', '#f97316']
-        });
-        
-        onVerify(false); // Log directly in
-      } else {
-        throw new Error('Biometric API not supported on this browser.');
-      }
-    } catch (err: any) {
-      setError(language === 'hi' ? 'बायोमेट्रिक प्रमाणीकरण विफल या असमर्थित।' : 'Biometric fallback failed or unsupported.');
-    } finally {
-      setBiometricLoading(false);
     }
   };
 
@@ -457,23 +429,6 @@ export function OtpStep({ onVerify, contact, language, autoFill = false }: OtpSt
               <CheckCircle className="w-4 h-4" />
             )}
             <span>{isLoading ? (language === 'hi' ? 'सत्यापन हो रहा है...' : 'Verifying...') : (language === 'hi' ? 'सत्यापित करें' : 'Verify & Proceed')}</span>
-          </button>
-
-          {/* Biometrics */}
-          <button
-            type="button"
-            onClick={handleBiometricLogin}
-            disabled={biometricLoading}
-            className="w-full py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl flex items-center justify-center space-x-2 transition-all active:scale-98 cursor-pointer"
-          >
-            {biometricLoading ? (
-              <RefreshCw className="w-4 h-4 animate-spin text-orange-500" />
-            ) : (
-              <Fingerprint className="w-4 h-4 text-orange-500" />
-            )}
-            <span>
-              {language === 'hi' ? 'बायोमेट्रिक से लॉग इन करें' : 'Login with Touch/Face ID'}
-            </span>
           </button>
         </div>
 
