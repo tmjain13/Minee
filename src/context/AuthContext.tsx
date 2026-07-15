@@ -19,14 +19,14 @@ async function getOwnerEmail(): Promise<string | null> {
     try {
       const snap = await getDoc(doc(db, 'config', 'admin'));
       if (snap.exists()) {
-        cachedOwnerEmail = snap.data().ownerEmail ?? 'jainkaran8999@gmail.com';
+        cachedOwnerEmail = snap.data().ownerEmail || null;
       } else {
-        cachedOwnerEmail = 'jainkaran8999@gmail.com';
+        cachedOwnerEmail = null;
       }
     } catch (e) {
-      // Offline or permission denied — fail silently, don't block auth, fall back to default
-      console.warn('Failed to load admin config, falling back to default:', e);
-      cachedOwnerEmail = 'jainkaran8999@gmail.com';
+      // Offline or permission denied — fail silently, don't block auth, return null
+      console.warn('Failed to load admin config:', e);
+      cachedOwnerEmail = null;
     }
     return cachedOwnerEmail;
   })();
@@ -73,9 +73,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Sync Admin Status
         await syncAdminStatus(currentUser);
 
-        // Fetch owner email dynamically with safe fallback
-        const ownerEmail = (await getOwnerEmail()) || 'jainkaran8999@gmail.com';
-        const isOwner = currentUser.email?.toLowerCase() === ownerEmail.toLowerCase();
+        // Fetch owner email dynamically
+        const ownerEmail = await getOwnerEmail();
+        const isOwner = !!(currentUser.email && ownerEmail && currentUser.email.toLowerCase() === ownerEmail.toLowerCase());
         const defaultRole = isOwner ? 'admin' : 'user';
 
         setUserData({
@@ -107,8 +107,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const userSnap = await getDoc(userRef);
             if (userSnap.exists()) {
               const data = userSnap.data();
-              const activeOwnerEmail = (await getOwnerEmail()) || 'jainkaran8999@gmail.com';
-              if (currentUser.email?.toLowerCase() === activeOwnerEmail.toLowerCase()) {
+              const activeOwnerEmail = await getOwnerEmail();
+              if (currentUser.email && activeOwnerEmail && currentUser.email.toLowerCase() === activeOwnerEmail.toLowerCase()) {
                 data.role = 'admin'; // Always force owner to admin
               }
               setUserData(data);

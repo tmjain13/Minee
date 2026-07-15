@@ -1,11 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { db } from '../lib/firebase';
-import { doc, onSnapshot, getDoc } from 'firebase/firestore';
 import { ShieldAlert, Loader2, ArrowLeft } from 'lucide-react';
 import { logAccess } from '../utils/auditLogger';
 import { SkeletonLoader } from './SkeletonLoader';
-import { devLog } from '../lib/devLog';
 
 interface AdminGuardProps {
   children: React.ReactNode;
@@ -14,98 +11,22 @@ interface AdminGuardProps {
 
 export const AdminGuard: React.FC<AdminGuardProps> = ({ children, onBack }) => {
   const { user, userData, loading: authLoading } = useAuth();
-  const [ownerEmail, setOwnerEmail] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<string | undefined>(userData?.role);
-  const [checkingRole, setCheckingRole] = useState(true);
 
-  // Load owner email dynamically on mount
+  const isAuthorized = userData?.role === 'admin';
+
+  // Audit Logging
   useEffect(() => {
-    let active = true;
-    const fetchOwner = async () => {
-      try {
-        const snap = await getDoc(doc(db, 'config', 'admin'));
-        if (snap.exists() && active) {
-          setOwnerEmail(snap.data().ownerEmail || 'jainkaran8999@gmail.com');
-        } else if (active) {
-          setOwnerEmail('jainkaran8999@gmail.com');
-        }
-      } catch (e) {
-        if (active) setOwnerEmail('jainkaran8999@gmail.com');
+    if (!authLoading) {
+      if (isAuthorized) {
+        logAccess(user?.uid || "unknown", "granted", window.location.pathname);
+      } else {
+        logAccess(user?.uid || "anonymous", "denied", window.location.pathname);
       }
-    };
-    fetchOwner();
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  // Sync state with userData role changes and ownerEmail
-  useEffect(() => {
-    if (userData?.role) {
-      const isOwner = user?.email && ownerEmail && user.email.toLowerCase() === ownerEmail.toLowerCase();
-      setUserRole(isOwner ? 'admin' : userData.role);
     }
-  }, [userData?.role, user?.email, ownerEmail]);
-
-  // Real-time Firestore document listener to ensure role state is 100% accurate
-  useEffect(() => {
-    if (authLoading || ownerEmail === null) return;
-    
-    if (!user?.uid) {
-      setUserRole(undefined);
-      setCheckingRole(false);
-      logAccess("anonymous", "denied", window.location.pathname);
-      return;
-    }
-
-    // Direct access if owner
-    const isOwner = user.email && user.email.toLowerCase() === ownerEmail.toLowerCase();
-    if (isOwner) {
-      setUserRole('admin');
-      setCheckingRole(false);
-      logAccess(user.uid, 'granted', window.location.pathname);
-      return;
-    }
-
-    devLog("[AdminGuard] Subscribing to user role in real-time for:", user.uid);
-    const userRef = doc(db, 'users', user.uid);
-    
-    const unsubscribe = onSnapshot(
-      userRef, 
-      (snap) => {
-        if (snap.exists()) {
-          const data = snap.data();
-          let currentRole = data?.role;
-          const activeIsOwner = user?.email && user.email.toLowerCase() === ownerEmail.toLowerCase();
-          if (activeIsOwner) {
-            currentRole = 'admin';
-          }
-          devLog("[AdminGuard] Real-time role check:", currentRole);
-          setUserRole(currentRole);
-          
-          // Execute Audit Logging
-          const status = currentRole === 'admin' ? 'granted' : 'denied';
-          logAccess(user.uid, status, window.location.pathname);
-        } else {
-          devLog("[AdminGuard] No user document found for UID:", user.uid);
-          const activeIsOwner = user?.email && user.email.toLowerCase() === ownerEmail.toLowerCase();
-          setUserRole(activeIsOwner ? 'admin' : undefined);
-          logAccess(user.uid, activeIsOwner ? 'granted' : 'denied', window.location.pathname);
-        }
-        setCheckingRole(false);
-      },
-      (err) => {
-        console.error("[AdminGuard] Error in Firestore role listener:", err);
-        setCheckingRole(false);
-        logAccess(user.uid, 'denied', window.location.pathname);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [user?.uid, authLoading, ownerEmail]);
+  }, [authLoading, isAuthorized, user?.uid]);
 
   // Combined Loading indicator using elegant layout-preserving SkeletonLoader
-  if (authLoading || checkingRole) {
+  if (authLoading) {
     return (
       <div className="max-w-md mx-auto p-6 bg-white dark:bg-slate-900/90 backdrop-blur-md rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-xl space-y-4">
         <div className="flex items-center space-x-3 border-b border-slate-100 dark:border-slate-800 pb-3">
@@ -120,9 +41,6 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children, onBack }) => {
   }
 
   // Access Denied screen if role is not 'admin'
-  const isOwner = user?.email && ownerEmail && user.email.toLowerCase() === ownerEmail.toLowerCase();
-  const isAuthorized = user && (userRole === 'admin' || isOwner);
-
   if (!isAuthorized) {
     return (
       <div className="max-w-md mx-auto p-8 my-8 text-center bg-white dark:bg-slate-900/90 backdrop-blur-md rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-xl">
@@ -147,7 +65,7 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children, onBack }) => {
             <strong>UID:</strong> {user?.uid || "Not Signed In"}
           </div>
           <div className="text-xs text-slate-600 dark:text-slate-300 font-sans mt-0.5">
-            <strong>Assigned Role:</strong> <span className="font-bold text-orange-500">{userRole || "guest"}</span>
+            <strong>Assigned Role:</strong> <span className="font-bold text-orange-500">{userData?.role || "guest"}</span>
           </div>
         </div>
 
