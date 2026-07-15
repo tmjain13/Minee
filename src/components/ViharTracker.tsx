@@ -4,6 +4,7 @@ import { ScatterChart, Scatter, XAxis, YAxis, Tooltip as RechartsTooltip, Respon
 import { viharPravasTodayData } from '../data/viharPravasToday';
 import { db } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { Share2, Check } from 'lucide-react';
 
 // --- Offline Map Caching Logic (IndexedDB) ---
 const initDB = (): Promise<IDBDatabase> => {
@@ -152,6 +153,44 @@ export default function ViharTracker() {
   const [selectedDate, setSelectedDate] = useState<string>('2026-07-15');
   const [viharData, setViharData] = useState<any>(viharPravasTodayData);
   const [loadingData, setLoadingData] = useState<boolean>(false);
+  const [sharedId, setSharedId] = useState<string | null>(null);
+
+  const handleShare = (ascetic: any) => {
+    let contactText = 'N/A';
+    if (ascetic.contactsList && ascetic.contactsList.length > 0) {
+      contactText = ascetic.contactsList.map((c: any) => `${c.name}: ${c.phone}`).join(', ');
+    } else if (ascetic.contacts) {
+      contactText = ascetic.contacts;
+    } else if (ascetic.phone) {
+      contactText = ascetic.phone;
+    }
+    
+    const shareText = `📍 जैन श्वेतांबर तेरापंथ विहार अपडेट (${selectedDate})\n\nसाधु/साध्वी: ${ascetic.title ? ascetic.title + ' ' : ''}${ascetic.name}\nठाणा: ${ascetic.thana}\nस्थान: ${ascetic.location}\nक्षेत्र: ${ascetic.regionLabel}\nसंपर्क सूत्र: ${contactText}\n\nतेरापंथ एआई ऐप के माध्यम से साझा किया गया।`;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: 'तेरापंथ विहार अपडेट',
+        text: shareText,
+        url: window.location.href
+      })
+      .then(() => {
+        setSharedId(ascetic.id);
+        setTimeout(() => setSharedId(null), 2000);
+      })
+      .catch(err => {
+        console.warn('Error sharing:', err);
+      });
+    } else {
+      navigator.clipboard.writeText(shareText)
+        .then(() => {
+          setSharedId(ascetic.id);
+          setTimeout(() => setSharedId(null), 2000);
+        })
+        .catch(err => {
+          console.error('Failed to copy share text: ', err);
+        });
+    }
+  };
 
   useEffect(() => {
     const fetchViharData = async () => {
@@ -842,6 +881,18 @@ export default function ViharTracker() {
                         📞 कॉल संपर्क
                       </a>
                     )}
+                    <button 
+                      id={`ascetic_share_btn_${ascetic.id}`}
+                      onClick={() => handleShare(ascetic)}
+                      className={`p-2.5 rounded-xl transition-all cursor-pointer border shrink-0 ${
+                        sharedId === ascetic.id
+                          ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/20" 
+                          : "bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400 border-transparent hover:bg-gray-200 dark:hover:bg-zinc-700"
+                      }`}
+                      title="विवरण साझा करें"
+                    >
+                      {sharedId === ascetic.id ? <Check size={14} className="animate-pulse" /> : <Share2 size={14} />}
+                    </button>
                   </div>
                 </div>
               ))

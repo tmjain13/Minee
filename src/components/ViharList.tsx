@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { Phone, MapPin, Copy, Star, Check, Search, Share2, Map, Info, RefreshCw, X } from 'lucide-react';
 import { viharPravasTodayData } from '../data/viharPravasToday';
 import { motion, AnimatePresence } from 'motion/react';
@@ -22,6 +22,30 @@ export const ViharList: React.FC = () => {
       return [];
     }
   });
+
+  // Automatically fetch the latest date available in Firestore upon component mount
+  useEffect(() => {
+    const fetchLatestDate = async () => {
+      try {
+        const q = query(
+          collection(db, "vihar_records"),
+          orderBy("date", "desc"),
+          limit(1)
+        );
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+          const latestDoc = querySnapshot.docs[0];
+          const latestDate = latestDoc.id; // Record ID is typically the date
+          if (latestDate && latestDate !== '2026-07-15') {
+            setSelectedDate(latestDate);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching latest date from Firestore:", error);
+      }
+    };
+    fetchLatestDate();
+  }, []);
 
   const fetchData = async (isManualRefresh = false) => {
     if (isManualRefresh) setRefreshing(true);
