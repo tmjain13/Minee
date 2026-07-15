@@ -331,6 +331,12 @@ export default function LiveLocationVihar2026({ onClose }: { onClose?: () => voi
           });
         });
       }
+    }, (error) => {
+      if (error?.message?.includes('offline') || error?.code === 'unavailable' || !navigator.onLine) {
+        console.warn("Vihar Live updates real-time stream offline mode:", error.message || error);
+      } else {
+        console.error("Vihar Live updates real-time stream subscription error:", error);
+      }
     });
     return () => unsubscribe();
   }, []);

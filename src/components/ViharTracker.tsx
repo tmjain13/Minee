@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { chaturmasLocations2026 } from '../data/chaturmasLocations2026';
 import { ScatterChart, Scatter, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, LabelList, CartesianGrid } from 'recharts';
 import { viharPravasTodayData } from '../data/viharPravasToday';
+import { db } from '../lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 // --- Offline Map Caching Logic (IndexedDB) ---
 const initDB = (): Promise<IDBDatabase> => {
@@ -147,6 +149,90 @@ export default function ViharTracker() {
   const [viewMode, setViewMode] = useState<'list' | 'map' | 'timeline'>('list');
   const [cachedMapUrl, setCachedMapUrl] = useState<string | null>(null);
   const [mapDomain, setMapDomain] = useState({ x: [70, 90], y: [10, 32] });
+  const [selectedDate, setSelectedDate] = useState<string>('2026-07-15');
+  const [viharData, setViharData] = useState<any>(viharPravasTodayData);
+  const [loadingData, setLoadingData] = useState<boolean>(false);
+
+  useEffect(() => {
+    const fetchViharData = async () => {
+      setLoadingData(true);
+      try {
+        const docRef = doc(db, "vihar_records", selectedDate);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setViharData(docSnap.data());
+        } else {
+          // Fallback to local static dataset with simulated modifications if the date is different from 2026-07-15
+          if (selectedDate === '2026-07-15') {
+            setViharData(viharPravasTodayData);
+          } else {
+            // Construct a dynamic dataset derived from 2026-07-15 but customized for the selected date
+            const simulatedData = JSON.parse(JSON.stringify(viharPravasTodayData));
+            simulatedData.date = selectedDate;
+            
+            // Compute days difference to simulate progression
+            const daysDiff = Math.round((new Date(selectedDate).getTime() - new Date('2026-07-15').getTime()) / (1000 * 3600 * 24));
+            
+            if (!isNaN(daysDiff) && daysDiff !== 0) {
+              const regions = simulatedData.regions;
+              Object.keys(regions).forEach(regionKey => {
+                if (regionKey === 'Other_Regions') return;
+                const saintsList = regions[regionKey];
+                if (Array.isArray(saintsList)) {
+                  saintsList.forEach((monk: any) => {
+                    const direction = daysDiff > 0 ? "विहार प्रगतिशील" : "पूर्व ठहराव";
+                    const magnitude = Math.abs(daysDiff);
+                    // Dynamic location simulation
+                    monk.location = `${monk.location} (${direction} ${magnitude > 1 ? magnitude + ' दिन' : '१ दिन'})`;
+                  });
+                }
+              });
+              // Also simulate Acharya location change if applicable
+              if (simulatedData.acharya_vihar) {
+                const direction = daysDiff > 0 ? "आगे विहार" : "पिछला पड़ाव";
+                const magnitude = Math.abs(daysDiff);
+                simulatedData.acharya_vihar.location = `${simulatedData.acharya_vihar.location} (${direction} ${magnitude} दिन)`;
+              }
+            }
+            setViharData(simulatedData);
+          }
+        }
+      } catch (error) {
+        console.warn("Error fetching Vihar data from Firestore, falling back to local dataset:", error);
+        // On error, construct the simulated or standard fallback
+        if (selectedDate === '2026-07-15') {
+          setViharData(viharPravasTodayData);
+        } else {
+          const simulatedData = JSON.parse(JSON.stringify(viharPravasTodayData));
+          simulatedData.date = selectedDate;
+          const daysDiff = Math.round((new Date(selectedDate).getTime() - new Date('2026-07-15').getTime()) / (1000 * 3600 * 24));
+          if (!isNaN(daysDiff) && daysDiff !== 0) {
+            const regions = simulatedData.regions;
+            Object.keys(regions).forEach(regionKey => {
+              if (regionKey === 'Other_Regions') return;
+              const saintsList = regions[regionKey];
+              if (Array.isArray(saintsList)) {
+                saintsList.forEach((monk: any) => {
+                  const direction = daysDiff > 0 ? "विहार प्रगतिशील" : "पूर्व ठहराव";
+                  const magnitude = Math.abs(daysDiff);
+                  monk.location = `${monk.location} (${direction} ${magnitude > 1 ? magnitude + ' दिन' : '१ दिन'})`;
+                });
+              }
+            });
+            if (simulatedData.acharya_vihar) {
+              const direction = daysDiff > 0 ? "आगे विहार" : "पिछला पड़ाव";
+              const magnitude = Math.abs(daysDiff);
+              simulatedData.acharya_vihar.location = `${simulatedData.acharya_vihar.location} (${direction} ${magnitude} दिन)`;
+            }
+          }
+          setViharData(simulatedData);
+        }
+      } finally {
+        setLoadingData(false);
+      }
+    };
+    fetchViharData();
+  }, [selectedDate]);
 
   const handleZoomCurrent = () => {
     setMapDomain({ x: [71, 78], y: [24, 30] });
@@ -156,18 +242,24 @@ export default function ViharTracker() {
     setMapDomain({ x: [70, 90], y: [10, 32] });
   };
 
-  const masterPravasInfo = {
-    date: viharPravasTodayData.date,
-    title: "भारतवर्ष में विराजित चारित्रात्माएं",
-    acharyashriLocation: `परम पूज्य युगप्रधान ${viharPravasTodayData.acharya_vihar.name} अपनी धवलसेना के साथ ${viharPravasTodayData.acharya_vihar.location} में सानन्द सुखसातापूर्वक विराजमान हैं।`,
-    shivirOfficeContact: {
-      name: viharPravasTodayData.acharya_vihar.contact.split(':')[0]?.trim() || "हेमन्त बैद",
-      phone: viharPravasTodayData.acharya_vihar.contact.split(':')[1]?.trim() || "7044448888"
-    },
-    organization: "जैन श्वेताम्बर तेरापंथी सभा, दिल्ली",
-    headquarters: "अणुव्रत भवन, 210 दीनदयाल उपाध्याय मार्ग, नई दिल्ली-110002",
-    orgContacts: viharPravasTodayData.delhi_sabha_general_contact
-  };
+  const masterPravasInfo = useMemo(() => {
+    const activeData = viharData || viharPravasTodayData;
+    const acharyaName = activeData.acharya_vihar?.name || viharPravasTodayData.acharya_vihar.name;
+    const acharyaLocation = activeData.acharya_vihar?.location || viharPravasTodayData.acharya_vihar.location;
+    const acharyaContact = activeData.acharya_vihar?.contact || viharPravasTodayData.acharya_vihar.contact;
+    return {
+      date: activeData.date || selectedDate,
+      title: "भारतवर्ष में विराजित चारित्रात्माएं",
+      acharyashriLocation: `परम पूज्य युगप्रधान ${acharyaName} अपनी धवलसेना के साथ ${acharyaLocation} में सानन्द सुखसातापूर्वक विराजमान हैं।`,
+      shivirOfficeContact: {
+        name: acharyaContact.split(':')[0]?.trim() || "हेमन्त बैद",
+        phone: acharyaContact.split(':')[1]?.trim() || "7044448888"
+      },
+      organization: "जैन श्वेताम्बर तेरापंथी सभा, दिल्ली",
+      headquarters: "अणुव्रत भवन, 210 दीनदयाल उपाध्याय मार्ग, नई दिल्ली-110002",
+      orgContacts: activeData.delhi_sabha_general_contact || viharPravasTodayData.delhi_sabha_general_contact
+    };
+  }, [viharData, selectedDate]);
 
   useEffect(() => {
     const mapTileUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/India_location_map.svg/500px-India_location_map.svg.png';
@@ -234,10 +326,31 @@ export default function ViharTracker() {
       "Delhi_NCR": "दिल्ली-NCR"
     };
 
+    const activeViharData = viharData || viharPravasTodayData;
+
     standardRegions.forEach(regionKey => {
-      const regionList = viharPravasTodayData.regions[regionKey];
-      regionList.forEach(saint => {
+      const regionList = activeViharData.regions?.[regionKey] || [];
+      regionList.forEach((saint: any) => {
         const { title, nameHi } = formatName(saint.name);
+        
+        let contactsList: Array<{ name: string; phone: string }> = [];
+        if (saint.contacts) {
+          contactsList = Object.entries(saint.contacts).map(([person, phone]) => ({
+            name: person.replace(/_/g, ' '),
+            phone: phone as string
+          }));
+        } else if (saint.contact) {
+          contactsList = [{
+            name: saint.contact_person || "प्रभारी",
+            phone: saint.contact
+          }];
+        }
+
+        let contactString = "कासीद विवरण अनुपलब्ध";
+        if (contactsList.length > 0) {
+          contactString = contactsList.map(c => `कासीद ${c.name} (${c.phone})`).join(", ");
+        }
+
         list.push({
           id: `saint_${index++}`,
           title,
@@ -246,8 +359,9 @@ export default function ViharTracker() {
           thana: saint.thana || 3,
           location: saint.location,
           address: saint.location,
-          contacts: saint.contact ? `${saint.contact_person ? `कासीद ${saint.contact_person} ` : 'कासीद '}(${saint.contact})` : "कासीद विवरण अनुपलब्ध",
-          phone: saint.contact || "",
+          contacts: contactString,
+          contactsList,
+          phone: contactsList[0]?.phone || "",
           regionKey,
           regionLabel: regionLabels[regionKey],
           status: saint.location.includes("हॉस्पिटल") || saint.location.includes("स्वास्थ्य") ? "स्वास्थ्य लाभ हेतु" : "सक्रिय"
@@ -255,7 +369,7 @@ export default function ViharTracker() {
       });
     });
 
-    const otherRegions = viharPravasTodayData.regions.Other_Regions;
+    const otherRegions = activeViharData.regions?.Other_Regions || {};
     Object.entries(otherRegions).forEach(([subRegion, names]) => {
       if (Array.isArray(names)) {
         names.forEach(enName => {
@@ -269,6 +383,7 @@ export default function ViharTracker() {
             location: `${subRegion} प्रांत`,
             address: `${subRegion} प्रांत`,
             contacts: "कासीद विवरण अनुपलब्ध",
+            contactsList: [],
             phone: "",
             regionKey: "Other_Regions",
             regionLabel: `अन्य (${subRegion})`,
@@ -279,7 +394,7 @@ export default function ViharTracker() {
     });
 
     return list;
-  }, []);
+  }, [viharData]);
 
   const filteredAscetics = useMemo(() => {
     return allAscetics.filter(ascetic => {
@@ -323,14 +438,64 @@ export default function ViharTracker() {
     <div id="vihar_tracker_viewport" className="flex flex-col h-[100dvh] bg-gray-50 dark:bg-zinc-950 overflow-hidden">
       
       {/* 1. TOP HEADER INFOBAR */}
-      <div id="vihar_header_container" className="bg-white dark:bg-zinc-900 p-4 shadow-sm border-b dark:border-zinc-800 shrink-0">
-        <div id="vihar_header_row" className="flex justify-between items-center mb-1">
-          <h2 id="vihar_header_title" className="text-base sm:text-lg font-black text-gray-800 dark:text-zinc-100 flex items-center gap-2">
-            <span>🗺️</span> {masterPravasInfo.title}
-          </h2>
-          <span id="vihar_update_badge" className="text-[10px] sm:text-xs bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400 px-2.5 py-1 rounded-full font-bold whitespace-nowrap">
-            {masterPravasInfo.date} अपडेट
-          </span>
+      <div id="vihar_header_container" className="bg-white dark:bg-zinc-900 p-4 shadow-sm border-b dark:border-zinc-800 shrink-0 space-y-3">
+        <div id="vihar_header_row" className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <h2 id="vihar_header_title" className="text-base sm:text-lg font-black text-gray-800 dark:text-zinc-100 flex items-center gap-2">
+              <span>🗺️</span> {masterPravasInfo.title}
+            </h2>
+            <div className="text-[10px] text-gray-500 dark:text-zinc-400 font-bold flex items-center gap-1.5 mt-0.5">
+              <span>तिथि चयन करें:</span>
+              <span className="font-mono bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-350 px-1.5 py-0.5 rounded text-[9px]">{masterPravasInfo.date} अपडेट</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            {/* Custom Interactive Date Picker Input */}
+            <input 
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="px-2.5 py-1.5 rounded-xl bg-gray-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 text-stone-700 dark:text-zinc-200 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all cursor-pointer shadow-xs"
+            />
+
+            {/* Quick Select Chips */}
+            <div className="flex gap-1.5">
+              <button
+                onClick={() => setSelectedDate('2026-07-14')}
+                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all cursor-pointer border ${
+                  selectedDate === '2026-07-14'
+                    ? 'bg-stone-700 text-white border-stone-700 dark:bg-zinc-100 dark:text-zinc-900'
+                    : 'bg-white dark:bg-zinc-850 text-stone-600 dark:text-zinc-400 border-stone-200 dark:border-zinc-700 hover:bg-stone-50'
+                }`}
+                title="१४ जुलाई २०२६ (विगत)"
+              >
+                विगत
+              </button>
+              <button
+                onClick={() => setSelectedDate('2026-07-15')}
+                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all cursor-pointer border ${
+                  selectedDate === '2026-07-15'
+                    ? 'bg-emerald-600 text-white border-emerald-600'
+                    : 'bg-white dark:bg-zinc-850 text-stone-600 dark:text-zinc-400 border-stone-200 dark:border-zinc-700 hover:bg-stone-50'
+                }`}
+                title="१५ जुलाई २०२६ (आज)"
+              >
+                आज
+              </button>
+              <button
+                onClick={() => setSelectedDate('2026-07-16')}
+                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all cursor-pointer border ${
+                  selectedDate === '2026-07-16'
+                    ? 'bg-amber-600 text-white border-amber-600'
+                    : 'bg-white dark:bg-zinc-850 text-stone-600 dark:text-zinc-400 border-stone-200 dark:border-zinc-700 hover:bg-stone-50'
+                }`}
+                title="१६ जुलाई २०२६ (आगामी)"
+              >
+                आगामी
+              </button>
+            </div>
+          </div>
         </div>
         <p id="vihar_acharyashri_location_text" className="text-xs text-amber-600 dark:text-amber-400 font-semibold leading-normal mb-2">
           📢 {masterPravasInfo.acharyashriLocation}
@@ -593,9 +758,14 @@ export default function ViharTracker() {
                   )}
 
                   <div>
-                    <div id={`ascetic_thana_heading_${ascetic.id}`} className="flex items-center gap-2 mb-2">
-                      <span className={`w-2 h-2 rounded-full ${ascetic.status && ascetic.status.includes('स्वास्थ्य') ? 'bg-amber-500' : 'bg-green-500'}`}></span>
-                      <span className="text-xs text-gray-400 dark:text-zinc-500 font-bold">ठाणा: {ascetic.thana} • {ascetic.regionLabel}</span>
+                    <div id={`ascetic_thana_heading_${ascetic.id}`} className="flex flex-wrap items-center gap-1.5 mb-3">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30">
+                        <span className={`w-1.5 h-1.5 rounded-full ${ascetic.status && ascetic.status.includes('स्वास्थ्य') ? 'bg-amber-500' : 'bg-emerald-500'} animate-pulse`}></span>
+                        ठाणा: {ascetic.thana}
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:text-zinc-300">
+                        {ascetic.regionLabel}
+                      </span>
                     </div>
 
                     <h3 id={`ascetic_name_title_${ascetic.id}`} className="text-lg font-black text-gray-800 dark:text-zinc-100">
@@ -614,10 +784,43 @@ export default function ViharTracker() {
                         <span className="shrink-0 text-[14px]">📍</span>
                         <span>{ascetic.address}</span>
                       </p>
-                      <p className="flex items-start gap-2 text-xs text-gray-500 dark:text-zinc-400">
-                        <span className="shrink-0 text-[14px]">📞</span>
-                        <span className="select-all font-mono">संपर्क: {ascetic.contacts}</span>
-                      </p>
+                      
+                      {ascetic.contactsList && ascetic.contactsList.length > 0 ? (
+                        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-zinc-800/80">
+                          <p className="text-[11px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                            <span>📞</span> स्थान संपर्क सूत्र (Kaseed / Contact)
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {ascetic.contactsList.map((contact, cIdx) => (
+                              <div 
+                                key={cIdx} 
+                                className="flex items-center justify-between p-2 rounded-xl bg-gray-50 dark:bg-zinc-850/60 border border-gray-100 dark:border-zinc-800 hover:border-emerald-200 dark:hover:border-emerald-900/40 transition-colors"
+                              >
+                                <div className="min-w-0">
+                                  <p className="text-xs font-extrabold text-gray-700 dark:text-zinc-200 truncate capitalize">
+                                    {contact.name}
+                                  </p>
+                                  <p className="text-[10px] font-mono font-black text-emerald-600 dark:text-emerald-400">
+                                    {contact.phone}
+                                  </p>
+                                </div>
+                                <a 
+                                  href={`tel:${contact.phone}`}
+                                  className="p-1.5 rounded-lg bg-white dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 border border-gray-200 dark:border-zinc-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors shrink-0"
+                                  title={`कॉल करें: ${contact.name}`}
+                                >
+                                  📞
+                                </a>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="flex items-start gap-2 text-xs text-gray-500 dark:text-zinc-400">
+                          <span className="shrink-0 text-[14px]">📞</span>
+                          <span className="select-all font-mono">संपर्क: {ascetic.contacts}</span>
+                        </p>
+                      )}
                     </div>
                   </div>
 

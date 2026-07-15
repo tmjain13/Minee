@@ -39,7 +39,11 @@ export default function ViharUpdateForm({ onBack }: ViharUpdateFormProps) {
           }
         }
       } catch (err: any) {
-        console.error('Error fetching Vihar stay info:', err);
+        if (err?.message?.includes('offline') || err?.code === 'unavailable' || !navigator.onLine) {
+          console.warn('Vihar stay info offline/unavailable fallback:', err.message || err);
+        } else {
+          console.error('Error fetching Vihar stay info:', err);
+        }
       } finally {
         setFetching(false);
       }

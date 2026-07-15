@@ -3,25 +3,32 @@ import { Phone, MapPin, Share2, Copy, Check, Heart, ShieldCheck, Search, Users, 
 import { motion, AnimatePresence } from 'motion/react';
 import { viharPravasTodayData } from '../data/viharPravasToday';
 
-const formatContacts = (contactPerson?: string, contact?: string | null) => {
+const formatContacts = (contactPerson?: string, contact?: string | null, contacts?: Record<string, string>) => {
+  if (contacts && Object.keys(contacts).length > 0) {
+    return Object.entries(contacts).map(([person, phone]) => ({
+      designation: person.replace(/_/g, ' ') || 'प्रभारी',
+      phone: phone
+    }));
+  }
   if (!contact) return [];
   return [{ designation: contactPerson || 'प्रभारी', phone: contact }];
 };
 
 const mappedSaintsList = viharPravasTodayData.regions.Delhi_NCR.map((saint, index) => {
   const nameMap: Record<string, { title: string, nameHi: string }> = {
-    "Munishri Vimal Kumar ji": { title: "शासनश्री", nameHi: "मुनिश्री विमल कुमारजी" },
-    "Munishri Udit Kumar ji": { title: "बहुश्रुत", nameHi: "मुनिश्री उदित कुमार जी" },
-    "Munishri Jay Kumar ji": { title: "", nameHi: "मुनिश्री जय कुमार जी" },
-    "Dr. Munishri Abhijit Kumar ji": { title: "डा.", nameHi: "मुनिश्री अभिजित कुमार जी" },
-    "Sadhvishri Sanghmitra ji": { title: "शासनश्री", nameHi: "साध्वीश्री संघमित्राजी" },
-    "Sadhvishri Suvrata ji": { title: "शासनश्री", nameHi: "साध्वीश्री सुव्रता जी" },
-    "Sadhvishri Sumanshri ji": { title: "शासनश्री", nameHi: "साध्वीश्री सुमनश्री जी" },
-    "Sadhvishri Raviprabha ji": { title: "शासनश्री", nameHi: "साध्वीश्री रविप्रभाजी" },
-    "Sadhvishri Dr. Kundanrekhaji": { title: "डा.", nameHi: "साध्वीश्री डा. कुन्दनरेखाजी" },
-    "Sadhvishri Labdhiprabhaji": { title: "", nameHi: "साध्वीश्री लब्धिप्रभाजी" }
+    "munishrivimalkumarji": { title: "शासनश्री", nameHi: "मुनिश्री विमल कुमारजी" },
+    "munishriuditkumarji": { title: "बहुश्रुत", nameHi: "मुनिश्री उदित कुमार जी" },
+    "munishrijaykumarji": { title: "", nameHi: "मुनिश्री जय कुमार जी" },
+    "drmunishriabhijitkumarji": { title: "डा.", nameHi: "मुनिश्री अभिजित कुमार जी" },
+    "sadhvishrisanghmitraji": { title: "शासनश्री", nameHi: "साध्वीश्री संघमित्राजी" },
+    "sadhvishrisuvrataji": { title: "शासनश्री", nameHi: "साध्वीश्री सुव्रता जी" },
+    "sadhvishrisumanshriji": { title: "शासनश्री", nameHi: "साध्वीश्री सुमनश्री जी" },
+    "sadhvishriraviprabhaji": { title: "शासनश्री", nameHi: "साध्वीश्री रविप्रभाजी" },
+    "sadhvishridrkundanrekhaji": { title: "डा.", nameHi: "साध्वीश्री डा. कुन्दनरेखाजी" },
+    "sadhvishrilabdhiprabhaji": { title: "", nameHi: "साध्वीश्री लब्धिप्रभाजी" }
   };
-  const mapped = nameMap[saint.name] || { title: "", nameHi: saint.name };
+  const normalizedKey = saint.name.replace(/\s+/g, '').toLowerCase();
+  const mapped = nameMap[normalizedKey] || { title: "", nameHi: saint.name };
   const isHealth = saint.location.includes("हॉस्पिटल") || saint.location.includes("स्वास्थ्य लाभ");
 
   return {
@@ -31,7 +38,7 @@ const mappedSaintsList = viharPravasTodayData.regions.Delhi_NCR.map((saint, inde
     thana: `ठाणा-${saint.thana || 3}`,
     status: isHealth ? "स्वास्थ्य लाभ हेतु" : "",
     stay_place: saint.location,
-    contacts: formatContacts(saint.contact_person, saint.contact)
+    contacts: formatContacts(saint.contact_person, saint.contact, saint.contacts)
   };
 });
 
