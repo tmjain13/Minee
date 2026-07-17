@@ -28,7 +28,6 @@ import {
   Award,
   BookOpen,
   Plus,
-  Star,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { doc, onSnapshot } from "firebase/firestore";
@@ -40,6 +39,7 @@ import { useLanguageInit } from "./hooks/useLanguageInit";
 import { ACHARYAS } from "./data/acharyas";
 import LoadingScreen from "./components/LoadingScreen";
 import Onboarding from "./components/Onboarding";
+import AppTour from "./components/AppTour";
 import TerapanthHeader from "./components/TerapanthHeader";
 import TerapanthFooterNav from "./components/TerapanthFooterNav";
 import QuickActions from "./components/QuickActions";
@@ -50,16 +50,45 @@ import { devLog } from "./lib/devLog";
 import LoginModal from "./components/LoginModal";
 import StaticUnifiedHomeDashboard from "./components/UnifiedHomeDashboard";
 import StaticThemeCustomizer from "./components/ThemeCustomizer";
+import * as Sentry from "@sentry/react";
 
 // --- SAFE LAZY WRAPPER FOR CHUNK-LOAD SELF-HEALING ---
+const retryLoad = async <T,>(
+  fn: () => Promise<T>,
+  retriesLeft = 3,
+  delay = 1000,
+  backoff = 2
+): Promise<T> => {
+  try {
+    return await fn();
+  } catch (error) {
+    if (retriesLeft <= 0) {
+      throw error;
+    }
+    console.warn(`Chunk load failed, retrying in ${delay}ms... (${retriesLeft} retries left)`);
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    return retryLoad(fn, retriesLeft - 1, delay * backoff, backoff);
+  }
+};
+
 const safeLazy = <T extends React.ComponentType<any>>(
   importFunc: () => Promise<{ default: T }>
 ): React.LazyExoticComponent<T> => {
   return lazy(async () => {
     try {
-      return await importFunc();
+      return await retryLoad(importFunc, 3, 1000, 2);
     } catch (error) {
-      console.error("Dynamic chunk load failure caught! Self-healing app via reload...", error);
+      console.error("Dynamic chunk load failure caught after retries! Self-healing app via reload...", error);
+      
+      // Log the failure as an error level incident to Sentry before reloading
+      Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+        level: "error",
+        tags: {
+          mechanism: "retry_load_failure",
+          will_reload: "true",
+        },
+      });
+
       const lastReload = sessionStorage.getItem("last_chunk_reload_time");
       const now = Date.now();
       if (!lastReload || now - parseInt(lastReload, 10) > 10000) {
@@ -78,43 +107,43 @@ const ProfileTab = safeLazy(() => import("./components/ProfileTab"));
 const AdminPanel = safeLazy(() => import("./components/AdminPanel"));
 const AdminDashboard = safeLazy(() => import("./components/AdminDashboard"));
 const PanchangSection = safeLazy(() => import("./components/PanchangSection"));
-const MediaCenter = safeLazy(() => import("./components/MediaCenter"));
-const AudioCenter = safeLazy(() => import("./components/AudioCenter"));
-const DigitalLibrary = safeLazy(() => import("./components/DigitalLibrary"));
-const MaryadaQuiz = safeLazy(() => import("./components/MaryadaQuiz"));
+const MediaCenter = safeLazy(() => import(/* webpackChunkName: "secondary-features" */ "./components/MediaCenter"));
+const AudioCenter = safeLazy(() => import(/* webpackChunkName: "secondary-features" */ "./components/AudioCenter"));
+const DigitalLibrary = safeLazy(() => import(/* webpackChunkName: "secondary-features" */ "./components/DigitalLibrary"));
+const MaryadaQuiz = safeLazy(() => import(/* webpackChunkName: "secondary-features" */ "./components/MaryadaQuiz"));
 const UnifiedHomeDashboard = (props: any) => <StaticUnifiedHomeDashboard {...props} />;
-const UnifiedQuizEngine = safeLazy(() => import("./components/UnifiedQuizEngine"));
-const AgamShorts = safeLazy(() => import("./components/AgamShorts"));
-const PrekshaVisualizer = safeLazy(() => import("./components/PrekshaVisualizer"));
-const UnifiedRegistry = safeLazy(() => import("./components/UnifiedRegistry"));
-const SaintsList = safeLazy(() => import("./components/SaintsList"));
+const UnifiedQuizEngine = safeLazy(() => import(/* webpackChunkName: "secondary-features" */ "./components/UnifiedQuizEngine"));
+const AgamShorts = safeLazy(() => import(/* webpackChunkName: "secondary-features" */ "./components/AgamShorts"));
+const PrekshaVisualizer = safeLazy(() => import(/* webpackChunkName: "secondary-features" */ "./components/PrekshaVisualizer"));
+const UnifiedRegistry = safeLazy(() => import(/* webpackChunkName: "secondary-features" */ "./components/UnifiedRegistry"));
+const SaintsList = safeLazy(() => import(/* webpackChunkName: "secondary-features" */ "./components/SaintsList"));
 const AiSmartFaqEngine = safeLazy(() => import("./components/AiSmartFaqEngine").then(m => ({ default: m.AiSmartFaqEngine })));
-const ViharTracker = safeLazy(() => import("./components/ViharTracker"));
-const GalleryTab = safeLazy(() => import("./components/GalleryTab"));
+const ViharTracker = safeLazy(() => import(/* webpackChunkName: "secondary-features" */ "./components/ViharTracker"));
+const GalleryTab = safeLazy(() => import(/* webpackChunkName: "secondary-features" */ "./components/GalleryTab"));
 
 // --- ADDITIONAL SUPPORTED TABS ---
-const DailyVachan = safeLazy(() => import("./components/DailyVachan"));
-const NavkarMantra = safeLazy(() => import("./components/NavkarMantra"));
-const DailySuvichar = safeLazy(() => import("./components/DailySuvichar"));
-const PratikramanGuide = safeLazy(() => import("./components/PratikramanGuide"));
-const SacredPlacesMap = safeLazy(() => import("./components/SacredPlacesMap"));
-const KarmaTheory = safeLazy(() => import("./components/KarmaTheory"));
-const TapaLeaderboard = safeLazy(() => import("./components/TapaLeaderboard"));
-const SutraLibrary = safeLazy(() => import("./components/SutraLibrary"));
-const AnuvratPledge = safeLazy(() => import("./components/AnuvratPledge"));
-const SpiritualJournal = safeLazy(() => import("./components/SpiritualJournal"));
-const ParyushanaTab = safeLazy(() => import("./components/ParyushanaTab"));
+const DailyVachan = safeLazy(() => import(/* webpackChunkName: "secondary-features" */ "./components/DailyVachan"));
+const NavkarMantra = safeLazy(() => import(/* webpackChunkName: "secondary-features" */ "./components/NavkarMantra"));
+const DailySuvichar = safeLazy(() => import(/* webpackChunkName: "secondary-features" */ "./components/DailySuvichar"));
+const PratikramanGuide = safeLazy(() => import(/* webpackChunkName: "secondary-features" */ "./components/PratikramanGuide"));
+const SacredPlacesMap = safeLazy(() => import(/* webpackChunkName: "secondary-features" */ "./components/SacredPlacesMap"));
+const KarmaTheory = safeLazy(() => import(/* webpackChunkName: "secondary-features" */ "./components/KarmaTheory"));
+const TapaLeaderboard = safeLazy(() => import(/* webpackChunkName: "secondary-features" */ "./components/TapaLeaderboard"));
+const SutraLibrary = safeLazy(() => import(/* webpackChunkName: "secondary-features" */ "./components/SutraLibrary"));
+const AnuvratPledge = safeLazy(() => import(/* webpackChunkName: "secondary-features" */ "./components/AnuvratPledge"));
+const SpiritualJournal = safeLazy(() => import(/* webpackChunkName: "secondary-features" */ "./components/SpiritualJournal"));
+const ParyushanaTab = safeLazy(() => import(/* webpackChunkName: "secondary-features" */ "./components/ParyushanaTab"));
 const TerapanthMasterHub2026 = safeLazy(() =>
-  import("./components/TerapanthMasterHub2026").then((m) => ({
+  import(/* webpackChunkName: "secondary-features" */ "./components/TerapanthMasterHub2026").then((m) => ({
     default: m.TerapanthMasterHub2026,
   }))
 );
 
 // --- MODALS & WRAPPERS ---
 const ThemeCustomizer = (props: any) => <StaticThemeCustomizer {...props} />;
-const ChaturmasRegistry = safeLazy(() => import("./components/ChaturmasRegistry"));
+const ChaturmasRegistry = safeLazy(() => import(/* webpackChunkName: "secondary-features" */ "./components/ChaturmasRegistry"));
 const NavigationController = safeLazy(() =>
-  import("./components/NavigationController").then((m) => ({
+  import(/* webpackChunkName: "secondary-features" */ "./components/NavigationController").then((m) => ({
     default: m.NavigationController,
   }))
 );
@@ -185,6 +214,7 @@ export default function App() {
   // --- CORE UI & ROUTING STATES ---
   // Check if user has already onboarded via local storage state
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
+  const [showTour, setShowTour] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>('home');
 
   const renderTabContent = () => {
@@ -283,6 +313,16 @@ export default function App() {
       setShowOnboarding(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (!showOnboarding) {
+      const onboarded = localStorage.getItem('terapanth_hub_onboarded');
+      const tourCompleted = localStorage.getItem('terapanth_hub_tour_completed');
+      if (onboarded === 'true' && tourCompleted !== 'true') {
+        setShowTour(true);
+      }
+    }
+  }, [showOnboarding]);
   const [sadhanaSubTab, setSadhanaSubTab] = useState<string>("timer");
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -610,15 +650,15 @@ export default function App() {
     <div
       style={{
         ...appStyle,
-        backgroundColor: theme === 'dark' ? '#141210' : '#FCF6EC',
+        backgroundColor: '#e9dbdb',
         // Safe luxury subtle geometric pattern instead of broken postimg URLs
         backgroundImage: theme === 'dark' 
           ? `radial-gradient(#2e251e 0.5px, transparent 0.5px), radial-gradient(#2e251e 0.5px, #141210 0.5px)`
-          : `radial-gradient(#e6dccb 0.5px, transparent 0.5px), radial-gradient(#e6dccb 0.5px, #FCF6EC 0.5px)`,
+          : `radial-gradient(#e6dccb 0.5px, transparent 0.5px), radial-gradient(#e6dccb 0.5px, #e9dbdb 0.5px)`,
         backgroundSize: '20px 20px',
         backgroundPosition: '0 0, 10px 10px'
       }}
-      className={`${activeTab === "chat" ? "h-[100dvh] overflow-hidden pt-0 pb-0" : "min-h-[100dvh] h-[100dvh] overflow-y-auto pt-[56px] pb-[68px] overflow-x-hidden"} w-full flex flex-col relative antialiased select-none p-0 m-0 border-none outline-none transition-colors duration-300 ${
+      className={`${activeTab === "chat" ? "h-[100dvh] overflow-hidden" : "min-h-[100dvh] h-[100dvh] overflow-y-auto"} w-full flex flex-col relative antialiased select-none p-0 m-0 border-none outline-none transition-colors duration-300 ${
         highContrast ? "contrast-125 saturate-150" : ""
       } ${theme}`}
     >
@@ -745,6 +785,7 @@ export default function App() {
                   lastSyncTime={lastSyncTime}
                   onNavigateToAdminDashboard={() => setActiveTab("admin_dashboard")}
                   onOpenLogin={() => setIsLoginModalOpen(true)}
+                  onStartTour={() => setShowTour(true)}
                 />
               </motion.div>
             )}
@@ -1258,14 +1299,6 @@ export default function App() {
       {/* FLOATING BUTTONS - RIGHT SIDE STACK (Only show if NOT on chat tab and NOT in Zen Mode) */}
       {activeTab !== 'chat' && !zenMode && (
         <div className="fixed bottom-[90px] right-4 z-[99] flex flex-col gap-3">
-          {/* Chatbot trigger */}
-          <button 
-            onClick={() => setActiveTab('chat')}
-            className="w-12 h-12 bg-indigo-600 rounded-full shadow-lg flex items-center justify-center text-white hover:scale-105 transition-transform"
-          >
-            <Star size={24} />
-          </button>
-          
           {/* Quick Actions trigger */}
           <button 
             onClick={() => setShowQuickActions(!showQuickActions)}
@@ -1321,6 +1354,16 @@ export default function App() {
         {showChaturmasRegistry && <ChaturmasRegistry onClose={() => setShowChaturmasRegistry(false)} />}
         {showUnifiedRegistry && <UnifiedRegistry onClose={() => setShowUnifiedRegistry(false)} />}
       </Suspense>
+
+      {/* App Tour Onboarding Component */}
+      {showTour && (
+        <AppTour
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          language={language}
+          onTourComplete={() => setShowTour(false)}
+        />
+      )}
     </div>
   );
 }

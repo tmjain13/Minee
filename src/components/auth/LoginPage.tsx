@@ -24,7 +24,7 @@ export function LoginPage({ onLoginSuccess, isModal = false }: LoginPageProps) {
   const [userData, setUserData] = useState({ contact: '', username: '' });
   
   const [deviceFingerprint, setDeviceFingerprint] = useState('');
-  const [simulatedIp, setSimulatedIp] = useState('192.168.1.1');
+  const [simulatedIp, setSimulatedIp] = useState('103.241.0.1');
   const [simulatedCity, setSimulatedCity] = useState('Ladnun, Rajasthan');
 
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);

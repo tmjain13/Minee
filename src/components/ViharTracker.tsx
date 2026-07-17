@@ -4,7 +4,9 @@ import { ScatterChart, Scatter, XAxis, YAxis, Tooltip as RechartsTooltip, Respon
 import { viharPravasTodayData } from '../data/viharPravasToday';
 import { db } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import { Share2, Check } from 'lucide-react';
+import { Share2, Check, MapPin, Filter, Locate } from 'lucide-react';
+import { useLocation } from '../context/LocationContext';
+import ViharDirectory from './ViharDirectory';
 
 // --- Offline Map Caching Logic (IndexedDB) ---
 const initDB = (): Promise<IDBDatabase> => {
@@ -63,13 +65,28 @@ const ahimsaYatraData = [
   { year: 2027, location: 'Delhi', lat: 28.6, lng: 77.2 }
 ];
 
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371; // Radius of the Earth in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distance in km
+};
+
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
       <div className="bg-white dark:bg-zinc-900 p-3 rounded-xl shadow-lg border border-emerald-100 dark:border-emerald-900/30 text-sm">
-        <p className="font-bold text-emerald-800">{data.year}</p>
-        <p className="text-gray-700">{data.location}</p>
+        <p className="font-bold text-emerald-800">{data.year || 'Point Info'}</p>
+        <p className="text-gray-700 font-medium">{data.location}</p>
+        {data.distanceKm !== undefined && (
+          <p className="text-orange-500 font-bold mt-1">📏 {data.distanceKm.toFixed(1)} km</p>
+        )}
       </div>
     );
   }
@@ -144,16 +161,52 @@ const acharyaViharTimeline = [
 ];
 
 export default function ViharTracker() {
+  const { activeCity } = useLocation();
+  const [filterByActiveCity, setFilterByActiveCity] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'monk' | 'nun'>('all');
   const [selectedState, setSelectedState] = useState<string>('All');
-  const [viewMode, setViewMode] = useState<'list' | 'map' | 'timeline'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'map' | 'timeline' | 'directory'>('list');
   const [cachedMapUrl, setCachedMapUrl] = useState<string | null>(null);
   const [mapDomain, setMapDomain] = useState({ x: [70, 90], y: [10, 32] });
   const [selectedDate, setSelectedDate] = useState<string>('2026-07-15');
   const [viharData, setViharData] = useState<any>(viharPravasTodayData);
   const [loadingData, setLoadingData] = useState<boolean>(false);
   const [sharedId, setSharedId] = useState<string | null>(null);
+
+  const nearestViharPoint = useMemo(() => {
+    if (!activeCity) return null;
+    let closestPoint = null;
+    let minDistance = Infinity;
+
+    for (const point of ahimsaYatraData) {
+      const dist = calculateDistance(activeCity.lat, activeCity.lng, point.lat, point.lng);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestPoint = { ...point, distanceKm: dist };
+      }
+    }
+    return closestPoint;
+  }, [activeCity]);
+
+  const connectionLineData = useMemo(() => {
+    if (!activeCity || !nearestViharPoint) return [];
+    return [
+      { lat: activeCity.lat, lng: activeCity.lng, location: `📍 ${activeCity.name}`, distanceKm: 0, isUser: true },
+      { lat: nearestViharPoint.lat, lng: nearestViharPoint.lng, location: `🏁 ${nearestViharPoint.location}`, distanceKm: nearestViharPoint.distanceKm, isTarget: true }
+    ];
+  }, [activeCity, nearestViharPoint]);
+
+  const activeCityPointData = useMemo(() => {
+    if (!activeCity) return [];
+    return [{
+      lat: activeCity.lat,
+      lng: activeCity.lng,
+      location: activeCity.name,
+      year: 'My Location',
+      isUser: true
+    }];
+  }, [activeCity]);
 
   const handleShare = (ascetic: any) => {
     let contactText = 'N/A';
@@ -274,12 +327,31 @@ export default function ViharTracker() {
   }, [selectedDate]);
 
   const handleZoomCurrent = () => {
-    setMapDomain({ x: [71, 78], y: [24, 30] });
+    if (activeCity && nearestViharPoint) {
+      const minLng = Math.min(activeCity.lng, nearestViharPoint.lng) - 1.5;
+      const maxLng = Math.max(activeCity.lng, nearestViharPoint.lng) + 1.5;
+      const minLat = Math.min(activeCity.lat, nearestViharPoint.lat) - 1.5;
+      const maxLat = Math.max(activeCity.lat, nearestViharPoint.lat) + 1.5;
+      setMapDomain({ x: [minLng, maxLng], y: [minLat, maxLat] });
+    } else {
+      setMapDomain({ x: [71, 78], y: [24, 30] });
+    }
   };
 
   const handleZoomFull = () => {
     setMapDomain({ x: [70, 90], y: [10, 32] });
   };
+
+  // Automatically frame the map to show the connection between activeCity and nearestViharPoint
+  useEffect(() => {
+    if (activeCity && nearestViharPoint) {
+      const minLng = Math.min(activeCity.lng, nearestViharPoint.lng) - 2.5;
+      const maxLng = Math.max(activeCity.lng, nearestViharPoint.lng) + 2.5;
+      const minLat = Math.min(activeCity.lat, nearestViharPoint.lat) - 2.5;
+      const maxLat = Math.max(activeCity.lat, nearestViharPoint.lat) + 2.5;
+      setMapDomain({ x: [minLng, maxLng], y: [minLat, maxLat] });
+    }
+  }, [activeCity, nearestViharPoint]);
 
   const masterPravasInfo = useMemo(() => {
     const activeData = viharData || viharPravasTodayData;
@@ -437,6 +509,21 @@ export default function ViharTracker() {
 
   const filteredAscetics = useMemo(() => {
     return allAscetics.filter(ascetic => {
+      if (filterByActiveCity && activeCity) {
+        const cityName = activeCity.name.toLowerCase();
+        const cityRegion = activeCity.region.toLowerCase();
+        
+        const locMatch = 
+          ascetic.location.toLowerCase().includes(cityName) || 
+          ascetic.regionLabel.toLowerCase().includes(cityName) ||
+          ascetic.location.toLowerCase().includes(cityRegion) ||
+          ascetic.regionLabel.toLowerCase().includes(cityRegion) ||
+          (cityName === 'delhi' && (ascetic.location.toLowerCase().includes('दिल्ली') || ascetic.regionLabel.toLowerCase().includes('दिल्ली'))) ||
+          (cityRegion === 'delhi' && (ascetic.location.toLowerCase().includes('दिल्ली') || ascetic.regionLabel.toLowerCase().includes('दिल्ली')));
+                         
+        if (!locMatch) return false;
+      }
+
       if (selectedState !== 'All' && ascetic.regionKey !== selectedState) {
         return false;
       }
@@ -455,7 +542,7 @@ export default function ViharTracker() {
       }
       return matchesSearch;
     });
-  }, [allAscetics, selectedState, searchQuery, activeFilter]);
+  }, [allAscetics, selectedState, searchQuery, activeFilter, activeCity, filterByActiveCity]);
 
   const openInGoogleMaps = (address: string) => {
     const encodedAddress = encodeURIComponent(address);
@@ -603,6 +690,35 @@ export default function ViharTracker() {
           ))}
         </div>
 
+        {/* Active City Filter Toggle */}
+        {activeCity && (
+          <div className="flex items-center justify-between p-3 bg-orange-50/50 dark:bg-orange-950/10 border border-orange-200/40 dark:border-orange-900/20 rounded-2xl gap-3">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-orange-100 dark:bg-orange-950/40 rounded-lg text-orange-500">
+                <MapPin size={14} className="animate-pulse" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[11px] font-bold text-stone-800 dark:text-stone-200">
+                  {activeCity.name} विहार अपडेट्स
+                </span>
+                <span className="text-[9px] text-stone-500 dark:text-stone-400">
+                  {filterByActiveCity ? "केवल आपके शहर/प्रांत के विहार दिखाए जा रहे हैं" : "सभी अखिल भारतीय विहार प्रदर्शित हैं"}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => setFilterByActiveCity(!filterByActiveCity)}
+              className={`px-3 py-1.5 text-[10px] font-extrabold rounded-lg transition-all duration-200 cursor-pointer shrink-0 ${
+                filterByActiveCity 
+                  ? 'bg-orange-500 text-white shadow-sm hover:bg-orange-600' 
+                  : 'bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-400 hover:bg-stone-200'
+              }`}
+            >
+              {filterByActiveCity ? "सभी दिखाएं" : "लोकल फ़िल्टर"}
+            </button>
+          </div>
+        )}
+
         {/* Tab Filters */}
         <div id="vihar_filter_tabs_row" className="flex gap-2">
           <button
@@ -634,30 +750,38 @@ export default function ViharTracker() {
           </button>
         </div>
         {/* View Mode Toggle */}
-        <div className="grid grid-cols-3 gap-1">
+        <div className="grid grid-cols-4 gap-1">
           <button
             onClick={() => setViewMode('list')}
-            className={`py-2 text-[10px] font-black rounded-lg transition-all cursor-pointer text-center ${
+            className={`py-2 text-[9px] sm:text-[10px] font-black rounded-lg transition-all cursor-pointer text-center ${
               viewMode === 'list' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200'
             }`}
           >
-            📋 चारित्रात्मा सूची
+            📋 सूची (List)
           </button>
           <button
             onClick={() => setViewMode('map')}
-            className={`py-2 text-[10px] font-black rounded-lg transition-all cursor-pointer text-center ${
+            className={`py-2 text-[9px] sm:text-[10px] font-black rounded-lg transition-all cursor-pointer text-center ${
               viewMode === 'map' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200'
             }`}
           >
-            🗺️ यात्रा नक़्शा
+            🗺️ नक़्शा (Map)
           </button>
           <button
             onClick={() => setViewMode('timeline')}
-            className={`py-2 text-[10px] font-black rounded-lg transition-all cursor-pointer text-center ${
+            className={`py-2 text-[9px] sm:text-[10px] font-black rounded-lg transition-all cursor-pointer text-center ${
               viewMode === 'timeline' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200'
             }`}
           >
-            📈 आचार्यश्री विहार
+            📈 यात्रा (Path)
+          </button>
+          <button
+            onClick={() => setViewMode('directory')}
+            className={`py-2 text-[9px] sm:text-[10px] font-black rounded-lg transition-all cursor-pointer text-center ${
+              viewMode === 'directory' ? 'bg-orange-600 text-white shadow-xs' : 'bg-orange-50 dark:bg-orange-950/20 text-orange-700 dark:text-orange-400 hover:bg-orange-100/50'
+            }`}
+          >
+            📖 प्रवास (July 26)
           </button>
         </div>
       </div>
@@ -699,8 +823,61 @@ export default function ViharTracker() {
                   >
                     <LabelList dataKey="location" position="top" style={{fontSize: '11px', fill: '#374151', fontWeight: 'bold'}} />
                   </Scatter>
+
+                  {connectionLineData.length > 0 && (
+                    <Scatter 
+                      name="Distance Connection" 
+                      data={connectionLineData} 
+                      line={{ stroke: '#ea580c', strokeDasharray: '6 4', strokeWidth: 2 }} 
+                      shape="circle" 
+                      fill="#ea580c"
+                    />
+                  )}
+
+                  {activeCityPointData.length > 0 && (
+                    <Scatter 
+                      name="Your Location" 
+                      data={activeCityPointData} 
+                      shape="circle" 
+                      fill="#ea580c"
+                    >
+                      <LabelList dataKey="location" position="bottom" style={{ fontSize: '11px', fill: '#ea580c', fontWeight: 'extrabold' }} />
+                    </Scatter>
+                  )}
                 </ScatterChart>
               </ResponsiveContainer>
+
+              {/* Nearest Path Info Overlay Card */}
+              {activeCity && nearestViharPoint && (
+                <div className="absolute bottom-4 left-4 right-4 md:right-auto md:w-80 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md p-4 rounded-2xl shadow-xl border border-orange-200/40 dark:border-orange-900/20 z-20 transition-all duration-300">
+                  <div className="flex items-center gap-2 mb-2 text-orange-600 dark:text-orange-400 font-extrabold text-[11px] tracking-wide uppercase">
+                    <span className="p-1 bg-orange-100 dark:bg-orange-950/40 rounded-lg">
+                      🗺️
+                    </span>
+                    <span>विहार पथ दूरी (Vihar Distance)</span>
+                  </div>
+                  <h4 className="text-xs font-bold text-stone-850 dark:text-stone-150">
+                    {activeCity.name} से निकटतम विहार मार्ग
+                  </h4>
+                  <div className="mt-2 space-y-1 text-[11px]">
+                    <div className="flex justify-between items-center text-stone-600 dark:text-stone-400">
+                      <span>निकटतम स्थल:</span>
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                        {nearestViharPoint.location} ({nearestViharPoint.year})
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-stone-600 dark:text-stone-400">
+                      <span>हवाई दूरी:</span>
+                      <span className="font-bold text-orange-600 dark:text-orange-400">
+                        {nearestViharPoint.distanceKm.toFixed(1)} किमी (km)
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-2 text-[9px] text-stone-500 dark:text-stone-400 bg-stone-50 dark:bg-zinc-800/50 p-1.5 rounded-xl">
+                    युगप्रधान आचार्यश्री महाश्रमणजी की अहिंसा यात्रा के ऐतिहासिक पड़ाव से आपके वर्तमान शहर की दूरी दर्शाई गई है।
+                  </div>
+                </div>
+              )}
               
               {/* Zoom Controls */}
               <div className="absolute top-4 right-4 flex flex-col gap-2">
@@ -777,6 +954,8 @@ export default function ViharTracker() {
               </div>
             </div>
           </div>
+        ) : viewMode === 'directory' ? (
+          <ViharDirectory />
         ) : (
           <div className="p-4 space-y-4">
             {filteredAscetics.length > 0 ? (

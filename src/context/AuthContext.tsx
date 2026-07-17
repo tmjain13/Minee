@@ -6,6 +6,7 @@ import { handleFirestoreError, OperationType } from '../lib/firestoreErrors';
 import toast from 'react-hot-toast';
 import { syncAdminStatus } from '../lib/auth-sync';
 import { devLog } from '../lib/devLog';
+import * as Sentry from '@sentry/react';
 
 // In-memory cache (lives for session, no localStorage needed)
 let cachedOwnerEmail: string | null = null;
@@ -70,6 +71,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(currentUser);
       
       if (currentUser) {
+        Sentry.addBreadcrumb({
+          category: 'auth',
+          type: 'login',
+          message: 'User authenticated successfully',
+          level: 'info',
+          data: {
+            uid: currentUser.uid,
+          },
+        });
+
         // Sync Admin Status
         await syncAdminStatus(currentUser);
 
@@ -179,11 +190,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
+    
+    Sentry.addBreadcrumb({
+      category: 'login',
+      type: 'auth',
+      message: 'Attempting Google Sign-In',
+      level: 'info',
+      data: {
+        method: 'google_popup',
+      },
+    });
+
     try {
       await signInWithPopup(auth, provider);
+      
+      Sentry.addBreadcrumb({
+        category: 'login',
+        type: 'auth',
+        message: 'Google Sign-In successful',
+        level: 'info',
+        data: {
+          uid: auth.currentUser?.uid,
+        },
+      });
+
       toast.success('Successfully signed in!');
     } catch (error: any) {
       console.error("Error signing in with Google:", error);
+      
+      // Track failed login attempt without exposing sensitive credentials (like password, token, or email)
+      Sentry.addBreadcrumb({
+        category: 'login',
+        type: 'auth',
+        message: 'Google Sign-In failed',
+        level: 'warning',
+        data: {
+          errorCode: error.code || 'unknown_code',
+          errorMessage: error.message || 'No error message provided',
+        },
+      });
+
       let message = 'Failed to sign in. Please try again.';
       if (error.code === 'auth/network-request-failed') message = 'Network issue. Check your connection.';
       else if (error.code === 'auth/popup-closed-by-user') message = 'Sign-in cancelled.';

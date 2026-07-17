@@ -1,0 +1,30 @@
+import { City } from './types';
+
+export const AFRICA_CITIES: City[] = [
+  { name: "Abidjan", lat: 5.3600, lng: -4.0083, region: "Lagunes", country: "Ivory Coast" },
+  { name: "Abuja", lat: 9.0765, lng: 7.3986, region: "Federal Capital Territory", country: "Nigeria" },
+  { name: "Accra", lat: 5.6037, lng: -0.1870, region: "Greater Accra", country: "Ghana" },
+  { name: "Addis Ababa", lat: 9.0300, lng: 38.7400, region: "Addis Ababa", country: "Ethiopia" },
+  { name: "Alexandria", lat: 31.2001, lng: 29.9187, region: "Alexandria", country: "Egypt" },
+  { name: "Algiers", lat: 36.7538, lng: 3.0588, region: "Algiers", country: "Algeria" },
+  { name: "Cairo", lat: 30.0444, lng: 31.2357, region: "Cairo", country: "Egypt" },
+  { name: "Cape Town", lat: -33.9249, lng: 18.4241, region: "Western Cape", country: "South Africa" },
+  { name: "Casablanca", lat: 33.5731, lng: -7.5898, region: "Casablanca-Settat", country: "Morocco" },
+  { name: "Dakar", lat: 14.7167, lng: -17.4677, region: "Dakar", country: "Senegal" },
+  { name: "Dar es Salaam", lat: -6.7924, lng: 39.2083, region: "Dar es Salaam", country: "Tanzania" },
+  { name: "Durban", lat: -29.8587, lng: 31.0218, region: "KwaZulu-Natal", country: "South Africa" },
+  { name: "Giza", lat: 30.0131, lng: 31.2089, region: "Giza", country: "Egypt" },
+  { name: "Johannesburg", lat: -26.2041, lng: 28.0473, region: "Gauteng", country: "South Africa" },
+  { name: "Kampala", lat: 0.3476, lng: 32.5825, region: "Central Region", country: "Uganda" },
+  { name: "Khartoum", lat: 15.5007, lng: 32.5599, region: "Khartoum", country: "Sudan" },
+  { name: "Kigali", lat: -1.9403, lng: 30.0619, region: "Kigali", country: "Rwanda" },
+  { name: "Kinshasa", lat: -4.4419, lng: 15.2663, region: "Kinshasa", country: "Democratic Republic of the Congo" },
+  { name: "Lagos", lat: 6.5244, lng: 3.3792, region: "Lagos", country: "Nigeria" },
+  { name: "Luanda", lat: -8.8390, lng: 13.2894, region: "Luanda", country: "Angola" },
+  { name: "Lusaka", lat: -15.4167, lng: 28.2833, region: "Lusaka", country: "Zambia" },
+  { name: "Marrakech", lat: 31.6295, lng: -7.9811, region: "Marrakesh-Safi", country: "Morocco" },
+  { name: "Nairobi", lat: -1.2921, lng: 36.8219, region: "Nairobi County", country: "Kenya" },
+  { name: "Pretoria", lat: -25.7479, lng: 28.2293, region: "Gauteng", country: "South Africa" },
+  { name: "Rabat", lat: 34.0209, lng: -6.8416, region: "Rabat-Sale-Kenitra", country: "Morocco" },
+  { name: "Tunis", lat: 36.8065, lng: 10.1815, region: "Tunis", country: "Tunisia" }
+];

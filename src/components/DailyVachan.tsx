@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { devLog } from '../lib/devLog';
 
-interface DailyVachanType {
+export interface DailyVachanType {
   id?: string;
   textHi: string;
   textEn: string;
@@ -20,7 +20,7 @@ interface DailyVachanType {
   tagEn: string;
 }
 
-const DAILY_VACHANS: DailyVachanType[] = [
+export const DAILY_VACHANS: DailyVachanType[] = [
   {
     textHi: "मनुष्य का जीवन केवल खाने और भोगने के लिए नहीं है, वह साधना और आत्म-शुद्धि का अनुपम अवसर है। संयम ही जीवन की वास्तविक निधि है।",
     textEn: "Human life is not merely for eating and indulgence; it is a matchless opportunity for spiritual practice and self-purification. Self-restraint is the true treasure of life.",

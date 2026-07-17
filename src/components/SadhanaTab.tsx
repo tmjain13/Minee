@@ -4,6 +4,7 @@ const confetti = (...args: any[]) => {};
 import { Clock, Play, Pause, RotateCcw, Sparkles, Volume2, VolumeX, ShieldCheck, Calendar, Plus, Trash2, CheckCircle2, ChevronRight, Info, Coffee, Sun, Moon, BookOpen, TrendingUp, Download, FileText, Wind, Flame, Timer, RefreshCw, Mic, FlameKindling, CheckSquare, X, Loader2, Send } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from 'recharts';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { db } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp, query, orderBy, limit, onSnapshot, doc, setDoc } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../lib/firebase-utils';
@@ -15,6 +16,8 @@ import {
   isOnline 
 } from '../services/sadhanaOfflineSync';
 import { Registry } from '../integrations/ComponentRegistry';
+import { KNOWLEDGE_BASE } from '../data/knowledge';
+import ArticleReader from './ArticleReader';
 
 // Lazy-loaded components from the Component Registry
 const DhyanTimer = Registry.DhyanTimer;
@@ -312,6 +315,87 @@ const SadhanaTab = memo(({
   initialSubTab?: 'timer' | 'fasting' | 'mantra' | 'breathwork' | 'diary' | 'swadhya' | 'gratitude' | 'suvichar' | 'pratikraman' | 'audio' | 'seva' | 'notifications' | 'salah' | 'streaks' | 'habits';
 }) => {
   const { user } = useAuth();
+  const { language } = useLanguage();
+
+  // --- Swadhya and Article Reader State ---
+  const [activeReadingArticle, setActiveReadingArticle] = useState<any | null>(null);
+  const [localReadHistory, setLocalReadHistory] = useState<any[]>([]);
+
+  const effectiveKnowledge = useMemo(() => {
+    return combinedKnowledge && combinedKnowledge.length > 0 ? combinedKnowledge : KNOWLEDGE_BASE;
+  }, [combinedKnowledge]);
+
+  useEffect(() => {
+    if (!user) {
+      // Local storage fallback for offline/guest mode
+      try {
+        const localStr = localStorage.getItem('sadhana_swadhya_read_history');
+        if (localStr) {
+          setLocalReadHistory(JSON.parse(localStr));
+        } else if (readHistory && readHistory.length > 0) {
+          setLocalReadHistory(readHistory);
+        }
+      } catch (err) {
+        console.warn("Failed to load local swadhya read history:", err);
+      }
+      return;
+    }
+    const path = `users/${user.uid}/readHistory`;
+    const q = query(
+      collection(db, path),
+      orderBy('timestamp', 'desc')
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setLocalReadHistory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (err) => {
+      console.warn("Failed to listen to Swadhya read history:", err);
+      if (readHistory && readHistory.length > 0 && localReadHistory.length === 0) {
+        setLocalReadHistory(readHistory);
+      }
+    });
+    return () => unsubscribe();
+  }, [user, readHistory]);
+
+  const markArticleAsRead = async (item: any) => {
+    const isAlreadyRead = localReadHistory.some(rh => rh.itemId === item.id);
+    if (isAlreadyRead) return;
+
+    const newRecord = {
+      itemId: item.id,
+      title: item.title,
+      category: item.category,
+      timestamp: new Date().toISOString()
+    };
+
+    if (!user) {
+      const updated = [newRecord, ...localReadHistory];
+      setLocalReadHistory(updated);
+      localStorage.setItem('sadhana_swadhya_read_history', JSON.stringify(updated));
+      return;
+    }
+
+    try {
+      const path = `users/${user.uid}/readHistory`;
+      await addDoc(collection(db, path), {
+        ...newRecord,
+        timestamp: serverTimestamp()
+      });
+    } catch (err) {
+      console.error("Failed to save read history to firestore:", err);
+      const updated = [newRecord, ...localReadHistory];
+      setLocalReadHistory(updated);
+    }
+  };
+
+  const onArticleClick = (item: any) => {
+    markArticleAsRead(item);
+    if (handleKnowledgeView) {
+      handleKnowledgeView(item);
+    } else {
+      setActiveReadingArticle(item);
+    }
+  };
+
   const [activeSubTab, setActiveSubTab] = useState<'timer' | 'fasting' | 'mantra' | 'breathwork' | 'diary' | 'swadhya' | 'gratitude' | 'suvichar' | 'pratikraman' | 'audio' | 'seva' | 'notifications' | 'salah' | 'streaks' | 'habits'>('timer');
 
   useEffect(() => {
@@ -364,6 +448,9 @@ const SadhanaTab = memo(({
   const [timeLeft, setTimeLeft] = useState(48 * 60);
   const [isActive, setIsActive] = useState(false);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  const [localSoundscape, setLocalSoundscape] = useState<'om' | 'temple_bells' | 'nature'>(() => {
+    return (localStorage.getItem('sadhana_local_soundscape') as any) || spiritualSoundscape || 'om';
+  });
   const [isListening, setIsListening] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -432,14 +519,15 @@ const SadhanaTab = memo(({
 
   useEffect(() => {
     // Only attempt to start playback if sound is enabled and component is active
-    if (ambientSoundEnabled && (isActive || isBreathActive)) {
+    const soundEnabled = ambientSoundEnabled || isAudioEnabled;
+    if (soundEnabled && (isActive || isBreathActive)) {
       const soundUrls = {
-        om: 'https://raw.githubusercontent.com/scottschiller/soundmanager2/master/demo/_mp3/rain.mp3',
+        om: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
         temple_bells: '/assets/peaceful-bell.mp3',
-        nature: 'https://raw.githubusercontent.com/scottschiller/soundmanager2/master/demo/_mp3/click-low.mp3'
+        nature: 'https://raw.githubusercontent.com/scottschiller/soundmanager2/master/demo/_mp3/rain.mp3'
       };
       
-      const currentUrl = soundUrls[spiritualSoundscape || 'om'] || soundUrls.om;
+      const currentUrl = soundUrls[localSoundscape || 'om'] || soundUrls.om;
 
       if (!ambientAudioRef.current) {
         try {
@@ -465,7 +553,7 @@ const SadhanaTab = memo(({
         ambientAudioRef.current.pause();
       }
     }
-  }, [ambientSoundEnabled, isActive, isBreathActive, spiritualSoundscape]);
+  }, [ambientSoundEnabled, isAudioEnabled, isActive, isBreathActive, localSoundscape]);
 
   useEffect(() => {
     return () => {
@@ -1873,6 +1961,71 @@ const SadhanaTab = memo(({
               </button>
             </div>
 
+            {/* QUICK-ACCESS SOUNDSCAPE SELECTOR */}
+            <div className="flex flex-col gap-2.5 p-4 rounded-3xl border w-full max-w-md mx-auto shadow-sm bg-amber-50/40 border-amber-100/80 text-stone-800 dark:bg-stone-900/40 dark:border-stone-800 dark:text-stone-200">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+                  <Volume2 size={12} className="text-spiritual" />
+                  {language === 'hi' ? 'अभ्यास संगीत' : 'Practice Soundscape'}
+                </span>
+                {!isAudioEnabled && (
+                  <span className="text-[9px] font-bold text-orange-500 dark:text-orange-400 uppercase animate-pulse">
+                    {language === 'hi' ? 'म्यूट' : 'Muted'}
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => {
+                    setLocalSoundscape('om');
+                    localStorage.setItem('sadhana_local_soundscape', 'om');
+                    if (!isAudioEnabled) {
+                      setIsAudioEnabled(true);
+                    }
+                  }}
+                  className={`py-2.5 px-3 rounded-2xl text-xs font-bold transition-all duration-200 cursor-pointer flex flex-col items-center gap-0.5 relative border ${
+                    localSoundscape === 'om'
+                      ? 'bg-spiritual text-white border-spiritual shadow-md shadow-orange-500/15'
+                      : 'bg-white text-stone-600 hover:text-stone-800 border-stone-200 dark:bg-stone-900/60 dark:text-stone-400 dark:hover:text-stone-200 dark:border-stone-800'
+                  }`}
+                >
+                  <span className="font-semibold tracking-wide">
+                    {language === 'hi' ? 'ॐ ध्वनि' : 'Om Chanting'}
+                  </span>
+                  <span className={`text-[8px] font-medium opacity-80`}>
+                    {language === 'hi' ? 'ध्यान संगीत' : 'Meditative Drone'}
+                  </span>
+                  {localSoundscape === 'om' && (
+                    <span className="absolute bottom-1 w-1 h-1 rounded-full bg-white" />
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setLocalSoundscape('nature');
+                    localStorage.setItem('sadhana_local_soundscape', 'nature');
+                    if (!isAudioEnabled) {
+                      setIsAudioEnabled(true);
+                    }
+                  }}
+                  className={`py-2.5 px-3 rounded-2xl text-xs font-bold transition-all duration-200 cursor-pointer flex flex-col items-center gap-0.5 relative border ${
+                    localSoundscape === 'nature'
+                      ? 'bg-spiritual text-white border-spiritual shadow-md shadow-orange-500/15'
+                      : 'bg-white text-stone-600 hover:text-stone-800 border-stone-200 dark:bg-stone-900/60 dark:text-stone-400 dark:hover:text-stone-200 dark:border-stone-800'
+                  }`}
+                >
+                  <span className="font-semibold tracking-wide">
+                    {language === 'hi' ? 'प्रकृति ध्वनि' : 'Nature Sounds'}
+                  </span>
+                  <span className={`text-[8px] font-medium opacity-80`}>
+                    {language === 'hi' ? 'शांत वर्षा' : 'Gentle Rain'}
+                  </span>
+                  {localSoundscape === 'nature' && (
+                    <span className="absolute bottom-1 w-1 h-1 rounded-full bg-white" />
+                  )}
+                </button>
+              </div>
+            </div>
+
             {/* Session Journal Trigger Card */}
             <div className="w-full max-w-md bg-orange-500/5 border border-orange-500/10 p-5 rounded-3xl flex flex-col items-center text-center gap-3 shadow-sm mx-auto mb-4">
               <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
@@ -2377,8 +2530,8 @@ const SadhanaTab = memo(({
               <div className="p-5 bg-black/5 dark:bg-white/5 rounded-3xl border border-black/5 flex flex-col justify-between text-left">
                 <span className="block text-[9px] font-black uppercase tracking-widest text-gray-400">Total Completed</span>
                 <div className="mt-2 flex items-baseline gap-2">
-                  <span className="text-3xl font-black">{readHistory?.length || 0}</span>
-                  <span className="text-xs font-bold text-gray-400 font-mono">/ {combinedKnowledge?.length || 0} items</span>
+                  <span className="text-3xl font-black">{localReadHistory?.length || 0}</span>
+                  <span className="text-xs font-bold text-gray-400 font-mono">/ {effectiveKnowledge?.length || 0} items</span>
                 </div>
               </div>
 
@@ -2386,7 +2539,7 @@ const SadhanaTab = memo(({
                 <span className="block text-[9px] font-black uppercase tracking-widest text-gray-400">Completion Rank</span>
                 <span className="text-xl font-black mt-2 text-orange-600 dark:text-orange-400 leading-tight">
                   {(() => {
-                    const pct = combinedKnowledge?.length ? ((readHistory?.length || 0) / combinedKnowledge.length) * 100 : 0;
+                    const pct = effectiveKnowledge?.length ? ((localReadHistory?.length || 0) / effectiveKnowledge.length) * 100 : 0;
                     if (pct >= 80) return 'Acharya Scholar';
                     if (pct >= 50) return 'Upadhyaya';
                     if (pct >= 20) return 'Sadhak';
@@ -2402,7 +2555,7 @@ const SadhanaTab = memo(({
                 <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Knowledge Progress Bar</span>
                 <span className="text-xs font-bold text-spiritual">
                   {(() => {
-                    const pct = combinedKnowledge?.length ? Math.round(((readHistory?.length || 0) / combinedKnowledge.length) * 100) : 0;
+                    const pct = effectiveKnowledge?.length ? Math.round(((localReadHistory?.length || 0) / effectiveKnowledge.length) * 100) : 0;
                     return `${pct}% Complete`;
                   })()}
                 </span>
@@ -2410,7 +2563,7 @@ const SadhanaTab = memo(({
               <div className="w-full h-3 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-orange-500 transition-all duration-500 rounded-full"
-                  style={{ width: `${combinedKnowledge?.length ? ((readHistory?.length || 0) / combinedKnowledge.length) * 100 : 0}%` }}
+                  style={{ width: `${effectiveKnowledge?.length ? ((localReadHistory?.length || 0) / effectiveKnowledge.length) * 100 : 0}%` }}
                 />
               </div>
             </div>
@@ -2430,12 +2583,12 @@ const SadhanaTab = memo(({
               </div>
 
               <div className="space-y-3">
-                {combinedKnowledge?.filter(item => !hideReadKnowledge || !readHistory?.some(rh => rh.itemId === item.id)).map((item) => {
-                  const isRead = readHistory?.some(rh => rh.itemId === item.id);
+                {effectiveKnowledge?.filter(item => !hideReadKnowledge || !localReadHistory?.some(rh => rh.itemId === item.id)).map((item) => {
+                  const isRead = localReadHistory?.some(rh => rh.itemId === item.id);
                   return (
                     <div 
                       key={item.id}
-                      onClick={() => handleKnowledgeView?.(item)}
+                      onClick={() => onArticleClick(item)}
                       className="group p-5 bg-white dark:bg-gray-800 hover:bg-orange-500/5 dark:hover:bg-orange-500/5 rounded-3xl border border-black/5 shadow-sm transition-all duration-200 flex items-center justify-between gap-4 cursor-pointer text-left"
                     >
                       <div className="flex-1 min-w-0">
@@ -2752,6 +2905,12 @@ const SadhanaTab = memo(({
           </div>
         )}
       </AnimatePresence>
+
+      <ArticleReader 
+        isOpen={activeReadingArticle !== null}
+        onClose={() => setActiveReadingArticle(null)}
+        article={activeReadingArticle}
+      />
     </motion.div>
   );
 });

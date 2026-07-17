@@ -11,10 +11,33 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
+export const detectBrowserLanguage = (): Language => {
+  try {
+    const locales = navigator.languages || [navigator.language || (navigator as any).userLanguage || ''];
+    for (const locale of locales) {
+      if (locale) {
+        const cleanLocale = locale.toLowerCase();
+        if (cleanLocale.startsWith('hi')) {
+          return 'hi';
+        }
+        if (cleanLocale.startsWith('en')) {
+          return 'en';
+        }
+      }
+    }
+  } catch (error) {
+    console.warn("Language detection failed, falling back to default.", error);
+  }
+  return 'hi'; // Default fallback for Terapanth community
+};
+
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguage] = useState<Language>(() => {
     const saved = localStorage.getItem('terapanth_language');
-    return (saved === 'hi' || saved === 'en') ? saved : 'hi';
+    if (saved === 'hi' || saved === 'en') {
+      return saved;
+    }
+    return detectBrowserLanguage();
   });
 
   useEffect(() => {

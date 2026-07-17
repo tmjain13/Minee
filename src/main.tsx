@@ -62,6 +62,7 @@ import './index.css';
 import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { ChatFocusProvider } from './context/ChatFocusContext';
+import { LocationProvider } from './context/LocationContext';
 import { auth } from './lib/firebase';
 
 // ─── SENTRY INITIALIZATION (Production Only) ───
@@ -130,101 +131,132 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Sentry.ErrorBoundary
-      fallback={({ error, resetError }) => (
-        <div
-          style={{
-            minHeight: "100vh",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%)",
-            padding: "24px",
-            fontFamily: "system-ui, sans-serif",
-          }}
-        >
+      fallback={({ error, resetError }) => {
+        const errStr = error ? error.toString() : '';
+        const errName = error && typeof error === 'object' && 'name' in error ? String((error as any).name) : '';
+        const errMessage = error && typeof error === 'object' && 'message' in error ? String((error as any).message) : '';
+        const isChunkError = 
+          errName === 'ChunkLoadError' ||
+          /chunk|loading|fetch|dynamically/i.test(errMessage || '') ||
+          /failed to fetch/i.test(errStr);
+
+        return (
           <div
             style={{
-              background: "white",
-              borderRadius: "20px",
-              padding: "40px",
-              maxWidth: "420px",
-              width: "100%",
-              textAlign: "center",
-              boxShadow: "0 20px 60px rgba(234, 88, 12, 0.15)",
+              minHeight: "100vh",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%)",
+              padding: "24px",
+              fontFamily: "system-ui, sans-serif",
             }}
           >
-            <div style={{ fontSize: "48px", marginBottom: "16px" }}>🙏</div>
-            <h2
+            <div
               style={{
-                color: "#c2410c",
-                fontSize: "20px",
-                fontWeight: 700,
-                marginBottom: "8px",
-                lineHeight: 1.4,
+                background: "white",
+                borderRadius: "20px",
+                padding: "40px",
+                maxWidth: "460px",
+                width: "100%",
+                textAlign: "center",
+                boxShadow: "0 20px 60px rgba(234, 88, 12, 0.15)",
               }}
             >
-              क्षमा करें, कुछ गलत हो गया
-            </h2>
-            <p
-              style={{
-                color: "#78716c",
-                fontSize: "14px",
-                marginBottom: "20px",
-                lineHeight: 1.6,
-              }}
-            >
-              Something went wrong. Please refresh the page.
-              <br />
-              <span style={{ fontSize: "12px", opacity: 0.7 }}>
-                यदि समस्या बनी रहती है, कृपया ऐप पुनः खोलें।
-              </span>
-            </p>
-            <button
-              onClick={() => {
-                resetError();
-                window.location.reload();
-              }}
-              style={{
-                background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-                color: "white",
-                border: "none",
-                padding: "12px 32px",
-                borderRadius: "12px",
-                fontSize: "14px",
-                fontWeight: 600,
-                cursor: "pointer",
-                boxShadow: "0 4px 12px rgba(234, 88, 12, 0.3)",
-              }}
-            >
-              Refresh Page / पेज रिफ्रेश करें
-            </button>
-            {import.meta.env.DEV && error && (
-              <pre
+              <div style={{ fontSize: "48px", marginBottom: "16px" }}>
+                {isChunkError ? "🌐" : "🙏"}
+              </div>
+              <h2
                 style={{
-                  marginTop: "20px",
-                  textAlign: "left",
-                  fontSize: "11px",
-                  color: "#a8a29e",
-                  background: "#fafaf9",
-                  padding: "12px",
-                  borderRadius: "8px",
-                  overflow: "auto",
-                  maxHeight: "200px",
+                  color: "#c2410c",
+                  fontSize: "20px",
+                  fontWeight: 700,
+                  marginBottom: "12px",
+                  lineHeight: 1.4,
                 }}
               >
-                {error.toString()}
-              </pre>
-            )}
+                {isChunkError 
+                  ? "कनेक्शन या अपडेट त्रुटि (चंक लोड विफलता)" 
+                  : "क्षमा करें, कुछ गलत हो गया (रनटाइम विफलता)"}
+              </h2>
+              <p
+                style={{
+                  color: "#78716c",
+                  fontSize: "14px",
+                  marginBottom: "24px",
+                  lineHeight: 1.6,
+                }}
+              >
+                {isChunkError ? (
+                  <>
+                    <strong>नेटवर्क कनेक्शन में समस्या आई है।</strong> कृपया अपने इंटरनेट कनेक्शन की जांच करें या पेज को फिर से लोड करें।
+                    <br />
+                    <span style={{ display: 'block', marginTop: '8px', fontSize: '13px', color: '#854d0e' }}>
+                      A network issue or application update occurred while loading this section. Please check your internet connection.
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <strong>सिस्टम में एक अनपेक्षित त्रुटि आई है।</strong> कृपया डेवलपर टीम को रिपोर्ट करने के लिए पेज रिफ्रेश करें।
+                    <br />
+                    <span style={{ display: 'block', marginTop: '8px', fontSize: '13px', color: '#991b1b' }}>
+                      An unexpected application runtime error occurred. Our diagnostics have been recorded.
+                    </span>
+                  </>
+                )}
+              </p>
+              <button
+                onClick={() => {
+                  resetError();
+                  window.location.reload();
+                }}
+                style={{
+                  background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+                  color: "white",
+                  border: "none",
+                  padding: "12px 32px",
+                  borderRadius: "12px",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  boxShadow: "0 4px 12px rgba(234, 88, 12, 0.3)",
+                }}
+              >
+                Refresh Page / पेज रिफ्रेश करें
+              </button>
+              
+              {error && (
+                <pre
+                  style={{
+                    marginTop: "20px",
+                    textAlign: "left",
+                    fontSize: "11px",
+                    color: "#a8a29e",
+                    background: "#fafaf9",
+                    padding: "12px",
+                    borderRadius: "8px",
+                    overflow: "auto",
+                    maxHeight: "150px",
+                    border: "1px solid #f5f5f4"
+                  }}
+                >
+                  Code: {errName || 'Error'}
+                  {"\n"}Message: {errMessage || errStr}
+                </pre>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      }}
     >
       <AuthProvider>
         <LanguageProvider>
-          <ChatFocusProvider>
-            {/* Removed ParyushanaMode from root to prevent global crashes */}
-            <App />
-          </ChatFocusProvider>
+          <LocationProvider>
+            <ChatFocusProvider>
+              {/* Removed ParyushanaMode from root to prevent global crashes */}
+              <App />
+            </ChatFocusProvider>
+          </LocationProvider>
         </LanguageProvider>
       </AuthProvider>
     </Sentry.ErrorBoundary>

@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useChatFocus } from '../context/ChatFocusContext';
-import { streamGeminiResponse } from '../services/geminiService';
+import { streamGeminiResponse } from '../lib/gemini-client';
 import { SharedFooterNav, getNavConfig } from './SharedFooterNav';
 import { KNOWLEDGE_BASE } from '../data/knowledge';
 import { jainQuizDatabase, fullJainDatabase, loadQuizDatabase } from '../data/jainQuizDatabase';

@@ -63,6 +63,7 @@ interface ProfileTabProps {
   lastSyncTime?: string;
   onNavigateToAdminDashboard?: () => void;
   onOpenLogin?: () => void;
+  onStartTour?: () => void;
 }
 
 const maskEmail = (emailStr?: string | null) => {
@@ -90,6 +91,7 @@ export default function ProfileTab({
   lastSyncTime,
   onNavigateToAdminDashboard,
   onOpenLogin,
+  onStartTour,
 }: ProfileTabProps) {
   const { user, userData } = useAuth();
   const [userRole, setUserRole] = useState<string | undefined>(userData?.role);
@@ -1892,6 +1894,21 @@ export default function ProfileTab({
               </div>
             </div>
 
+            {/* App Tour Trigger Button */}
+            {onStartTour && (
+              <div className="pt-4 border-t border-black/[0.04] dark:border-zinc-800/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed max-w-sm">
+                  Let the interactive onboarding tour guide you through the main hubs of Terapanth AI including Chat, Sadhana, and Panchang.
+                </span>
+                <button
+                  onClick={onStartTour}
+                  className="py-1.5 px-3 bg-orange-500 hover:bg-orange-600 text-white text-[10px] font-bold rounded-lg uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-sm shadow-orange-500/10 active:scale-95 cursor-pointer"
+                >
+                  <Sparkles size={12} /> App Guided Tour
+                </button>
+              </div>
+            )}
+
             {/* Privacy Policy Trigger Button */}
             <div className="pt-4 border-t border-black/[0.04] dark:border-zinc-800/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed max-w-sm">
@@ -2104,7 +2121,7 @@ export default function ProfileTab({
                       साधना डेटा और सिंक्रनाइज़ लॉग्स को स्थायी रूप से हटाने का
                       अनुरोध कर सकते हैं। इसके लिए समर्थन ईमेल{" "}
                       <span className="underline font-bold text-orange-500">
-                        jainkaran8999@gmail.com
+                        support@terapanth.ai
                       </span>{" "}
                       पर संपर्क करें।
                     </p>
@@ -2238,7 +2255,7 @@ export default function ProfileTab({
                       credentials, and associated databases. Please submit
                       request details via our support channel:{" "}
                       <span className="underline font-bold text-orange-500">
-                        jainkaran8999@gmail.com
+                        support@terapanth.ai
                       </span>
                       .
                     </p>

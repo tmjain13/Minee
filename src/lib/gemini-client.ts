@@ -1,7 +1,7 @@
-import { safeStringify } from '../lib/safe-json';
-import { auth } from '../lib/firebase';
+import { safeStringify } from './safe-json';
+import { auth } from './firebase';
 
-// Helper to safely truncate prompt and history inputs to prevent payload bloat (Fixing Issue 6 / 19 / 20)
+// Helper to safely truncate prompt and history inputs to prevent payload bloat
 function preparePayload(message: string, history: any[] = []) {
   if (message.length > 3000) {
     throw new Error('Message exceeds the 3000 character limit.');

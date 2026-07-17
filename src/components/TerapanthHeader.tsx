@@ -8,9 +8,11 @@ import {
   Settings,
   User,
   LogOut,
+  ArrowUp,
 } from "lucide-react";
 import { getAuth } from "firebase/auth";
 import { useLanguage } from "../context/LanguageContext";
+import { motion, AnimatePresence } from "motion/react";
 
 export interface TerapanthHeaderProps {
   theme?: string;
@@ -64,16 +66,37 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
   const activeLanguage = customLanguage || contextLang.language;
   const triggerToggleLanguage = onToggleLanguage || contextLang.toggleLanguage;
 
-  const [scrolled, setScrolled] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = (e: Event) => {
+      let currentScroll = 0;
+      if (e.target instanceof HTMLElement) {
+        currentScroll = e.target.scrollTop;
+      } else if (e.target === document || e.target === window) {
+        currentScroll = window.scrollY || document.documentElement.scrollTop;
+      }
+      setScrollY(currentScroll);
+    };
+
+    window.addEventListener("scroll", handleScroll, { capture: true, passive: true });
+    return () => window.removeEventListener("scroll", handleScroll, { capture: true });
+  }, []);
+
+  const scrolled = scrollY > 20;
+  const showScrollTop = scrollY > 300;
+
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [greeting, setGreeting] = useState("");
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    const scrollContainers = document.querySelectorAll(".overflow-y-auto, [class*='overflow-y-auto']");
+    scrollContainers.forEach((el) => {
+      el.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  };
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -112,12 +135,14 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled
             ? isDarkActive
-              ? "bg-black/80 backdrop-blur-xl border-b border-white/10 shadow-lg text-white"
-              : "bg-white/90 backdrop-blur-xl border-b border-orange-100 shadow-md text-gray-800"
+              ? "bg-black/60 backdrop-blur-lg border-b border-white/10 shadow-lg text-white"
+              : "bg-white/70 backdrop-blur-lg border-b border-orange-100 shadow-md text-gray-800"
             : "bg-gradient-to-r from-orange-500 via-orange-400 to-amber-500 text-white"
         }`}
       >
-        <div className="max-w-lg mx-auto px-3 py-2 flex items-center justify-between">
+        <div className={`max-w-lg mx-auto px-3 flex items-center justify-between transition-all duration-300 ${
+          scrolled ? "py-1" : "py-2"
+        }`}>
           {/* Group 1: Logo and Brand */}
           <div className="flex items-center gap-2.5">
             <div className="relative">
@@ -282,7 +307,28 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
           </div>
         )}
       </header>
-      <div className="h-12" />
+
+      {/* Scroll to Top Floating Action Button */}
+      <AnimatePresence>
+        {showScrollTop && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 15 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={scrollToTop}
+            className={`fixed bottom-22 right-4 z-50 p-3 rounded-full shadow-lg cursor-pointer flex items-center justify-center transition-all duration-300 border ${
+              isDarkActive
+                ? "bg-stone-900 border-stone-800 text-orange-400 hover:text-orange-300 hover:bg-stone-850 shadow-orange-950/20"
+                : "bg-white border-orange-100 text-orange-600 hover:text-orange-500 hover:bg-orange-50 shadow-orange-500/10"
+            }`}
+            aria-label="Scroll to top"
+          >
+            <ArrowUp size={20} className="stroke-[2.5]" />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </>
   );
 };

@@ -89,6 +89,20 @@ export default defineConfig(({mode}) => {
               if (id.includes('lucide-react')) return 'icons-vendor';
               return 'vendor';
             }
+            if (id.includes('src/components/')) {
+              const nonCritical = [
+                'MediaCenter', 'AudioCenter', 'DigitalLibrary', 'MaryadaQuiz',
+                'UnifiedQuizEngine', 'AgamShorts', 'PrekshaVisualizer', 'UnifiedRegistry',
+                'SaintsList', 'ViharTracker', 'GalleryTab', 'DailyVachan',
+                'NavkarMantra', 'DailySuvichar', 'PratikramanGuide', 'SacredPlacesMap',
+                'KarmaTheory', 'TapaLeaderboard', 'SutraLibrary', 'AnuvratPledge',
+                'SpiritualJournal', 'ParyushanaTab', 'TerapanthMasterHub2026',
+                'ChaturmasRegistry', 'NavigationController'
+              ];
+              if (nonCritical.some(comp => id.includes(comp))) {
+                return 'secondary-features';
+              }
+            }
           },
           chunkFileNames: (chunkInfo) => {
             let name = chunkInfo.name;
@@ -114,11 +128,10 @@ export default defineConfig(({mode}) => {
       headers: {
         'Content-Security-Policy': "frame-ancestors 'self' https://studio.google.com https://*.google.com https://*.googleusercontent.com https://*.run.app;",
       },
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modify—file watching is disabled to prevent flickering during agent edits.
-      hmr: process.env.DISABLE_HMR === 'true' ? false : { protocol: 'wss' },
-      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
-      watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      // HMR is disabled in AI Studio to prevent unnecessary resource usage and console errors.
+      hmr: false,
+      // Disable file watching to save CPU during agent edits.
+      watch: null,
     },
   };
 });

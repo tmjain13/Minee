@@ -6,6 +6,26 @@ jest.mock('../lib/firebase', () => ({
   db: {}
 }));
 
+jest.mock('../services/sadhanaOfflineSync', () => ({
+  getLocalData: jest.fn().mockResolvedValue([]),
+  saveLocalData: jest.fn().mockResolvedValue(true),
+  createSadhanaRecord: jest.fn().mockResolvedValue({ id: 'mock-record-id' }),
+  syncPendingRecords: jest.fn().mockResolvedValue([]),
+  isOnline: jest.fn().mockReturnValue(true)
+}));
+
+jest.mock('firebase/firestore', () => ({
+  collection: jest.fn(() => ({})),
+  addDoc: jest.fn(),
+  serverTimestamp: jest.fn(),
+  query: jest.fn(() => ({})),
+  orderBy: jest.fn(),
+  limit: jest.fn(),
+  onSnapshot: jest.fn(() => () => {}), // Returns an unsubscribe function
+  doc: jest.fn(() => ({})),
+  setDoc: jest.fn()
+}));
+
 import SadhanaTab from './SadhanaTab';
 import { AuthContext } from '../context/AuthContext';
 

@@ -346,3 +346,17 @@ export async function prepopulateLocalCache(
     console.error('[Offline Cache] Prepopulation failed:', error);
   }
 }
+
+/**
+ * Get the size of the sync queue
+ */
+export async function getSyncQueueSize(): Promise<number> {
+  try {
+    const database = await getDB();
+    const queue = await database.getAll('syncQueue');
+    return queue?.length || 0;
+  } catch (error) {
+    console.error('[Offline Sync] Error getting sync queue size:', error);
+    return 0;
+  }
+}

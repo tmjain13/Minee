@@ -1,31 +1,239 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import SunCalc from 'suncalc';
-import { Sun, Moon, MapPin, CalendarDays, Search, Globe, Loader2, Sparkles, ChevronDown, ChevronUp, Info, Check, Clock, Waves, Copy, Timer, RotateCcw, Play, Pause } from 'lucide-react';
+import { 
+  Sun, Moon, MapPin, CalendarDays, Search, Globe, Loader2, 
+  Sparkles, ChevronDown, ChevronUp, Info, Check, Clock, 
+  Timer, RotateCcw, Play, Pause, Star, X 
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+
 const confetti = (...args: any[]) => {};
 import { FESTIVALS_2026_2027 } from '../data/panchang';
 import { safeStringify } from '../lib/safe-json';
+import { searchCities } from '../data/cities';
+import { useLocation } from '../context/LocationContext';
 
-const monthNames = ['जनवरी', 'फरवरी', 'मार्च', 'अप्रैल', 'मई', 'जून', 'जुलाई', 'अगस्त', 'सितम्बर', 'अक्टूबर', 'नवम्बर', 'दिसम्बर'];
+const monthNames = [
+  'जनवरी', 'फरवरी', 'मार्च', 'अप्रैल', 'मई', 'जून', 
+  'जुलाई', 'अगस्त', 'सितम्बर', 'अक्टूबर', 'नवम्बर', 'दिसम्बर'
+];
+
+export interface City {
+  name: string;
+  lat: number;
+  lng: number;
+  region: string;
+  country: string;
+}
+
+const DELHI_DEFAULT: City = {
+  name: "Delhi",
+  lat: 28.6139,
+  lng: 77.2090,
+  region: "Delhi",
+  country: "India"
+};
+
+// ==========================================
+// 1. TYPES & INTERFACES
+// ==========================================
+
+export type ChoghadiyaName = 'Amrit' | 'Shubh' | 'Labh' | 'Char' | 'Udveg' | 'Rog' | 'Kaal';
+export type ChoghadiyaCategory = 'Auspicious' | 'Neutral' | 'Inauspicious';
+
+export interface ChoghadiyaSlot {
+  name: ChoghadiyaName;
+  category: ChoghadiyaCategory;
+  startTime: Date;
+  endTime: Date;
+  isDay: boolean;
+}
+
+// ==========================================
+// 2. METADATA & CATEGORIZATION
+// ==========================================
+
+const CHOGHADIYA_CATEGORIES: Record<ChoghadiyaName, ChoghadiyaCategory> = {
+  Amrit: 'Auspicious',
+  Shubh: 'Auspicious',
+  Labh: 'Auspicious',
+  Char: 'Neutral',
+  Udveg: 'Inauspicious',
+  Rog: 'Inauspicious',
+  Kaal: 'Inauspicious',
+};
+
+const CHOGHADIYA_DISPLAY_MAP: Record<ChoghadiyaName, { label: string; status: 'good' | 'neutral' | 'bad' }> = {
+  Amrit: { label: 'अमृत (Amrit)', status: 'good' },
+  Shubh: { label: 'शुभ (Shubh)', status: 'good' },
+  Labh: { label: 'लाभ (Labh)', status: 'good' },
+  Char: { label: 'चल (Char)', status: 'neutral' },
+  Udveg: { label: 'उद्वेग (Udveg)', status: 'bad' },
+  Rog: { label: 'रोग (Rog)', status: 'bad' },
+  Kaal: { label: 'काल (Kaal)', status: 'bad' },
+};
+
+// ==========================================
+// 3. SEQUENCE MATRICES
+// Rows = Day of week (0 = Sunday, 1 = Monday, etc.)
+// Columns = The 8 consecutive slots for that day/night
+// ==========================================
+
+const DAY_SEQUENCE: ChoghadiyaName[][] = [
+  ['Udveg', 'Char', 'Labh', 'Amrit', 'Kaal', 'Shubh', 'Rog', 'Udveg'], // 0: Sunday
+  ['Amrit', 'Kaal', 'Shubh', 'Rog', 'Udveg', 'Char', 'Labh', 'Amrit'], // 1: Monday
+  ['Rog', 'Udveg', 'Char', 'Labh', 'Amrit', 'Kaal', 'Shubh', 'Rog'],   // 2: Tuesday
+  ['Labh', 'Amrit', 'Kaal', 'Shubh', 'Rog', 'Udveg', 'Char', 'Labh'],  // 3: Wednesday
+  ['Shubh', 'Rog', 'Udveg', 'Char', 'Labh', 'Amrit', 'Kaal', 'Shubh'], // 4: Thursday
+  ['Char', 'Labh', 'Amrit', 'Kaal', 'Shubh', 'Rog', 'Udveg', 'Char'],  // 5: Friday
+  ['Kaal', 'Shubh', 'Rog', 'Udveg', 'Char', 'Labh', 'Amrit', 'Kaal']   // 6: Saturday
+];
+
+// This matches the exact sequence provided in your reference image (612270.jpg)
+const NIGHT_SEQUENCE: ChoghadiyaName[][] = [
+  ['Shubh', 'Amrit', 'Char', 'Rog', 'Kaal', 'Labh', 'Udveg', 'Shubh'], // 0: Sunday
+  ['Char', 'Rog', 'Kaal', 'Labh', 'Udveg', 'Shubh', 'Amrit', 'Char'],  // 1: Monday
+  ['Kaal', 'Labh', 'Udveg', 'Shubh', 'Amrit', 'Char', 'Rog', 'Kaal'],  // 2: Tuesday
+  ['Udveg', 'Shubh', 'Amrit', 'Char', 'Rog', 'Kaal', 'Labh', 'Udveg'], // 3: Wednesday
+  ['Amrit', 'Char', 'Rog', 'Kaal', 'Labh', 'Udveg', 'Shubh', 'Amrit'], // 4: Thursday
+  ['Rog', 'Kaal', 'Labh', 'Udveg', 'Shubh', 'Amrit', 'Char', 'Rog'],   // 5: Friday
+  ['Labh', 'Udveg', 'Shubh', 'Amrit', 'Char', 'Rog', 'Kaal', 'Labh']   // 6: Saturday
+];
+
+// ==========================================
+// 4. GENERATOR ENGINE
+// ==========================================
+
+/**
+ * Generates the full 24-hour Choghadiya schedule for a given date and location.
+ * 
+ * @param sunrise - Date object representing today's sunrise
+ * @param sunset - Date object representing today's sunset
+ * @param nextSunrise - Date object representing tomorrow's sunrise
+ * @returns Array of 16 Choghadiya slots
+ */
+export function generateDailyChoghadiya(
+  sunrise: Date,
+  sunset: Date,
+  nextSunrise: Date
+): ChoghadiyaSlot[] {
+  const slots: ChoghadiyaSlot[] = [];
+  
+  // Calculate the total duration of daylight and nighttime in milliseconds
+  const dayDurationMs = sunset.getTime() - sunrise.getTime();
+  const nightDurationMs = nextSunrise.getTime() - sunset.getTime();
+  
+  // Each slot is precisely 1/8th of the respective period duration
+  const daySlotDurationMs = dayDurationMs / 8;
+  const nightSlotDurationMs = nightDurationMs / 8;
+
+  // JavaScript `getDay()` returns 0 for Sunday, matching our matrix index
+  const dayOfWeek = sunrise.getDay();
+
+  // Generate the 8 Day Slots
+  for (let i = 0; i < 8; i++) {
+    const slotStartTime = new Date(sunrise.getTime() + i * daySlotDurationMs);
+    const slotEndTime = new Date(sunrise.getTime() + (i + 1) * daySlotDurationMs);
+    const name = DAY_SEQUENCE[dayOfWeek][i];
+
+    slots.push({
+      name,
+      category: CHOGHADIYA_CATEGORIES[name],
+      startTime: slotStartTime,
+      endTime: slotEndTime,
+      isDay: true
+    });
+  }
+
+  // Generate the 8 Night Slots
+  for (let i = 0; i < 8; i++) {
+    const slotStartTime = new Date(sunset.getTime() + i * nightSlotDurationMs);
+    const slotEndTime = new Date(sunset.getTime() + (i + 1) * nightSlotDurationMs);
+    const name = NIGHT_SEQUENCE[dayOfWeek][i];
+
+    slots.push({
+      name,
+      category: CHOGHADIYA_CATEGORIES[name],
+      startTime: slotStartTime,
+      endTime: slotEndTime,
+      isDay: false
+    });
+  }
+
+  return slots;
+}
 
 export default function SunriseSunset() {
   const [date, setDate] = useState<Date>(new Date());
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
-  const [location, setLocation] = useState(() => {
-    const saved = localStorage.getItem('default-location');
-    try {
-        const parsed = saved ? JSON.parse(saved) : null;
-        return (parsed && parsed.lat && parsed.lng) ? parsed : { lat: 28.6139, lng: 77.2090, name: 'Delhi' };
-    } catch {
-        return { lat: 28.6139, lng: 77.2090, name: 'Delhi' };
-    }
-  });
-
+  
+  const { activeCity, setActiveCity, isDefault, setDefaultCity } = useLocation();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
+  const [isTithiExpanded, setIsTithiExpanded] = useState(false);
+  const [weather, setWeather] = useState<{
+    temp: number;
+    description: string;
+    icon: string;
+    humidity?: number;
+    windSpeed?: number;
+    loading: boolean;
+    error: boolean;
+  } | null>(null);
+
+  // Weather fetcher based on activeCity coordinates
   useEffect(() => {
-    localStorage.setItem('default-location', safeStringify(location));
-  }, [location]);
+    let active = true;
+    const fetchWeather = async () => {
+      setWeather(prev => prev ? { ...prev, loading: true, error: false } : { temp: 0, description: '', icon: '', loading: true, error: false });
+      try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${activeCity.lat}&longitude=${activeCity.lng}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!active) return;
+        if (data && data.current) {
+          const code = data.current.weather_code;
+          let desc = "Clear";
+          let icon = "☀️";
+          if (code === 0) { desc = "Clear Sky"; icon = "☀️"; }
+          else if ([1, 2, 3].includes(code)) { desc = "Partly Cloudy"; icon = "⛅"; }
+          else if ([45, 48].includes(code)) { desc = "Foggy"; icon = "🌫️"; }
+          else if ([51, 53, 55, 56, 57].includes(code)) { desc = "Drizzle"; icon = "🌧️"; }
+          else if ([61, 63, 65, 66, 67].includes(code)) { desc = "Rainy"; icon = "🌧️"; }
+          else if ([71, 73, 75, 77].includes(code)) { desc = "Snowy"; icon = "❄️"; }
+          else if ([80, 81, 82].includes(code)) { desc = "Rain Showers"; icon = "🌦️"; }
+          else if ([95, 96, 99].includes(code)) { desc = "Thunderstorm"; icon = "⛈️"; }
+
+          setWeather({
+            temp: Math.round(data.current.temperature_2m),
+            description: desc,
+            icon: icon,
+            humidity: data.current.relative_humidity_2m,
+            windSpeed: data.current.wind_speed_10m,
+            loading: false,
+            error: false
+          });
+        } else {
+          setWeather(prev => prev ? { ...prev, loading: false, error: true } : null);
+        }
+      } catch (err) {
+        console.error("Error fetching weather:", err);
+        if (active) {
+          setWeather(prev => prev ? { ...prev, loading: false, error: true } : null);
+        }
+      }
+    };
+
+    fetchWeather();
+    return () => {
+      active = false;
+    };
+  }, [activeCity.lat, activeCity.lng]);
+
   const [calendarType, setCalendarType] = useState<'Gregorian' | 'Vikrami'>('Gregorian');
   
   // Timer State
@@ -33,6 +241,31 @@ export default function SunriseSunset() {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [timerPreset, setTimerPreset] = useState<number | null>(48);
 
+  const [timezone, setTimezone] = useState<string>(() => {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata';
+    return tz === 'Asia/Calcutta' ? 'Asia/Kolkata' : tz;
+  });
+  const [timezoneSearch, setTimezoneSearch] = useState('');
+  const [showTimezoneDropdown, setShowTimezoneDropdown] = useState(false);
+  const [showForecast, setShowForecast] = useState(false);
+  const [showTithiInfo, setShowTithiInfo] = useState(false);
+  const [showControls, setShowControls] = useState(false);
+  const [showSadhanaTimer, setShowSadhanaTimer] = useState(true);
+
+  const searchRef = useRef<HTMLDivElement>(null);
+  const timezoneRef = useRef<HTMLDivElement>(null);
+
+  const allTimezones = useMemo(() => {
+    return Intl.supportedValuesOf('timeZone').map(tz => tz === 'Asia/Calcutta' ? 'Asia/Kolkata' : tz);
+  }, []);
+
+  const filteredTimezones = useMemo(() => {
+    return allTimezones.filter(tz => tz.toLowerCase().includes(timezoneSearch.toLowerCase()));
+  }, [allTimezones, timezoneSearch]);
+
+
+
+  // Clock interval
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -40,6 +273,7 @@ export default function SunriseSunset() {
     return () => clearInterval(timer);
   }, []);
 
+  // Timer interval
   useEffect(() => {
     let interval: any;
     if (isTimerRunning && timerTime > 0) {
@@ -58,29 +292,7 @@ export default function SunriseSunset() {
     return () => clearInterval(interval);
   }, [isTimerRunning, timerTime]);
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [timezone, setTimezone] = useState<string>(() => {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata';
-    return tz === 'Asia/Calcutta' ? 'Asia/Kolkata' : tz;
-  });
-  const [timezoneSearch, setTimezoneSearch] = useState('');
-  const [showTimezoneDropdown, setShowTimezoneDropdown] = useState(false);
-  const [showForecast, setShowForecast] = useState(false);
-  const [showTithiInfo, setShowTithiInfo] = useState(false);
-  
-  const searchRef = useRef<HTMLDivElement>(null);
-  const allTimezones = useMemo(() => {
-    return Intl.supportedValuesOf('timeZone').map(tz => tz === 'Asia/Calcutta' ? 'Asia/Kolkata' : tz);
-  }, []);
-  const filteredTimezones = useMemo(() => {
-    return allTimezones.filter(tz => tz.toLowerCase().includes(timezoneSearch.toLowerCase()));
-  }, [allTimezones, timezoneSearch]);
-  
-  const timezoneRef = useRef<HTMLDivElement>(null);
-
+  // Location selector click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (timezoneRef.current && !timezoneRef.current.contains(event.target as Node)) {
@@ -92,7 +304,7 @@ export default function SunriseSunset() {
   }, []);
 
   // Terapanth Rules: Add 3 mins to sunrise, subtract 3 mins from sunset
-  const times = SunCalc.getTimes(date, location.lat, location.lng);
+  const times = SunCalc.getTimes(date, activeCity.lat, activeCity.lng);
   
   const panchangSunrise = new Date(times.sunrise.getTime() + 3 * 60000);
   const panchangSunset = new Date(times.sunset.getTime() - 3 * 60000);
@@ -117,26 +329,56 @@ export default function SunriseSunset() {
     const nightPraharLength = nightLength / 4;
 
     if (now >= sunrise && now < sunset) {
-      // Day Prahars
       const elapsed = now - sunrise;
       const praharNum = Math.floor(elapsed / dayPraharLength) + 1;
-      return { type: 'Day', num: praharNum, label: `${praharNum}${praharNum === 1 ? 'st' : praharNum === 2 ? 'nd' : praharNum === 3 ? 'rd' : 'th'} Prahar (Day)` };
+      return { 
+        type: 'Day', 
+        num: praharNum, 
+        label: `${praharNum}${praharNum === 1 ? 'st' : praharNum === 2 ? 'nd' : praharNum === 3 ? 'rd' : 'th'} Prahar (Day)` 
+      };
     } else {
-      // Night Prahars
       let elapsed;
       if (now >= sunset) {
         elapsed = now - sunset;
       } else {
-        // Between midnight and sunrise
         const prevSunset = sunset - 24 * 60 * 60 * 1000;
         elapsed = now - prevSunset;
       }
       const praharNum = Math.floor(elapsed / nightPraharLength) + 1;
-      return { type: 'Night', num: praharNum, label: `${praharNum}${praharNum === 1 ? 'st' : praharNum === 2 ? 'nd' : praharNum === 3 ? 'rd' : 'th'} Prahar (Night)` };
+      return { 
+        type: 'Night', 
+        num: praharNum, 
+        label: `${praharNum}${praharNum === 1 ? 'st' : praharNum === 2 ? 'nd' : praharNum === 3 ? 'rd' : 'th'} Prahar (Night)` 
+      };
     }
   }, [currentTime, panchangSunrise, panchangSunset]);
 
   const currentPrahar = calculatePrahar();
+
+  const getChoghadiyaData = useCallback((isDay: boolean) => {
+    const tomorrow = new Date(date);
+    tomorrow.setDate(date.getDate() + 1);
+    const tomorrowTimes = SunCalc.getTimes(tomorrow, activeCity.lat, activeCity.lng);
+    const nextSunrise = new Date(tomorrowTimes.sunrise.getTime() + 3 * 60000);
+
+    const slots = generateDailyChoghadiya(panchangSunrise, panchangSunset, nextSunrise);
+    const currentMs = currentTime.getTime();
+
+    return slots
+      .filter(slot => slot.isDay === isDay)
+      .map(slot => {
+        const displayInfo = CHOGHADIYA_DISPLAY_MAP[slot.name];
+        const isActive = currentMs >= slot.startTime.getTime() && currentMs < slot.endTime.getTime();
+        return {
+          name: displayInfo.label,
+          status: displayInfo.status,
+          meaning: slot.category,
+          start: slot.startTime,
+          end: slot.endTime,
+          isActive
+        };
+      });
+  }, [panchangSunrise, panchangSunset, date, currentTime, activeCity.lat, activeCity.lng]);
 
   const formatTime = (d: Date) => {
     try {
@@ -205,58 +447,84 @@ export default function SunriseSunset() {
 
   const tithiData = getTithiInfo();
 
+  // Unified Offline / Online Search
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setShowDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    if (searchQuery.length > 1) {
+      // 1. Instant offline matches
+      const offlineMatches = searchCities(searchQuery, 8).map(city => ({
+        lat: String(city.lat),
+        lon: String(city.lng),
+        display_name: `${city.name}, ${city.region}, ${city.country}`,
+        address: {
+          city: city.name,
+          state: city.region,
+          country: city.country
+        },
+        isOffline: true
+      }));
 
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
-      if (searchQuery.length > 2) {
-        setIsSearching(true);
-        try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&limit=5&addressdetails=1`);
-          const data = await res.json();
-          setSearchResults(data);
-          setShowDropdown(true);
-        } catch (error) {
-          console.error('Error fetching location:', error);
-        } finally {
-          setIsSearching(false);
+      setSearchResults(offlineMatches);
+
+      // 2. Online search fallback
+      const delayDebounceFn = setTimeout(async () => {
+        if (searchQuery.length > 2) {
+          setIsSearching(true);
+          try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&limit=5&addressdetails=1`);
+            const onlineData = await res.json();
+            
+            setSearchResults(prev => {
+              const existingNames = new Set(prev.map(p => p.display_name.toLowerCase()));
+              const filteredOnline = onlineData.filter((place: any) => {
+                const fullName = place.display_name.toLowerCase();
+                return !existingNames.has(fullName);
+              });
+              return [...prev, ...filteredOnline];
+            });
+          } catch (error) {
+            console.error('Error fetching online locations:', error);
+          } finally {
+            setIsSearching(false);
+          }
         }
-      } else {
-        setSearchResults([]);
-        setShowDropdown(false);
-      }
-    }, 500);
+      }, 500);
 
-    return () => clearTimeout(delayDebounceFn);
+      return () => clearTimeout(delayDebounceFn);
+    } else {
+      setSearchResults([]);
+    }
   }, [searchQuery]);
 
-  const handleSelectLocation = (place: any) => {
-    const nameParts = [];
-    if (place.address) {
-      if (place.address.city || place.address.town || place.address.village) {
-        nameParts.push(place.address.city || place.address.town || place.address.village);
-      } else if (place.address.county) {
-        nameParts.push(place.address.county);
-      }
-      if (place.address.state) nameParts.push(place.address.state);
-      if (place.address.country) nameParts.push(place.address.country);
+  const handleCitySelect = (place: any) => {
+    let selected: City;
+    if (place.isOffline) {
+      selected = {
+        name: place.address.city,
+        lat: Number(place.lat),
+        lng: Number(place.lon),
+        region: place.address.state || '',
+        country: place.address.country || ''
+      };
+    } else {
+      const nameParts = place.display_name.split(',');
+      const cityName = nameParts[0]?.trim() || 'Unknown';
+      const countryName = nameParts[nameParts.length - 1]?.trim() || 'Unknown';
+      const regionName = nameParts[nameParts.length - 2]?.trim() || '';
+      selected = {
+        name: cityName,
+        lat: parseFloat(place.lat),
+        lng: parseFloat(place.lon),
+        region: regionName,
+        country: countryName
+      };
     }
-    
-    setLocation({
-      lat: parseFloat(place.lat),
-      lng: parseFloat(place.lon),
-      name: nameParts.length > 0 ? nameParts.join(', ') : place.display_name.split(',')[0]
-    });
+    setActiveCity(selected);
+    setIsModalOpen(false);
     setSearchQuery('');
-    setShowDropdown(false);
+  };
+
+  const handleSetDefault = () => {
+    setDefaultCity(activeCity);
   };
 
   const getUserLocation = () => {
@@ -264,10 +532,12 @@ export default function SunriseSunset() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setLocation({
+          setActiveCity({
+            name: 'GPS Location',
             lat: position.coords.latitude,
             lng: position.coords.longitude,
-            name: 'Current Location'
+            region: 'Current',
+            country: 'Local'
           });
         },
         (error) => {
@@ -280,20 +550,13 @@ export default function SunriseSunset() {
             msg = "लोकेशन अनुरोध का समय समाप्त।";
           }
           setLocationError(msg);
-          console.warn("Could not get location:", error.message || error);
-          
-          // Auto clear after 4 seconds
-          setTimeout(() => {
-            setLocationError(null);
-          }, 4000);
+          setTimeout(() => setLocationError(null), 4000);
         },
         { timeout: 8000 }
       );
     } else {
       setLocationError("आपका ब्राउज़र जीपीएस का समर्थन नहीं करता है।");
-      setTimeout(() => {
-        setLocationError(null);
-      }, 4000);
+      setTimeout(() => setLocationError(null), 4000);
     }
   };
 
@@ -303,7 +566,7 @@ export default function SunriseSunset() {
       const forecastDate = new Date(date);
       forecastDate.setDate(date.getDate() + i);
       
-      const fTimes = SunCalc.getTimes(forecastDate, location.lat, location.lng);
+      const fTimes = SunCalc.getTimes(forecastDate, activeCity.lat, activeCity.lng);
       const fSunrise = new Date(fTimes.sunrise.getTime() + 3 * 60000);
       const fSunset = new Date(fTimes.sunset.getTime() - 3 * 60000);
       
@@ -313,7 +576,11 @@ export default function SunriseSunset() {
       if (tithiNumber === 0) tithiNumber = 30; 
       const paksha = phase <= 0.5 ? 'शुक्ल' : 'कृष्ण';
       const tithiNameNumber = tithiNumber > 15 ? tithiNumber - 15 : tithiNumber;
-      const tithiNames = ['प्रतिपदा (1)', 'द्वितीया (2)', 'तृतीया (3)', 'चतुर्थी (4)', 'पंचमी (5)', 'षष्ठी (6)', 'सप्तमी (7)', 'अष्टमी (8)', 'नवमी (9)', 'दशमी (10)', 'एकादशी (11)', 'द्वादशी (12)', 'त्रयोदशी (13)', 'चतुर्दशी (14)', 'पूर्णिमा / अमावस्या'];
+      const tithiNames = [
+        'प्रतिपदा (1)', 'द्वितीया (2)', 'तृतीया (3)', 'चतुर्थी (4)', 'पंचमी (5)',
+        'षष्ठी (6)', 'सप्तमी (7)', 'अष्टमी (8)', 'नवमी (9)', 'दशमी (10)',
+        'एकादशी (11)', 'द्वादशी (12)', 'त्रयोदशी (13)', 'चतुर्दशी (14)', 'पूर्णिमा / अमावस्या'
+      ];
       let tithiName = tithiNames[tithiNameNumber - 1] || '';
       if (tithiNumber === 15) tithiName = 'पूर्णिमा (15)';
       if (tithiNumber === 30) tithiName = 'अमावस्या (30)';
@@ -330,413 +597,572 @@ export default function SunriseSunset() {
 
   const forecastData = showForecast ? generateForecast() : [];
 
-  return (
-    <div className="space-y-4">
-      {/* Real-time Master Clock Section */}
-      <div className="bg-spiritual shadow-spiritual p-4 sm:p-5 rounded-3xl text-[var(--bg-cream)] flex flex-col items-stretch gap-4 sm:gap-5 relative overflow-hidden group">
-        <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
-          <Clock size={120} />
-        </div>
+  // Parse AM/PM for layout split
+  const timeStr = formatTime(currentTime);
+  const amPmMatch = timeStr.match(/(AM|PM|am|pm)/i);
+  const amPmStr = amPmMatch ? amPmMatch[0] : '';
+  const cleanTimeStr = timeStr.replace(/(AM|PM|am|pm)/i, '').trim();
 
-        {/* Sun Path Visualization */}
-        <div className="absolute inset-0 pointer-events-none opacity-20">
+  // Create full dates string
+  const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
+  const monthName = date.toLocaleDateString('en-US', { month: 'long' });
+  const dayNum = date.getDate();
+  const yearVal = date.getFullYear();
+  const vikramiYear = yearVal + 57;
+
+  return (
+    <main className="pt-16 px-4 pb-24 w-full max-w-md mx-auto">
+      
+      {/* --- FIX 2: LOCATION & SEARCH BAR (यह आपका सर्च बटन है जो गायब हो गया था) --- */}
+      <div className="flex items-center justify-between px-1 mb-3">
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="group flex items-center gap-1.5 px-3.5 py-1.5 bg-[#403d38] text-orange-400 hover:bg-[#4d4943] hover:text-orange-300 hover:scale-[1.03] active:scale-[0.97] transition-all duration-200 rounded-full text-xs font-semibold shadow-md border border-[#524f48] cursor-pointer"
+        >
+          {isSearching || (weather && weather.loading) ? (
+            <Loader2 size={13} className="animate-spin text-orange-400" />
+          ) : (
+            <MapPin size={13} className="transition-transform duration-200 group-hover:translate-y-[-1px] group-hover:scale-110" />
+          )}
+          <span>{activeCity.name}, {activeCity.country}</span>
+        </button>
+
+        {!isDefault && (
+          <button 
+            onClick={handleSetDefault}
+            className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-[#ff9900] font-bold bg-[#403d38] border border-[#ff9900]/30 px-2 py-1.5 rounded-md hover:bg-[#ff9900]/10 transition-colors"
+          >
+            <Star size={12} className="fill-[#ff9900]" />
+            Set Default
+          </button>
+        )}
+      </div>
+
+      {/* --- SOLAR LIFECYCLE CARD (आपका डार्क कार्ड यहाँ से शुरू होता है) --- */}
+      <div className="bg-[#46433e] rounded-[24px] p-5 shadow-lg border border-[#524f48] relative overflow-hidden group">
+        
+        {/* Background Subtle Path */}
+        <div className="absolute inset-0 pointer-events-none opacity-5">
           <svg viewBox="0 0 400 100" className="w-full h-full">
             <path 
               d="M 50 80 Q 200 -20 350 80" 
               fill="none" 
               stroke="white" 
-              strokeWidth="0.5" 
+              strokeWidth="1" 
               strokeDasharray="2 4"
-            />
-            {/* Position of indicator based on solar cycle */}
-            <motion.circle 
-              r="2" 
-              fill="orange"
-              animate={{ 
-                cx: [50, 200, 350],
-                cy: [80, 0, 80]
-              }}
-              transition={{ 
-                duration: 24, 
-                repeat: Infinity, 
-                ease: "linear" 
-              }}
             />
           </svg>
         </div>
-        
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6 relative z-10">
-          <div className="text-center md:text-left flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-1.5 mb-2 justify-center md:justify-start">
-              <div className="flex items-center gap-1 bg-white/10 px-2 py-0.5 rounded-full border border-white/10">
-                <div className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] opacity-80">Spiritual Chronometer</span>
+
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`${activeCity.name}-${activeCity.lat}-${activeCity.lng}`}
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="space-y-4 relative z-10"
+          >
+            {/* Header Row */}
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2 bg-[#2c2a26] px-3 py-1.5 rounded-full text-xs font-bold text-orange-400 border border-[#3d3a35]">
+                <Clock size={12} className="animate-pulse" />
+                <span className="uppercase">{currentPrahar.label}</span>
               </div>
-              <div className="flex items-center gap-1 bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/20">
-                <Sparkles size={8} className="text-amber-400" />
-                <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] text-amber-400">{currentPrahar.label}</span>
-              </div>
+              <span className="text-[10px] tracking-widest uppercase font-bold text-gray-400">
+                Solar Lifecycle
+              </span>
             </div>
             
-            <motion.h2 
-              className="text-4xl sm:text-5xl md:text-6xl font-black font-mono tracking-tighter mb-2 text-amber-400 drop-shadow-[0_0_15px_rgba(251,191,36,0.35)]"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              {new Intl.DateTimeFormat('en-US', {
-                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true, timeZone: timezone
-              }).format(currentTime)}
-            </motion.h2>
-
-            <div className="flex flex-wrap items-center gap-2 justify-center md:justify-start">
-              <div className="flex items-center bg-black/20 rounded-lg p-0.5 border border-white/10 backdrop-blur-sm shrink-0">
-                <button 
-                  onClick={() => setCalendarType('Gregorian')}
-                  className={`px-2.5 py-1 text-[8px] font-black uppercase tracking-widest rounded transition-all ${calendarType === 'Gregorian' ? 'bg-amber-400 text-black shadow-md shadow-amber-400/10' : 'text-gray-400 hover:text-white'}`}
-                >
-                  Gregorian
-                </button>
-                <button 
-                  onClick={() => setCalendarType('Vikrami')}
-                  className={`px-2.5 py-1 text-[8px] font-black uppercase tracking-widest rounded transition-all ${calendarType === 'Vikrami' ? 'bg-amber-400 text-black shadow-md shadow-amber-400/10' : 'text-gray-400 hover:text-white'}`}
-                >
-                  Vikrami
-                </button>
+            {/* Main Time Display */}
+            <div className="bg-[#3b3833] rounded-2xl p-6 flex flex-col items-center justify-center border border-[#48453f] relative">
+              <div className="text-orange-400 text-5xl font-mono font-bold tracking-tight flex items-baseline gap-2">
+                {cleanTimeStr} <span className="text-3xl font-sans font-medium uppercase text-orange-500">{amPmStr}</span>
               </div>
-              <p className="text-[10px] font-bold opacity-90 px-1 italic serif-text">
-                {calendarType === 'Gregorian' ? (
-                  currentTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-                ) : (
-                  `V.S. ${currentTime.getFullYear() + 57}, ${currentTime.toLocaleDateString('hi-IN', { weekday: 'short' })}`
-                )}
+              <p className="text-center text-[11px] text-stone-300 mt-2 font-medium">
+                {dayOfWeek}, {monthName} {dayNum} • {tithiData.tithi} ({vikramiYear})
               </p>
-              <div className="h-4 w-[1px] bg-white/10 hidden sm:block" />
-              <span className="text-[8px] font-black uppercase tracking-[0.2em] bg-white/10 px-2 py-1 rounded border border-white/5 opacity-80 hidden sm:inline">{timezone === 'Asia/Kolkata' ? 'IST' : timezone.split('/').pop()?.replace(/_/g, ' ')}</span>
-            </div>
-          </div>
-
-          {/* Samayik Timer Section */}
-          <div className="bg-black/20 backdrop-blur-xl p-4 rounded-2xl border border-white/10 w-full md:w-60 shadow-xl relative overflow-hidden group/timer ring-1 ring-white/10">
-            <div className="absolute top-0 left-0 w-full h-1 bg-white/5 overflow-hidden">
-               <motion.div 
-                 initial={{ width: "0%" }}
-                 animate={{ width: isTimerRunning ? `${(timerTime / (timerPreset ? timerPreset * 60 : 2880)) * 100}%` : "0%" }}
-                 className="h-full bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]"
-               />
+              {weather && (
+                <div className="flex items-center gap-2 mt-2 text-[10px] text-stone-400">
+                  {weather.loading ? (
+                    <span className="flex items-center gap-1 animate-pulse">🌤️ Weather syncing...</span>
+                  ) : weather.error ? (
+                    <span className="text-stone-500">Weather unavailable</span>
+                  ) : (
+                    <span className="flex items-center gap-1.5">
+                      <span>{weather.icon}</span>
+                      <span className="font-semibold text-stone-300">{weather.temp}°C</span>
+                      <span>•</span>
+                      <span className="capitalize">{weather.description}</span>
+                      {weather.humidity !== undefined && (
+                        <>
+                          <span>•</span>
+                          <span>💧 {weather.humidity}%</span>
+                        </>
+                      )}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
             
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-1.5">
-                <Timer size={14} className="text-orange-400" />
-                <span className="text-[9px] font-black uppercase tracking-widest text-orange-400">Sadhana Timer</span>
+            {/* 2x2 Grid for Sunrise/Sunset */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Sunrise */}
+              <div className="bg-[#4a3e31] border border-[#5c4a39] rounded-2xl p-3">
+                <div className="text-[10px] text-orange-400 font-bold uppercase mb-1 flex items-center gap-1">
+                  <Sun size={12} /> Sunrise
+                </div>
+                <div className="text-orange-400 font-mono text-lg font-bold">{formatTime(panchangSunrise)}</div>
               </div>
+              
+              {/* Navkarsi */}
+              <div className="bg-[#4a3e31] border border-[#5c4a39] rounded-2xl p-3">
+                <div className="text-[10px] text-orange-400 font-bold uppercase mb-1 flex items-center gap-1">
+                  <Sparkles size={11} /> Navkarsi
+                </div>
+                <div className="text-orange-400 font-mono text-lg font-bold">{formatTime(navkarsi)}</div>
+              </div>
+              
+              {/* Paurushi */}
+              <div className="bg-[#4a3e31] border border-[#5c4a39] rounded-2xl p-3">
+                <div className="text-[10px] text-orange-400 font-bold uppercase mb-1 flex items-center gap-1">
+                  <Clock size={11} /> Paurushi
+                </div>
+                <div className="text-orange-400 font-mono text-lg font-bold">{formatTime(paurushi)}</div>
+              </div>
+              
+              {/* Sunset (Purple Tint) */}
+              <div className="bg-[#3e3146] border border-[#4d3a5a] rounded-2xl p-3">
+                <div className="text-[10px] text-[#b388d5] font-bold uppercase mb-1 flex items-center gap-1">
+                  <Moon size={11} /> Sunset
+                </div>
+                <div className="text-[#b388d5] font-mono text-lg font-bold">{formatTime(panchangSunset)}</div>
+              </div>
+            </div>
+
+            {/* Bottom Tithi Pill */}
+            <div className="bg-[#2c3d36] border border-[#3a5046] rounded-xl overflow-hidden transition-colors duration-200">
               <button 
-                onClick={() => {
-                  setTimerTime(48 * 60);
-                  setIsTimerRunning(false);
-                  setTimerPreset(48);
-                }}
-                className="p-1 hover:bg-white/10 rounded transition-colors text-gray-400 hover:text-white"
-                title="Reset to Samayik (48m)"
+                onClick={() => setIsTithiExpanded(!isTithiExpanded)}
+                className="w-full p-3 text-left flex items-center justify-between text-xs font-bold text-[#6bba96] hover:bg-[#32453e] transition-colors"
               >
-                <RotateCcw size={12} />
+                <div className="flex items-center gap-1.5">
+                  <span>✨</span> 
+                  <span>APPROXIMATE TITHI: {tithiData.tithi}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {tithiData.name && (
+                    <span className="text-[9px] bg-[#3a5046] px-2 py-0.5 rounded text-white tracking-wider truncate max-w-[120px]">
+                      {tithiData.name}
+                    </span>
+                  )}
+                  {isTithiExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </div>
               </button>
-            </div>
 
-            <div className="text-center py-1">
-               <h3 className="text-2xl sm:text-3xl font-black font-mono text-white tracking-widest">
-                 {formatTimer(timerTime)}
-               </h3>
-               <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">
-                 {timerPreset ? `${timerPreset}m Samayik` : 'Meditation'}
-               </p>
-            </div>
+              <AnimatePresence initial={false}>
+                {isTithiExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="px-3 pb-3 border-t border-[#3a5046] bg-[#22302a] text-[#a4d4bc] text-[11px] space-y-2.5 pt-3 overflow-hidden"
+                  >
+                    {/* Paksha End details */}
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="text-stone-300 font-medium">Paksha Lunar Phase</span>
+                      <span className="font-semibold">{tithiData.isApprox ? 'Approx. Calculated' : 'Panchang Verified'}</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="text-stone-300 font-medium">Moon Phase Angle</span>
+                      <span className="font-mono">{(SunCalc.getMoonIllumination(panchangSunrise).phase * 360).toFixed(1)}°</span>
+                    </div>
 
-            <div className="flex gap-2 mt-2">
-              <button 
-                onClick={() => setIsTimerRunning(!isTimerRunning)}
-                className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-md ${isTimerRunning ? 'bg-red-500/20 text-red-500 border border-red-500/30' : 'bg-emerald-500 text-white shadow-emerald-500/10'}`}
-              >
-                {isTimerRunning ? <Pause size={14} /> : <Play size={14} />}
-                <span className="text-[9px] font-black uppercase tracking-widest">{isTimerRunning ? 'Pause' : 'Start'}</span>
-              </button>
-            </div>
+                    {/* Day Choghadiya Header */}
+                    <div className="border-t border-[#3a5046] pt-2">
+                      <div className="text-[10px] font-bold text-orange-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                        <span>☀️</span> Day Choghadiya Timings (दिन का चौघड़िया)
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5 max-h-40 overflow-y-auto pr-1">
+                        {getChoghadiyaData(true).map((ch, idx) => {
+                          let statusBg = 'bg-[#3b3833] border-[#48453f] text-gray-400';
+                          if (ch.status === 'good') {
+                            statusBg = 'bg-[#1e3a1e]/40 border-[#2d5c2d]/40 text-emerald-400';
+                          } else if (ch.status === 'bad') {
+                            statusBg = 'bg-[#3d1e1e]/40 border-[#5c2d2d]/40 text-red-400';
+                          }
 
-            <div className="grid grid-cols-3 gap-1.5 mt-2">
-               {[24, 48, 60].map(mins => (
-                 <button 
-                   key={mins}
-                   onClick={() => {
-                     setTimerTime(mins * 60);
-                     setTimerPreset(mins);
-                     setIsTimerRunning(false);
-                   }}
-                   className={`py-1 rounded text-[8px] font-black uppercase tracking-widest border transition-all ${timerPreset === mins ? 'bg-white/10 border-white/20 text-white' : 'border-white/5 text-gray-500 hover:text-gray-300'}`}
-                 >
-                   {mins}m
-                 </button>
-               ))}
-            </div>
-          </div>
-        </div>
+                          return (
+                            <div 
+                              key={`day-${idx}`} 
+                              className={`p-1.5 rounded-lg border text-[9px] flex flex-col justify-between ${statusBg} ${ch.isActive ? 'ring-1 ring-orange-500' : ''}`}
+                            >
+                              <div className="flex justify-between items-center font-bold">
+                                <span>{ch.name}</span>
+                                {ch.isActive && <span className="bg-orange-500 text-white text-[8px] px-1 py-0.2 rounded font-black animate-pulse">NOW</span>}
+                              </div>
+                              <div className="text-[8px] text-stone-300 font-mono mt-1">
+                                {ch.start.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {ch.end.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
 
-        {/* Prahars Bar */}
-        <div className="relative z-10 bg-black/10 rounded-2xl p-2 border border-white/5 backdrop-blur-sm">
-           <div className="grid grid-cols-8 gap-2">
-             {[1, 2, 3, 4, 1, 2, 3, 4].map((p, i) => {
-               const isDay = i < 4;
-               const isActive = isDay ? (currentPrahar.type === 'Day' && currentPrahar.num === p) : (currentPrahar.type === 'Night' && currentPrahar.num === p);
-               return (
-                 <div key={i} className="flex flex-col items-center gap-1.5">
-                   <div 
-                     className={`w-full h-1.5 rounded-full transition-all duration-700 ${isActive ? (isDay ? 'bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]' : 'bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]') : 'bg-white/5'}`}
-                   />
-                   <span className={`text-[8px] font-bold uppercase transition-colors ${isActive ? 'text-white' : 'text-gray-600'}`}>{isDay ? 'D' : 'N'}{p}</span>
-                 </div>
-               );
-             })}
-           </div>
-        </div>
+                    {/* Night Choghadiya Header */}
+                    <div className="border-t border-[#3a5046] pt-2">
+                      <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                        <span>🌙</span> Night Choghadiya Timings (रात्रि का चौघड़िया)
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5 max-h-40 overflow-y-auto pr-1">
+                        {getChoghadiyaData(false).map((ch, idx) => {
+                          let statusBg = 'bg-[#3b3833] border-[#48453f] text-gray-400';
+                          if (ch.status === 'good') {
+                            statusBg = 'bg-[#1e3a1e]/40 border-[#2d5c2d]/40 text-emerald-400';
+                          } else if (ch.status === 'bad') {
+                            statusBg = 'bg-[#3d1e1e]/40 border-[#5c2d2d]/40 text-red-400';
+                          }
+
+                          return (
+                            <div 
+                              key={`night-${idx}`} 
+                              className={`p-1.5 rounded-lg border text-[9px] flex flex-col justify-between ${statusBg} ${ch.isActive ? 'ring-1 ring-orange-500' : ''}`}
+                            >
+                              <div className="flex justify-between items-center font-bold">
+                                <span>{ch.name}</span>
+                                {ch.isActive && <span className="bg-orange-500 text-white text-[8px] px-1 py-0.2 rounded font-black animate-pulse">NOW</span>}
+                              </div>
+                              <div className="text-[8px] text-stone-300 font-mono mt-1">
+                                {ch.start.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {ch.end.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+        </AnimatePresence>
       </div>
 
-      <div className="bg-[var(--card-bg)] rounded-3xl border border-[var(--border-color)] p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-          <h3 className="serif-text text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-            <Waves size={16} className="text-spiritual" />
-            Solar Lifecycle & Calculation
-          </h3>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="relative">
-            <CalendarDays size={14} className="absolute left-3 top-1/2 min-w-max -translate-y-1/2 text-gray-500" />
-            <input 
-              type="date" 
-              value={formatDateForInput(date)}
-              onChange={handleDateChange}
-              className="pl-8 pr-3 py-1.5 text-xs font-medium rounded-full bg-black/5 dark:bg-white/5 border border-transparent outline-none focus:border-black/20 dark:focus:border-white/20 dark:[color-scheme:dark] transition-colors"
-            />
-          </div>
-          
-          <div className="relative" ref={searchRef}>
-            <Search size={14} className="absolute left-3 top-1/2 min-w-max -translate-y-1/2 text-gray-500" />
-            <input 
-              type="text" 
-              placeholder="Search city..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => searchResults.length > 0 && setShowDropdown(true)}
-              className="pl-8 pr-3 py-2 text-xs font-medium rounded-full bg-black/10 dark:bg-white/10 border-2 border-transparent focus:border-spiritual/30 outline-none transition-all w-36 sm:w-48"
-            />
-            {isSearching && (
-              <Loader2 size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 animate-spin" />
-            )}
-            
-            {showDropdown && searchResults.length > 0 && (
-              <div className="absolute top-full mt-1 left-0 right-0 bg-white dark:bg-gray-800 border border-black/10 dark:border-white/10 rounded-xl shadow-lg overflow-hidden z-50 max-h-48 overflow-y-auto">
-                {searchResults.map((place, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleSelectLocation(place)}
-                    className="w-full text-left px-3 py-2 text-xs hover:bg-black/5 dark:hover:bg-white/5 truncate transition-colors border-b border-black/5 dark:border-white/5 last:border-0"
-                    title={place.display_name}
-                  >
-                    {place.display_name.split(',')[0]}
-                    <span className="block text-[9px] text-gray-500 truncate">{place.display_name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="relative" ref={timezoneRef}>
-            <button 
-              onClick={() => setShowTimezoneDropdown(!showTimezoneDropdown)}
-              className="flex items-center gap-2 group"
-              title="Select Timezone"
-            >
-               <div className="relative">
-                 <Globe size={14} className="absolute left-3 top-1/2 min-w-max -translate-y-1/2 text-gray-500 group-hover:text-spiritual transition-colors" />
-                 <div className="pl-8 pr-8 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-black/5 dark:bg-white/5 border border-transparent group-hover:border-spiritual/30 transition-all max-w-[120px] truncate text-left">
-                   {timezone.split('/').pop()?.replace(/_/g, ' ')}
-                 </div>
-                 <ChevronDown size={10} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-spiritual transition-colors" />
-               </div>
-            </button>
-            
-            <AnimatePresence>
-              {showTimezoneDropdown && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute top-full mt-2 origin-top-left left-0 right-auto w-64 max-w-[calc(100vw-2rem)] md:max-w-xs overflow-x-hidden shadow-xl rounded-xl border border-stone-200 bg-white dark:bg-gray-800 dark:border-white/10 z-50"
-                >
-                  <div className="p-3 border-b border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.02]">
-                    <div className="relative">
-                      <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <input 
-                        type="text"
-                        placeholder="Search timezone..."
-                        value={timezoneSearch}
-                        onChange={(e) => setTimezoneSearch(e.target.value)}
-                        autoFocus
-                        className="w-full pl-8 pr-3 py-2 text-[10px] font-bold uppercase tracking-wider bg-white dark:bg-gray-900 border border-black/5 dark:border-white/5 rounded-xl outline-none focus:border-spiritual/30 transition-all"
-                      />
-                    </div>
-                  </div>
-                  <div className="max-h-60 overflow-y-auto py-1">
-                    {filteredTimezones.length > 0 ? (
-                      filteredTimezones.map(tz => (
-                        <button
-                          key={tz}
-                          onClick={() => {
-                            setTimezone(tz);
-                            setShowTimezoneDropdown(false);
-                            setTimezoneSearch('');
-                          }}
-                          className={`w-full text-left px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-between group ${timezone === tz ? 'text-spiritual bg-spiritual/5' : 'text-gray-500'}`}
-                        >
-                          <span className="truncate">{tz.replace(/_/g, ' ')}</span>
-                          {timezone === tz && <Check size={10} />}
-                        </button>
-                      ))
-                    ) : (
-                      <div className="px-4 py-6 text-center text-[10px] font-bold uppercase tracking-widest text-gray-400 italic">
-                        No matches found
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          <button 
-            onClick={getUserLocation}
-            className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-bold bg-black/5 dark:bg-white/5 px-3 py-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-            title="Use my location"
-          >
-            <MapPin size={12} />
-            <span className="hidden sm:inline">{location.name}</span>
-          </button>
-          
-          <button
-              onClick={() => {
-                setLocation({ lat: 28.6139, lng: 77.2090, name: 'Delhi' });
-                localStorage.removeItem('default-location');
-              }}
-              className="text-[9px] font-bold uppercase tracking-widest text-spiritual hover:underline"
-          >
-              Reset to Delhi
-          </button>
-        </div>
+      {/* 3. SETTINGS & ADJUSTMENT CONTROLS */}
+      <div className="bg-[#3b3833] border border-[#48453f] rounded-2xl p-3 shadow-md">
+        <button 
+          onClick={() => setShowControls(!showControls)}
+          className="w-full flex items-center justify-between px-2 py-1 text-stone-300 hover:text-white transition-colors"
+        >
+          <span className="text-xs font-bold tracking-wider uppercase flex items-center gap-1.5">
+            🔧 Parameters & Adjustments
+          </span>
+          {showControls ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
 
         <AnimatePresence>
-          {locationError && (
+          {showControls && (
             <motion.div 
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="mt-3 text-center py-2 px-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-600 text-xs font-semibold overflow-hidden"
+              className="overflow-hidden mt-3 pt-3 border-t border-[#48453f] space-y-3 px-1"
             >
-              ⚠️ {locationError}
+              {/* Date & GPS Selector */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] uppercase tracking-wider font-bold text-gray-400">Target Date</label>
+                  <div className="relative">
+                    <CalendarDays size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-orange-400" />
+                    <input 
+                      type="date" 
+                      value={formatDateForInput(date)}
+                      onChange={handleDateChange}
+                      className="w-full bg-[#2c2a26] text-[11px] font-semibold text-white pl-8 pr-2 py-2 rounded-lg border border-[#48453f] focus:border-orange-400/40 outline-none [color-scheme:dark]"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] uppercase tracking-wider font-bold text-gray-400">GPS Sync</label>
+                  <button 
+                    onClick={getUserLocation}
+                    className="w-full bg-[#2c2a26] hover:bg-[#34322e] text-[11px] font-bold text-white py-2 rounded-lg border border-[#48453f] hover:border-orange-400/30 transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <MapPin size={12} className="text-orange-400" />
+                    Locate GPS
+                  </button>
+                </div>
+              </div>
+
+              {/* Timezone & Reset Row */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col gap-1 relative" ref={timezoneRef}>
+                  <label className="text-[9px] uppercase tracking-wider font-bold text-gray-400">Timezone</label>
+                  <button 
+                    onClick={() => setShowTimezoneDropdown(!showTimezoneDropdown)}
+                    className="w-full bg-[#2c2a26] hover:bg-[#34322e] text-[11px] font-bold text-white px-2 py-2 rounded-lg border border-[#48453f] hover:border-orange-400/30 transition-colors flex items-center justify-between"
+                  >
+                    <span className="truncate flex items-center gap-1">
+                      <Globe size={11} className="text-orange-400" />
+                      {timezone.split('/').pop()?.replace(/_/g, ' ')}
+                    </span>
+                    <ChevronDown size={10} className="text-gray-400" />
+                  </button>
+
+                  <AnimatePresence>
+                    {showTimezoneDropdown && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 5 }}
+                        className="absolute bottom-full mb-1 left-0 right-0 max-h-48 overflow-y-auto bg-[#2c2a26] border border-[#48453f] rounded-lg shadow-xl z-50 py-1"
+                      >
+                        <div className="px-2 py-1 border-b border-[#48453f] sticky top-0 bg-[#2c2a26]">
+                          <input 
+                            type="text"
+                            placeholder="Search..."
+                            value={timezoneSearch}
+                            onChange={(e) => setTimezoneSearch(e.target.value)}
+                            className="w-full bg-[#3b3833] text-[10px] px-2 py-1.5 rounded border border-[#48453f] text-white outline-none focus:border-orange-400/40"
+                          />
+                        </div>
+                        {filteredTimezones.map(tz => (
+                          <button
+                            key={tz}
+                            onClick={() => {
+                              setTimezone(tz);
+                              setShowTimezoneDropdown(false);
+                              setTimezoneSearch('');
+                            }}
+                            className={`w-full text-left px-3 py-2 text-[10px] font-bold hover:bg-[#34322e] transition-colors flex items-center justify-between ${timezone === tz ? 'text-orange-400' : 'text-stone-300'}`}
+                          >
+                            <span className="truncate">{tz.replace(/_/g, ' ')}</span>
+                            {timezone === tz && <Check size={10} />}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] uppercase tracking-wider font-bold text-gray-400">Quick Reset</label>
+                  <button 
+                    onClick={() => {
+                      setActiveCity(DELHI_DEFAULT);
+                      localStorage.removeItem('panchangDefaultCity');
+                    }}
+                    className="w-full bg-[#2c2a26] hover:bg-[#34322e] text-[11px] font-bold text-orange-400 hover:text-orange-300 py-2 rounded-lg border border-[#48453f] transition-all flex items-center justify-center gap-1.5"
+                  >
+                    Reset to Delhi
+                  </button>
+                </div>
+              </div>
+
+              {locationError && (
+                <div className="py-2 px-3 bg-red-950/20 border border-red-900/30 rounded-lg text-red-400 text-[10px] font-semibold text-center">
+                  ⚠️ {locationError}
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-      
-      <p className="text-xs text-gray-500 mb-4 italic leading-relaxed">
-        * As per Terapanth rules, the sunrise is considered 3 minutes after the standard geographical time, and the sunset is considered 3 minutes before the standard geographical time. Timezone: {timezone === 'Asia/Kolkata' ? 'IST' : timezone.split('/').pop()?.replace(/_/g, ' ')}
-      </p>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="flex flex-col items-center justify-center p-4 bg-orange-500/10 rounded-2xl border border-orange-500/20">
-          <Sun className="text-orange-500 mb-2" size={20} />
-          <span className="text-[9px] uppercase tracking-[0.2em] font-black text-orange-600/80 mb-1">Sunrise</span>
-          <span className="text-lg font-black font-mono text-orange-600 dark:text-orange-400">{formatTime(panchangSunrise)}</span>
-        </div>
-
-        <div className="flex flex-col items-center justify-center p-4 bg-amber-500/10 rounded-2xl border border-amber-500/20">
-          <Sparkles className="text-amber-500 mb-2" size={20} />
-          <span className="text-[9px] uppercase tracking-[0.2em] font-black text-amber-600/80 mb-1">Navkarsi</span>
-          <span className="text-lg font-black font-mono text-amber-600 dark:text-amber-400">{formatTime(navkarsi)}</span>
-        </div>
-
-        <div className="flex flex-col items-center justify-center p-4 bg-yellow-500/10 rounded-2xl border border-yellow-500/20">
-          <Clock className="text-yellow-600 mb-2" size={20} />
-          <span className="text-[9px] uppercase tracking-[0.2em] font-black text-yellow-700/80 mb-1">Paurushi</span>
-          <span className="text-lg font-black font-mono text-yellow-700 dark:text-yellow-500">{formatTime(paurushi)}</span>
-        </div>
-        
-        <div className="flex flex-col items-center justify-center p-4 bg-indigo-500/10 rounded-2xl border border-indigo-500/20">
-          <Moon className="text-indigo-500 mb-2" size={20} />
-          <span className="text-[9px] uppercase tracking-[0.2em] font-black text-indigo-600/80 mb-1">Sunset</span>
-          <span className="text-lg font-black font-mono text-indigo-600 dark:text-indigo-400">{formatTime(panchangSunset)}</span>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="flex flex-col items-center justify-center p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 relative group">
-          <Sparkles className="text-emerald-500 mb-2" size={24} />
-          <div className="flex items-center gap-1 mb-1">
-            <span className="text-[10px] uppercase tracking-widest font-bold text-emerald-600/80">Approximate Tithi</span>
-            <button 
-              className="text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
-              onMouseEnter={() => setShowTithiInfo(true)}
-              onMouseLeave={() => setShowTithiInfo(false)}
-              onClick={() => setShowTithiInfo(!showTithiInfo)}
-            >
-              <Info size={12} />
-            </button>
+      {/* 4. SADHANA / SAMAYIK TIMER MODULE */}
+      <div className="bg-[#3b3833] border border-[#48453f] rounded-2xl p-4 shadow-md relative overflow-hidden">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-1.5">
+            <Timer size={14} className="text-orange-400 animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-orange-400">Sadhana Samayik Timer</span>
           </div>
-          
-          <AnimatePresence>
-            {showTithiInfo && (
-              <motion.div 
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 5 }}
-                className="absolute top-12 left-1/2 -translate-x-1/2 w-48 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-[10px] p-2 rounded-lg shadow-xl z-20 pointer-events-none"
-              >
-                <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 dark:bg-gray-100 rotate-45"></div>
-                {tithiData.isApprox 
-                  ? "Calculated based on astronomical moon phase proportion." 
-                  : "Authenticated data from Terapanth Panchang."}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 text-center">{tithiData.tithi}</span>
-          {tithiData.name && (
-            <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 mt-1 line-clamp-1">{tithiData.name}</span>
-          )}
+          <button 
+            onClick={() => {
+              setTimerTime(48 * 60);
+              setIsTimerRunning(false);
+              setTimerPreset(48);
+            }}
+            className="p-1 hover:bg-[#2c2a26] rounded transition-colors text-gray-400 hover:text-white"
+            title="Reset to 48m"
+          >
+            <RotateCcw size={12} />
+          </button>
         </div>
-      </div>
 
-      <div className="mt-4 border-t border-[var(--border-color)] pt-4">
-        <button 
-          onClick={() => setShowForecast(!showForecast)}
-          className="flex flex-row items-center justify-center gap-2 w-full text-sm font-bold text-gray-600 hover:text-black dark:text-gray-400 dark:hover:text-white transition-colors"
-        >
-          {showForecast ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          {showForecast ? 'Hide 7-Day Forecast' : 'View 7-Day Forecast'}
-        </button>
+        {/* Dynamic Progress Indicator */}
+        <div className="h-1 bg-[#2c2a26] rounded-full overflow-hidden mb-3">
+          <motion.div 
+            className="h-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]"
+            initial={{ width: "0%" }}
+            animate={{ width: isTimerRunning ? `${(timerTime / (timerPreset ? timerPreset * 60 : 2880)) * 100}%` : "0%" }}
+          />
+        </div>
 
-        {showForecast && (
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 animate-fade-in">
-            {forecastData.map((f, i) => (
-              <div key={i} className="flex flex-col p-3 bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5">
-                <span className="text-xs font-bold mb-2">{f.date}</span>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-[10px] text-gray-500 flex items-center gap-1"><Sun size={10} className="text-orange-500" /> {formatTime(f.sunrise)}</span>
-                  <span className="text-[10px] text-gray-500 flex items-center gap-1"><Moon size={10} className="text-indigo-500" /> {formatTime(f.sunset)}</span>
-                </div>
-                <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 mt-1">{f.tithi}</span>
-              </div>
+        <div className="flex items-center justify-between gap-4">
+          <div className="text-left flex-1">
+            <h3 className="text-3xl font-black font-mono text-white tracking-widest leading-none">
+              {formatTimer(timerTime)}
+            </h3>
+            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mt-1">
+              {timerPreset ? `${timerPreset} Minutes preset` : 'Custom Study Session'}
+            </p>
+          </div>
+
+          <div className="flex gap-2">
+            {[24, 48, 60].map(mins => (
+              <button 
+                key={mins}
+                onClick={() => {
+                  setTimerTime(mins * 60);
+                  setTimerPreset(mins);
+                  setIsTimerRunning(false);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all ${timerPreset === mins ? 'bg-orange-500 border-orange-500 text-white shadow-md' : 'bg-[#2c2a26] border-[#48453f] text-gray-400 hover:text-white'}`}
+              >
+                {mins}m
+              </button>
             ))}
           </div>
-        )}
+        </div>
+
+        <button 
+          onClick={() => setIsTimerRunning(!isTimerRunning)}
+          className={`w-full py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-md font-bold text-[10px] uppercase tracking-widest mt-4 ${isTimerRunning ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/15'}`}
+        >
+          {isTimerRunning ? <Pause size={14} /> : <Play size={14} />}
+          <span>{isTimerRunning ? 'Pause Session' : 'Begin Samayik'}</span>
+        </button>
       </div>
-    </div>
+
+      {/* 5. 7-DAY FORECAST ACCORDION */}
+      <div className="bg-[#3b3833] border border-[#48453f] rounded-2xl p-3 shadow-md">
+        <button 
+          onClick={() => setShowForecast(!showForecast)}
+          className="w-full flex items-center justify-between px-2 py-1 text-stone-300 hover:text-white transition-colors"
+        >
+          <span className="text-xs font-bold tracking-wider uppercase flex items-center gap-1.5">
+            📅 View 7-Day Forecast
+          </span>
+          {showForecast ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
+
+        <AnimatePresence>
+          {showForecast && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden mt-3 pt-3 border-t border-[#48453f] space-y-2"
+            >
+              {forecastData.map((f, i) => (
+                <div key={i} className="flex justify-between items-center p-2.5 bg-[#2c2a26] rounded-xl border border-[#48453f] text-[10px] font-medium text-stone-300">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-bold text-white">{f.date}</span>
+                    <span className="text-[9px] text-[#6bba96]">{f.tithi}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-1 text-orange-400 font-mono"><Sun size={11} /> {formatTime(f.sunrise)}</span>
+                    <span className="flex items-center gap-1 text-[#b388d5] font-mono"><Moon size={11} /> {formatTime(f.sunset)}</span>
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Bottom Legal Disclaimer */}
+      <p className="text-[10px] text-stone-500 text-center leading-relaxed italic mt-2 px-2">
+        * As per authentic Terapanth rules, Sunrise is calculated 3 minutes after standard geographical dawn, and Sunset 3 minutes before standard geographical dusk for absolute safety in fasts.
+      </p>
+
+      {/* 6. CITY SEARCH MODAL (MODAL PATTERN FOR CLEAN ACCESSIBILITY) */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 15 }}
+              className="bg-[#2c2a26] border border-[#48453f] w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[70vh]"
+            >
+              {/* Header Input */}
+              <div className="flex items-center gap-3 p-4 border-b border-[#48453f] bg-[#22201d]">
+                <Search size={18} className="text-orange-400" />
+                <input 
+                  type="text"
+                  autoFocus
+                  placeholder="Search city for Panchang..."
+                  className="flex-1 bg-transparent text-xs outline-none text-white placeholder-stone-500 font-medium"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <button 
+                  onClick={() => setIsModalOpen(false)} 
+                  className="p-1.5 rounded-full bg-[#3b3833] text-stone-300 hover:text-white"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Scrollable list of results */}
+              <div className="flex-1 overflow-y-auto p-3 space-y-1">
+                {isSearching && searchQuery.length > 2 && (
+                  <div className="p-8 text-center text-orange-400 text-xs flex flex-col items-center gap-2">
+                    <Loader2 size={18} className="animate-spin text-orange-400" />
+                    <span>Searching global database...</span>
+                  </div>
+                )}
+                
+                {searchQuery.length > 1 && searchResults.length === 0 && !isSearching ? (
+                  <div className="p-8 text-center text-stone-500 text-xs">
+                    No matching city found in offline database
+                  </div>
+                ) : (
+                  <ul className="space-y-1">
+                    {searchResults.map((place, idx) => (
+                      <li key={`${place.lat}-${place.lon}-${idx}`}>
+                        <button 
+                          onClick={() => handleCitySelect(place)}
+                          className="w-full text-left flex items-center justify-between p-3 rounded-xl bg-[#34322e] hover:bg-[#3f3c37] border border-transparent hover:border-orange-500/20 transition-all group"
+                        >
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-bold text-white group-hover:text-orange-400 transition-colors">
+                              {place.address?.city || place.display_name.split(',')[0]}
+                            </span>
+                            <span className="text-[10px] text-stone-400 mt-0.5 truncate max-w-[260px]">
+                              {place.address?.state || place.display_name.split(',')[1]?.trim()}, {place.address?.country || place.display_name.split(',')[2]?.trim()}
+                            </span>
+                          </div>
+                          {place.isOffline ? (
+                            <span className="text-[8px] font-black uppercase tracking-widest bg-emerald-500/10 text-[#6bba96] border border-emerald-500/20 px-2 py-0.5 rounded">
+                              Offline
+                            </span>
+                          ) : (
+                            <span className="text-[8px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded">
+                              Global
+                            </span>
+                          )}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </main>
   );
 }

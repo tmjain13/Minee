@@ -1,4 +1,5 @@
-import React, { Suspense } from 'react';
+import * as React from 'react';
+const { Suspense, Component } = React;
 import StaticLoginModal from '../components/LoginModal';
 import StaticUnifiedHomeDashboard from '../components/UnifiedHomeDashboard';
 import StaticThemeCustomizer from '../components/ThemeCustomizer';
@@ -21,7 +22,7 @@ interface ErrorBoundaryProps {
   children: React.ReactNode;
 }
 
-class ComponentErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class ComponentErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   state = { hasError: false };
   static getDerivedStateFromError() { return { hasError: true }; }
   componentDidCatch(error: any, errorInfo: any) {

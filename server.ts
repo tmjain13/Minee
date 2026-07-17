@@ -122,9 +122,11 @@ async function startServer() {
 
   // Force-override headers after Helmet to guarantee absolute iframe embedding compatibility
   app.use((req, res, next) => {
-    res.setHeader('Permissions-Policy', 'geolocation=(), camera=(), microphone=()');
     if (allowEmbed) {
+      res.setHeader('Permissions-Policy', 'geolocation=(self "https://studio.google.com" "https://aistudio.google.com" "https://*.google.com" "https://*.run.app"), camera=(self "https://studio.google.com" "https://aistudio.google.com" "https://*.google.com" "https://*.run.app"), microphone=(self "https://studio.google.com" "https://aistudio.google.com" "https://*.google.com" "https://*.run.app")');
       res.removeHeader("X-Frame-Options");
+    } else {
+      res.setHeader('Permissions-Policy', 'geolocation=(), camera=(), microphone=()');
     }
     next();
   });

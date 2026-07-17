@@ -38,7 +38,7 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, auth, storage } from '../lib/firebase';
-import { streamGeminiResponse } from '../services/geminiService';
+import { streamGeminiResponse } from '../lib/gemini-client';
 
 export interface BookInfo {
   id: string;
@@ -215,6 +215,21 @@ export default function DigitalLibrary({ isAdmin }: DigitalLibraryProps) {
   // Increment download count securely
   const registerDownload = async (book: BookInfo) => {
     try {
+      // Save to localStorage history first
+      const historyStr = localStorage.getItem('terapanth_read_books_history') || '[]';
+      let history = [];
+      try {
+        history = JSON.parse(historyStr);
+      } catch (err) {
+        history = [];
+      }
+      if (!history.some((h: any) => h.id === book.id)) {
+        history.push({ id: book.id, category: book.category, title: book.title, timestamp: Date.now() });
+        localStorage.setItem('terapanth_read_books_history', JSON.stringify(history));
+        // Dispatch a custom storage event so other components on the page (like dashboard) can update immediately
+        window.dispatchEvent(new Event('terapanth_history_update'));
+      }
+
       if (book.id.startsWith('seed_book_')) return; // skip state count updating for static seeds
       const bookDocRef = doc(db, 'books', book.id);
       await updateDoc(bookDocRef, {
