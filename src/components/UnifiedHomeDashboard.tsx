@@ -856,7 +856,7 @@ export default function UnifiedHomeDashboard({
           </div>
 
           {/* Vihar items / updates */}
-          <div className="flex-1 overflow-y-auto max-h-[160px] space-y-2 pr-1 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto max-h-[220px] space-y-2 pr-1 custom-scrollbar">
             {localViharUpdates.length > 0 ? (
               localViharUpdates.map((vihar: any, idx: number) => (
                 <div 
@@ -868,16 +868,16 @@ export default function UnifiedHomeDashboard({
                   }`}
                 >
                   <div className="flex justify-between items-start gap-1">
-                    <h5 className="font-bold text-[11px] truncate leading-tight">{vihar.name}</h5>
+                    <h5 className="font-bold text-[11px] leading-tight break-words">{vihar.name}</h5>
                     <span className={`text-[8px] font-bold px-1 py-0.2 rounded shrink-0 ${
                       isDarkMode ? 'bg-stone-800 text-stone-300' : 'bg-stone-100 text-stone-600'
                     }`}>
                       {vihar.tag || `ठाणा ${vihar.thana || 'N/A'}`}
                     </span>
                   </div>
-                  <p className={`text-[10px] flex items-center gap-1 mt-1 truncate ${isDarkMode ? 'text-stone-400' : 'text-stone-500'}`}>
-                    <MapPin size={10} className="text-orange-500 shrink-0" />
-                    <span>{vihar.loc || vihar.location}</span>
+                  <p className={`text-[10px] flex items-start gap-1 mt-1 ${isDarkMode ? 'text-stone-400' : 'text-stone-500'}`}>
+                    <MapPin size={10} className="text-orange-500 shrink-0 mt-0.5" />
+                    <span className="break-words">{vihar.loc || vihar.location}</span>
                   </p>
                   <p className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-0.5 font-semibold">
                     <Phone size={10} className="shrink-0" />

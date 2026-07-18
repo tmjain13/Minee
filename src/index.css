@@ -64,6 +64,17 @@
   --shadow-card: 0 4px 18px -4px rgba(26, 51, 26, 0.06);
 }
 
+/* Saffron Theme */
+.theme-saffron {
+  --bg-cream: #fffaf0;
+  --text-spiritual: #7c2d12;
+  --card-bg: #ffffff;
+  --border-color: #fed7aa;
+  --accent-soft: rgba(249, 115, 22, 0.12);
+  --radius-card: 24px;
+  --shadow-card: 0 4px 18px -4px rgba(124, 45, 18, 0.06);
+}
+
 .dark {
   --bg-cream: #0f0f0f;
   --text-spiritual: #ffffff;
@@ -93,6 +104,14 @@
   --text-spiritual: #dcfce7;
   --card-bg: #142e14;
   --border-color: #215c21;
+}
+
+.dark.theme-saffron {
+  --bg-cream: #2c1001;
+  --text-spiritual: #ffebd2;
+  --card-bg: #431a04;
+  --border-color: #9a3412;
+  --accent-soft: rgba(249, 115, 22, 0.15);
 }
 
 /* High Contrast Mode Override */

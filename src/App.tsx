@@ -42,6 +42,7 @@ import Onboarding from "./components/Onboarding";
 import AppTour from "./components/AppTour";
 import TerapanthHeader from "./components/TerapanthHeader";
 import TerapanthFooterNav from "./components/TerapanthFooterNav";
+import { GlobalAudioPlayer } from "./components/GlobalAudioPlayer";
 import QuickActions from "./components/QuickActions";
 import { AdminGuard } from "./components/AdminGuard";
 import UnifiedPermissionsModal from "./components/UnifiedPermissionsModal";
@@ -343,7 +344,10 @@ export default function App() {
     const saved = localStorage.getItem("app_theme");
     return (saved as "light" | "dark" | "system") || "system";
   });
-  const [palette, setPalette] = useState<"default" | "sunset" | "ocean" | "forest">("default");
+  const [palette, setPalette] = useState<"default" | "sunset" | "ocean" | "forest" | "saffron" >(() => {
+    const saved = localStorage.getItem("app_palette");
+    return (saved as "default" | "sunset" | "ocean" | "forest" | "saffron") || "default";
+  });
   const [highContrast, setHighContrast] = useState(false);
   const [kfontSize, setKfontSize] = useState(15);
   const [kfontType, setKfontType] = useState<"sans" | "serif" | "mono">("sans");
@@ -549,6 +553,16 @@ export default function App() {
     }
   }, [theme]);
 
+  // --- MANAGE PALETTE CLASS ---
+  useEffect(() => {
+    const root = window.document.documentElement;
+    localStorage.setItem("app_palette", palette);
+    root.classList.remove("theme-sunset", "theme-ocean", "theme-forest", "theme-saffron");
+    if (palette !== "default") {
+      root.classList.add(`theme-${palette}`);
+    }
+  }, [palette]);
+
   // --- FIREBASE ROLE SYNC ---
   useEffect(() => {
     if (!user) {
@@ -667,6 +681,68 @@ export default function App() {
 
       {/* Decorative Atmosphere Filter */}
       <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-orange-500/5 to-transparent pointer-events-none z-0" />
+
+      {/* Dynamic Watermark of Flower patterns, Mt. Fuji, and Cherry Blossoms 🌸 */}
+      <div className="absolute inset-x-0 bottom-24 top-24 flex items-center justify-center pointer-events-none select-none z-0 overflow-hidden">
+        <svg viewBox="0 0 400 400" className="w-[340px] h-[340px] text-orange-600 dark:text-amber-500 opacity-[0.06] dark:opacity-[0.03] fill-none stroke-current" strokeWidth="1.5">
+          {/* Concentric outer geometric flower/mandala circles */}
+          <circle cx="200" cy="200" r="185" strokeDasharray="3 6" />
+          <circle cx="200" cy="200" r="165" />
+          
+          {/* Floral Petals radiating out (representing traditional flower pattern / flower mandala) */}
+          <g transform="translate(200, 200)">
+            {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((angle) => (
+              <path 
+                key={angle} 
+                d="M 0 0 C -12 -35, 12 -35, 0 0" 
+                transform={`rotate(${angle}) translate(0, -115)`} 
+                className="opacity-60"
+              />
+            ))}
+            {[15, 45, 75, 105, 135, 165, 195, 225, 255, 285, 315, 345].map((angle) => (
+              <circle
+                key={angle}
+                cx="0"
+                cy="-155"
+                r="3.5"
+                transform={`rotate(${angle})`}
+                className="fill-current opacity-40"
+              />
+            ))}
+          </g>
+
+          {/* Majestic Mountain Fuji Peak Silhouette in lower center */}
+          <g transform="translate(80, 140)">
+            <path 
+              d="M 10 180 Q 90 150, 110 50 Q 115 35, 120 35 L 130 35 Q 135 35, 140 50 Q 160 150, 240 180 Z" 
+              strokeWidth="2" 
+            />
+            {/* Fuji Snow Cap */}
+            <path 
+              d="M 94 95 Q 110 108, 120 98 Q 128 112, 138 102 Q 148 110, 153 95 L 130 35 L 120 35 Z" 
+              className="fill-current opacity-25" 
+              strokeWidth="1.5"
+            />
+          </g>
+
+          {/* Graceful Cherry Blossom 🌸 Blooms & Falling Petals */}
+          {/* Sakura Bloom 1: Top Left */}
+          <g transform="translate(100, 90) scale(0.85)">
+            <path d="M 0 0 C -12 -24, 12 -24, 0 0 M 0 0 C 24 -12, 24 12, 0 0 M 0 0 C 12 24, -12 24, 0 0 M 0 0 C -24 12, -24 -12, 0 0" strokeWidth="1.5" />
+            <circle cx="0" cy="0" r="2.5" className="fill-current" />
+          </g>
+          {/* Sakura Bloom 2: Top Right */}
+          <g transform="translate(300, 110) scale(0.95)">
+            <path d="M 0 0 C -12 -24, 12 -24, 0 0 M 0 0 C 24 -12, 24 12, 0 0 M 0 0 C 12 24, -12 24, 0 0 M 0 0 C -24 12, -24 -12, 0 0" strokeWidth="1.5" />
+            <circle cx="0" cy="0" r="2.5" className="fill-current" />
+          </g>
+          {/* Falling Sakura Petals around Mount Fuji */}
+          <path d="M 140,115 C 135,105 145,100 150,110 C 155,120 145,125 140,115 Z" className="fill-current opacity-40" />
+          <path d="M 270,220 C 265,210 275,205 280,215 C 285,225 275,230 270,220 Z" className="fill-current opacity-45" />
+          <path d="M 60,200 C 55,190 65,185 70,195 C 75,205 65,210 60,200 Z" className="fill-current opacity-30" />
+          <path d="M 220,90 C 215,80 225,75 230,85 C 235,95 225,100 220,90 Z" className="fill-current opacity-35" />
+        </svg>
+      </div>
 
       {/* HEADER SECTION */}
       {activeTab !== "chat" && (
@@ -1176,11 +1252,20 @@ export default function App() {
         setActiveTab={setActiveTab} 
       />
       {!zenMode && (
-        <TerapanthFooterNav 
-          activeTab={activeTab} 
-          setActiveTab={setActiveTab}
-          language={language}
-        />
+        <>
+          <GlobalAudioPlayer
+            ambientSoundEnabled={ambientSoundEnabled}
+            setAmbientSoundEnabled={setAmbientSoundEnabled}
+            spiritualSoundscape={spiritualSoundscape}
+            setSpiritualSoundscape={setSpiritualSoundscape}
+            language={language}
+          />
+          <TerapanthFooterNav 
+            activeTab={activeTab} 
+            setActiveTab={setActiveTab}
+            language={language}
+          />
+        </>
       )}
 
       {/* ZEN MODE FLOATING DISMISSAL PILL */}
@@ -1298,12 +1383,12 @@ export default function App() {
 
       {/* FLOATING BUTTONS - RIGHT SIDE STACK (Only show if NOT on chat tab and NOT in Zen Mode) */}
       {activeTab !== 'chat' && !zenMode && (
-        <div className="fixed bottom-[90px] right-4 z-[99] flex flex-col gap-3">
+        <div className="fixed bottom-[138px] right-4 z-[99] flex flex-col gap-3">
           {/* Quick Actions trigger */}
           <button 
             onClick={() => setShowQuickActions(!showQuickActions)}
-            className={`w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg transition-all ${
-              showQuickActions ? 'bg-stone-800 rotate-90' : 'bg-gradient-to-tr from-orange-500 to-amber-500'
+            className={`w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg transition-all bg-gradient-to-r from-orange-500 via-orange-400 to-amber-500 hover:brightness-105 active:scale-95 ${
+              showQuickActions ? 'rotate-90' : ''
             }`}
           >
             {showQuickActions ? <X size={24} /> : <Plus size={24} />}

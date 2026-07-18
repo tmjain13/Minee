@@ -40,6 +40,7 @@ import { chaturmasLocations2026 } from '../data/chaturmasLocations2026';
 import { viharSearchEngine } from '../utils/viharSearchEngine';
 import ReactMarkdown from 'react-markdown';
 import { db, auth } from '../lib/firebase';
+import toast from 'react-hot-toast';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 // Helper function to escape special regex characters
@@ -200,7 +201,7 @@ export const TerapanthLightChatUI: React.FC<TerapanthLightChatUIProps> = ({
     settingsBg: isDark ? '#1a1a1a' : '#ffffff',
   };
 
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navConfig = getNavConfig(t);
   const [chatInput, setChatInput] = useState('');
   const [activeSection, setActiveSection] = useState('HOME 🏠');
@@ -429,7 +430,7 @@ export const TerapanthLightChatUI: React.FC<TerapanthLightChatUIProps> = ({
   // Handle Speech Toggle
   const toggleListening = () => {
     if (!recognitionRef.current) {
-      alert("Voice recognition is not supported in this browser or iframe.");
+      toast.error("Voice recognition is not supported in this browser or iframe.");
       return;
     }
 
@@ -450,7 +451,7 @@ export const TerapanthLightChatUI: React.FC<TerapanthLightChatUIProps> = ({
     }
 
     if (rawQuery.length > 3000) {
-      alert("संदेश बहुत लंबा है। कृपया इसे 3000 अक्षरों के भीतर रखें। (Message is too long)");
+      toast.error(language === 'hi' ? "संदेश बहुत लंबा है। कृपया इसे 3000 अक्षरों के भीतर रखें।" : "Message is too long. Please keep it under 3000 characters.");
       return;
     }
 

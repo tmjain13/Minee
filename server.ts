@@ -98,6 +98,7 @@ async function startServer() {
           : ["'self'"],
         scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://apis.google.com"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com", "https://fonts.googleapis.com"],
         imgSrc: ["'self'", "data:", "https://firebasestorage.googleapis.com", "https://postimg.cc", "https://*.postimg.cc", "https://i.postimg.cc"],
         connectSrc: [
           "'self'", 

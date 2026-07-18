@@ -165,11 +165,11 @@ export default function QuickActions({ isOpen, onClose, setActiveTab }: QuickAct
                   animationDelay: `${index * 30}ms`,
                   animationFillMode: 'both'
                 }}
-                className="flex items-center gap-3 bg-[#1e1e1e]/95 text-stone-200 px-5 py-3 rounded-xl shadow-md border border-stone-800 hover:bg-[#2a2a2a] hover:text-stone-100 active:scale-95 transition-all w-full cursor-pointer"
+                className="flex items-center gap-3 bg-orange-50/95 dark:bg-orange-950/45 text-orange-900 dark:text-orange-100 px-5 py-3 rounded-xl shadow-md border border-orange-200/50 dark:border-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-900/30 active:scale-95 transition-all w-full cursor-pointer"
               >
-                <span className="text-stone-500">{action.icon}</span>
+                <span className="text-orange-500 dark:text-orange-400">{action.icon}</span>
                 <span className="text-xs font-bold tracking-wider">{action.label}</span>
-                <ChevronRight size={12} className="ml-auto text-stone-600" />
+                <ChevronRight size={12} className="ml-auto text-orange-400 dark:text-orange-600" />
               </button>
             ))}
           </motion.div>

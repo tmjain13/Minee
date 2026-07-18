@@ -94,7 +94,11 @@ export default function SaintsList() {
     const contactStrings = saint.contacts.map((c: any) => `📞 ${c.designation}: +91 ${c.phone}`).join('\n');
     const message = `*☸️ ${data.meta_info.title} (2026) ☸️*\n\n👤 *संत/साध्वी संघ:* ${saint.title ? `[${saint.title}] ` : ''}${saint.name} (${saint.thana})\n${saint.status ? `🏥 *स्थिति:* ${saint.status}\n` : ''}📍 *प्रवास स्थल:* ${saint.stay_place}\n\n*सम्पर्क सूत्र:*\n${contactStrings}\n\n_प्रदाता: तेरापंथ राष्ट्रीय हेल्पलाइन एआई निर्देशिका_`;
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
+    const link = document.createElement('a');
+    link.href = whatsappUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.click();
   };
 
   const filteredSaints = data.saints_list.filter(saint => {

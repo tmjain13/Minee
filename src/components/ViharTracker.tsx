@@ -561,7 +561,7 @@ export default function ViharTracker() {
   ];
 
   return (
-    <div id="vihar_tracker_viewport" className="flex flex-col h-[100dvh] bg-gray-50 dark:bg-zinc-950 overflow-hidden">
+    <div id="vihar_tracker_viewport" className="flex flex-col bg-gray-50 dark:bg-zinc-950">
       
       {/* 1. TOP HEADER INFOBAR */}
       <div id="vihar_header_container" className="bg-white dark:bg-zinc-900 p-4 shadow-sm border-b dark:border-zinc-800 shrink-0 space-y-3">
@@ -787,9 +787,9 @@ export default function ViharTracker() {
       </div>
 
       {/* 3. MAIN CONTENT AREA */}
-      <main id="vihar_scroll_list_main" className="flex-1 overflow-y-auto bg-gray-50 dark:bg-zinc-950 relative pb-28">
+      <div id="vihar_scroll_list_main" className="flex-1 bg-gray-50 dark:bg-zinc-950 relative pb-28">
         {viewMode === 'map' ? (
-          <div className="w-full h-full p-4 flex flex-col relative">
+          <div className="w-full h-[500px] p-4 flex flex-col relative">
             <h3 className="font-bold text-gray-800 dark:text-zinc-100 mb-2">Ahimsa Yatra Historical Path (2015-2027)</h3>
             <div className="flex-1 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-gray-200 dark:border-zinc-800 relative overflow-hidden">
               {/* Render Offline Map Background if cached */}
@@ -1082,7 +1082,7 @@ export default function ViharTracker() {
             )}
           </div>
         )}
-      </main>
+      </div>
 
     </div>
   );

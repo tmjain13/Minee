@@ -12,8 +12,8 @@ interface ThemeCustomizerProps {
   onClose: () => void;
   theme?: 'light' | 'dark' | 'system';
   onThemeChange?: (theme: 'light' | 'dark' | 'system') => void;
-  palette: 'default' | 'sunset' | 'ocean' | 'forest';
-  onPaletteChange: (palette: 'default' | 'sunset' | 'ocean' | 'forest') => void;
+  palette: 'default' | 'sunset' | 'ocean' | 'forest' | 'saffron';
+  onPaletteChange: (palette: 'default' | 'sunset' | 'ocean' | 'forest' | 'saffron') => void;
   mantraAudioCueEnabled: boolean;
   onMantraAudioCueChange: (enabled: boolean) => void;
   ambientSoundEnabled: boolean;
@@ -41,6 +41,7 @@ const PALETTES = [
   { id: 'sunset', name: 'Sunset (Warmth)', color: '#4A1E11', bg: '#FFF5F1' },
   { id: 'ocean', name: 'Ocean (Calm)', color: '#002244', bg: '#F0F8FF' },
   { id: 'forest', name: 'Forest (Peace)', color: '#1A331A', bg: '#F1F8F1' },
+  { id: 'saffron', name: 'Saffron (Sacred)', color: '#7c2d12', bg: '#fffaf0' },
 ] as const;
 
 const previewTexts = [

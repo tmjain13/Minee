@@ -6,7 +6,7 @@ import { defineConfig, loadEnv } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { sentryVitePlugin } from "@sentry/vite-plugin";
-import { ViteImageOptimizer } from 'vite-plugin-image-optimizer';
+// ViteImageOptimizer removed to prevent native sharp compilation issues in CI/CD environments
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -18,21 +18,6 @@ export default defineConfig(({mode}) => {
     plugins: [
       react(), 
       tailwindcss(),
-      ViteImageOptimizer({
-        test: /\.(jpe?g|gif|tiff|webp|svg|avif)$/i, // Exclude png to avoid native container library issues
-        jpeg: {
-          quality: 70, // Aggressive compression
-        },
-        jpg: {
-          quality: 70, // Aggressive compression
-        },
-        webp: {
-          quality: 70, // Aggressive compression
-        },
-        svg: {
-          multipass: true,
-        }
-      }),
       // 🛡️ OBFUSCATION: Removed to troubleshoot build artifact issues
       ...(process.env.ANALYZE === 'true' ? [
         visualizer({

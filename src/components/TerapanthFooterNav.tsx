@@ -57,17 +57,15 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({ activeTab, setA
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50">
-      <div className="max-w-md mx-auto px-3 pb-safe">
-        <div className="h-[72px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-t-3xl border border-gray-100 dark:border-slate-800/40 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] dark:shadow-[0_-8px_30px_rgba(0,0,0,0.5)] flex items-center justify-around relative">
+    <nav 
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-orange-600/20 bg-gradient-to-r from-orange-500 via-orange-400 to-amber-500 text-white shadow-[0_-4px_20px_rgba(0,0,0,0.12)] transition-all duration-300"
+    >
+      <div className="max-w-md mx-auto px-2 pb-safe">
+        <div className="h-[60px] flex items-center justify-around relative">
           
           {/* Subtle Global Sync Status Strip at the very top edge if pending */}
           {pendingSyncs > 0 && (
-            <div className={`absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full px-3 py-1 rounded-t-xl text-[9px] font-black tracking-widest uppercase flex items-center gap-1.5 transition-all duration-300 border border-b-0 shadow-xs ${
-              isSyncing 
-                ? 'bg-orange-500 text-white border-orange-600' 
-                : 'bg-amber-500 text-white border-amber-600'
-            }`}>
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full px-3 py-1 rounded-t-xl text-[9px] font-black tracking-widest uppercase flex items-center gap-1.5 transition-all duration-300 border border-b-0 shadow-xs bg-orange-600 text-white" style={{ borderColor: 'rgba(234, 88, 12, 0.3)' }}>
               <RefreshCw size={10} className={isSyncing ? 'animate-spin' : 'animate-pulse'} />
               <span>
                 {isSyncing 
@@ -90,7 +88,7 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({ activeTab, setA
                   }
                   setActiveTab(item.id);
                 }}
-                className="flex flex-col items-center justify-center flex-1 py-1 focus:outline-none focus:ring-2 focus:ring-orange-500 rounded-2xl"
+                className="flex flex-col items-center justify-center flex-1 py-1 focus:outline-none focus:ring-2 focus:ring-white/50 rounded-2xl"
                 aria-label={language === 'en' ? item.labelEn : item.labelHi}
                 aria-current={Active ? 'page' : undefined}
               >
@@ -98,29 +96,29 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({ activeTab, setA
                   className={`transition-all duration-300 flex items-center justify-center rounded-full relative
                   ${
                     Active
-                      ? "bg-orange-500 text-white w-11 h-11 shadow-lg shadow-orange-300 dark:shadow-orange-950/40"
-                      : "w-10 h-10 text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-slate-200"
+                      ? "bg-white text-orange-600 w-9 h-9 shadow-md shadow-orange-600/20"
+                      : "w-9 h-9 text-orange-100 hover:text-white hover:bg-white/10"
                   }`}
                 >
                   <Icon
-                    size={22}
-                    strokeWidth={Active ? 2.6 : 2}
+                    size={18}
+                    strokeWidth={Active ? 2.5 : 2}
                   />
 
                   {/* Red Badge Indicator on Sadhana Tab for Offline pending syncs */}
                   {item.id === 'sadhana' && pendingSyncs > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-amber-500 text-[8px] font-black text-white animate-bounce border border-white dark:border-slate-900 shadow-sm">
+                    <span className="absolute -top-0.5 -right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-red-500 text-[8px] font-black text-white animate-bounce border border-white dark:border-slate-900 shadow-sm">
                       {pendingSyncs}
                     </span>
                   )}
                 </div>
 
                 <span
-                  className={`mt-1 text-[11px] font-medium transition-colors
+                  className={`mt-0.5 text-[10px] font-semibold transition-colors
                   ${
                     Active
-                      ? "text-orange-500 font-bold"
-                      : "text-gray-400 dark:text-slate-400"
+                      ? "text-white font-bold"
+                      : "text-orange-100/90"
                   }`}
                 >
                   {language === 'en' ? item.labelEn : item.labelHi}

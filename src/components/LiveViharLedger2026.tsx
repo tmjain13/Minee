@@ -118,7 +118,7 @@ export const LiveViharLedger2026: React.FC<{ onClose?: () => void }> = ({ onClos
 
   if (activeTab === 'DELHI_BOARD') {
     return (
-      <div className="relative w-full max-w-2xl mx-auto h-auto my-auto max-h-[92vh] bg-slate-900 border border-white/10 rounded-[2.5rem] overflow-hidden flex flex-col shadow-2xl">
+      <div className="relative w-full max-w-2xl mx-auto h-auto my-auto max-h-[92vh] bg-slate-900 border border-white/10 rounded-[2.5rem] overflow-y-auto flex flex-col shadow-2xl">
         <div className="absolute top-4 right-4 z-50">
           {onClose && (
             <button 
