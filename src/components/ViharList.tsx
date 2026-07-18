@@ -173,7 +173,14 @@ export const ViharList: React.FC = () => {
     "sadhvishrisumanshriji": { title: "शासनश्री", nameHi: "साध्वीश्री सुमनश्री जी" },
     "sadhvishriraviprabhaji": { title: "शासनश्री", nameHi: "साध्वीश्री रविप्रभाजी" },
     "sadhvishridrkundanrekhaji": { title: "डा.", nameHi: "साध्वीश्री डा. कुन्दनरेखाजी" },
-    "sadhvishrilabdhiprabhaji": { title: "", nameHi: "साध्वीश्री लब्धिप्रभाजी" }
+    "sadhvishrilabdhiprabhaji": { title: "", nameHi: "साध्वीश्री लब्धिप्रभाजी" },
+    "munishrihemantkumarji": { title: "", nameHi: "मुनिश्री हेमंत कुमार जी" },
+    "munishrijineshkumarji": { title: "", nameHi: "मुनिश्री जिनेश कुमार जी" },
+    "sadhvishrikanchanprabhaji": { title: "", nameHi: "साध्वीश्री कंचन प्रभा जी" },
+    "sadhvishrividyutprabhaji": { title: "", nameHi: "साध्वीश्री विद्युत प्रभा जी" },
+    "sadhvishriamitpragnaji": { title: "", nameHi: "साध्वीश्री अमित प्रज्ञा जी" },
+    "sadhvishriswarnarekhaji": { title: "", nameHi: "साध्वीश्री स्वर्ण रेखा जी" },
+    "sadhvishrimaitriyashaji": { title: "", nameHi: "साध्वीश्री मैत्री यशा जी" }
   };
 
   const formatName = (enName: string) => {

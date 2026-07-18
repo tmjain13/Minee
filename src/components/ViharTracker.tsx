@@ -406,7 +406,14 @@ export default function ViharTracker() {
       "Sadhvishri Sumanshri ji": { title: "शासनश्री", nameHi: "साध्वीश्री सुमनश्री जी" },
       "Sadhvishri Raviprabha ji": { title: "शासनश्री", nameHi: "साध्वीश्री रविप्रभाजी" },
       "Sadhvishri Dr. Kundanrekhaji": { title: "डा.", nameHi: "साध्वीश्री डा. कुन्दनरेखाजी" },
-      "Sadhvishri Labdhiprabhaji": { title: "", nameHi: "साध्वीश्री लब्धिप्रभाजी" }
+      "Sadhvishri Labdhiprabhaji": { title: "", nameHi: "साध्वीश्री लब्धिप्रभाजी" },
+      "Munishri Hemant Kumar ji": { title: "", nameHi: "मुनिश्री हेमंत कुमार जी" },
+      "Munishri Jinesh Kumar ji": { title: "", nameHi: "मुनिश्री जिनेश कुमार जी" },
+      "Sadhvishri Kanchan Prabha ji": { title: "", nameHi: "साध्वीश्री कंचन प्रभा जी" },
+      "Sadhvishri Vidyut Prabha ji": { title: "", nameHi: "साध्वीश्री विद्युत प्रभा जी" },
+      "Sadhvishri Amit Pragna ji": { title: "", nameHi: "साध्वीश्री अमित प्रज्ञा जी" },
+      "Sadhvishri Swarna Rekha ji": { title: "", nameHi: "साध्वीश्री स्वर्ण रेखा जी" },
+      "Sadhvishri Maitri Yasha ji": { title: "", nameHi: "साध्वीश्री मैत्री यशा जी" }
     };
 
     const formatName = (enName: string) => {
