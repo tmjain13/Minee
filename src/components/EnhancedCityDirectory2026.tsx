@@ -36,15 +36,15 @@ export const EnhancedCityDirectory2026: React.FC<EnhancedCityDirectory2026Props>
       subdivision: "अणुव्रत भवन केंद्रीय समिति",
       centralPhone: "9911716974",
       activeViharLogs: [
-        { Thana: "ठाणा-३", name: "मुनिश्री उदित कुमार जी (बहुश्रुत)", currentVenue: "अणुव्रत भवन, २१०, दीनदयाल उपाध्याय मार्ग, नई दिल्ली", kashidName: "श्री दिनेश जी संचेती (मंडी हाउस)", kashidPhone: "9983478999" },
-        { Thana: "ठाणा-३", name: "मुनिश्री जय कुमार जी (श्रमण)", currentVenue: "अणुव्रत भवन, २१०, दीनदयाल उपाध्याय मार्ग, नई दिल्ली", kashidName: "केन्द्रीय भवन कार्यालय", kashidPhone: "9602711402" },
-        { Thana: "ठाणा-२", name: "मुनिश्री अभिजित कुमार जी (डा.)", currentVenue: "तेरापंथ भवन, एफ.बी-१२९, मानसरोवर गार्डन, दिल्ली", kashidName: "प्रवास व्यवस्था डेस्क", kashidPhone: "8291669704" },
-        { Thana: "आदि ठाणा-४", name: "मुनिश्री विमल कुमार जी (शासनश्री)", currentVenue: "तेरापंथ भवन, डी-२/१३, सेक्टर-१०, फरीदाबाद", kashidName: "श्री सुखराज जी सेठिया", kashidPhone: "9983478999" },
-        { Thana: "आदि ठाणा-५", name: "साध्वीश्री संघमित्रा जी (शासनश्री)", currentVenue: "गोयल श्रद्धा निवास, सी-१४, ग्रीन पार्क मेन, दिल्ली", kashidName: "श्री जयप्रकाश जी गोयल", kashidPhone: "9950120242" },
-        { Thana: "आदि ठाणा-४", name: "साध्वीश्री सुमनश्री जी (शासनश्री)", currentVenue: "तेरापंथ भवन, सेक्टर-५, रोहिणी, दिल्ली", kashidName: "श्री पूनमचंद जी चौरड़िया", kashidPhone: "9915501240" },
-        { Thana: "आदि ठाणा-४", name: "साध्वीश्री सुव्रता जी (शासनश्री)", currentVenue: "श्री धनपत जी सुराणा निवास, पीतमपुरा, दिल्ली", kashidName: "श्री अरुण जी सुराणा", kashidPhone: "8375941210" },
-        { Thana: "आदि ठाणा-३", name: "साध्वीश्री लब्धिप्रभा जी", currentVenue: "अध्यात्म साधना केंद्र, छतरपुर, दिल्ली", kashidName: "केन्द्रीय प्रभाग कार्यालय", kashidPhone: "6295084007" },
-        { Thana: "आदि ठाणा-३", name: "साध्वीश्री कुन्दनरेखा जी (साध्वी डॉ.)", currentVenue: "अणुव्रत भवन, २१०, मंडी हाउस, दिल्ली", kashidName: "श्री दिनेश जी संचेती", kashidPhone: "8104273773" }
+        { Thana: "ठाना-३", name: "मुनिश्री उदित कुमार जी (बहुश्रुत)", currentVenue: "अणुव्रत भवन, २१०, दीनदयाल उपाध्याय मार्ग, नई दिल्ली", kashidName: "श्री दिनेश जी संचेती (मंडी हाउस)", kashidPhone: "9983478999" },
+        { Thana: "ठाना-३", name: "मुनिश्री जय कुमार जी (श्रमण)", currentVenue: "अणुव्रत भवन, २१०, दीनदयाल उपाध्याय मार्ग, नई दिल्ली", kashidName: "केन्द्रीय भवन कार्यालय", kashidPhone: "9602711402" },
+        { Thana: "ठाना-२", name: "मुनिश्री अभिजित कुमार जी (डा.)", currentVenue: "तेरापंथ भवन, एफ.बी-१२९, मानसरोवर गार्डन, दिल्ली", kashidName: "प्रवास व्यवस्था डेस्क", kashidPhone: "8291669704" },
+        { Thana: "आदि ठाना-४", name: "मुनिश्री विमल कुमार जी (शासनश्री)", currentVenue: "तेरापंथ भवन, डी-२/१३, सेक्टर-१०, फरीदाबाद", kashidName: "श्री सुखराज जी सेठिया", kashidPhone: "9983478999" },
+        { Thana: "आदि ठाना-५", name: "साध्वीश्री संघमित्रा जी (शासनश्री)", currentVenue: "गोयल श्रद्धा निवास, सी-१४, ग्रीन पार्क मेन, दिल्ली", kashidName: "श्री जयप्रकाश जी गोयल", kashidPhone: "9950120242" },
+        { Thana: "आदि ठाना-४", name: "साध्वीश्री सुमनश्री जी (शासनश्री)", currentVenue: "तेरापंथ भवन, सेक्टर-५, रोहिणी, दिल्ली", kashidName: "श्री पूनमचंद जी चौरड़िया", kashidPhone: "9915501240" },
+        { Thana: "आदि ठाना-४", name: "साध्वीश्री सुव्रता जी (शासनश्री)", currentVenue: "श्री धनपत जी सुराणा निवास, पीतमपुरा, दिल्ली", kashidName: "श्री अरुण जी सुराणा", kashidPhone: "8375941210" },
+        { Thana: "आदि ठाना-३", name: "साध्वीश्री लब्धिप्रभा जी", currentVenue: "अध्यात्म साधना केंद्र, छतरपुर, दिल्ली", kashidName: "केन्द्रीय प्रभाग कार्यालय", kashidPhone: "6295084007" },
+        { Thana: "आदि ठाना-३", name: "साध्वीश्री कुन्दनरेखा जी (साध्वी डॉ.)", currentVenue: "अणुव्रत भवन, २१०, मंडी हाउस, दिल्ली", kashidName: "श्री दिनेश जी संचेती", kashidPhone: "8104273773" }
       ]
     },
     {
@@ -55,8 +55,8 @@ export const EnhancedCityDirectory2026: React.FC<EnhancedCityDirectory2026Props>
       subdivision: "उधना / पर्वतपाटिया सभा प्रभाग",
       centralPhone: "9911716974",
       activeViharLogs: [
-        { Thana: "ठाणा ३", name: "डॉ. मुनिश्री मदन कुमारजी स्वामी", currentVenue: "B-4, B-wing, ग्रीन विक्ट्री, अलथान भीमराड़ रोड, वेसु, सूरत, उधना", kashidName: "सम्पर्क सूत्र (मार्ग सूचना)", kashidPhone: "6377377427" },
-        { Thana: "ठाणा-५", name: "साध्वीश्री मधुबालाजी (शासनश्री)", currentVenue: "तेरापंथ भवन, सिटीलाइट, सूरत", kashidName: "सूरत सभा डेस्क", kashidPhone: "N/A" }
+        { Thana: "ठाना ३", name: "डॉ. मुनिश्री मदन कुमारजी स्वामी", currentVenue: "B-4, B-wing, ग्रीन विक्ट्री, अलथान भीमराड़ रोड, वेसु, सूरत, उधना", kashidName: "सम्पर्क सूत्र (मार्ग सूचना)", kashidPhone: "6377377427" },
+        { Thana: "ठाना-५", name: "साध्वीश्री मधुबालाजी (शासनश्री)", currentVenue: "तेरापंथ भवन, सिटीलाइट, सूरत", kashidName: "सूरत सभा डेस्क", kashidPhone: "N/A" }
       ]
     },
     {
@@ -67,7 +67,7 @@ export const EnhancedCityDirectory2026: React.FC<EnhancedCityDirectory2026Props>
       subdivision: "गांधीनगर / यशवंतपुर क्षेत्रीय समिति",
       centralPhone: "8076455559",
       activeViharLogs: [
-        { Thana: "आदि ठाणा ४", name: "मुनिश्री विनीत कुमारजी एवं मुनिश्री आकाश कुमार जी", currentVenue: "अमृत लाल जी देवड़ा, मधुबन बिडदी, कर्नाटक", kashidName: "सम्पर्क सूत्र (मार्ग सूचना)", kashidPhone: "6378404756" }
+        { Thana: "आदि ठाना ४", name: "मुनिश्री विनीत कुमारजी एवं मुनिश्री आकाश कुमार जी", currentVenue: "अमृत लाल जी देवड़ा, मधुबन बिडदी, कर्नाटक", kashidName: "सम्पर्क सूत्र (मार्ग सूचना)", kashidPhone: "6378404756" }
       ]
     },
     {
@@ -78,7 +78,7 @@ export const EnhancedCityDirectory2026: React.FC<EnhancedCityDirectory2026Props>
       subdivision: "न्यू अलीपुर / सुख वैभव प्रभाग",
       centralPhone: "9831086310",
       activeViharLogs: [
-        { Thana: "ठाणा ३", name: "मुनिश्री जिनेश कुमार जी", currentVenue: "अलीपुर एक्ज़ोटिका, ३७B, अलीपुर रोड, कोलकाता", kashidName: "सम्पर्क सूत्र", kashidPhone: "9831086310" }
+        { Thana: "ठाना ३", name: "मुनिश्री जिनेश कुमार जी", currentVenue: "अलीपुर एक्ज़ोटिका, ३७B, अलीपुर रोड, कोलकाता", kashidName: "सम्पर्क सूत्र", kashidPhone: "9831086310" }
       ]
     }
   ], []);
@@ -176,7 +176,7 @@ export const EnhancedCityDirectory2026: React.FC<EnhancedCityDirectory2026Props>
                       {/* Header */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                         <h4 style={{ margin: 0, fontSize: '16px', color: '#0f172a', fontWeight: '800', lineHeight: '1.4' }}>
-                          <span style={{ color: '#ea580c' }}>[ठाणा-{saint.thana}]</span> {saint.title} {saint.name}
+                          <span style={{ color: '#ea580c' }}>[ठाना-{saint.thana}]</span> {saint.title} {saint.name}
                         </h4>
                         <span style={{ fontSize: '20px' }}>🗺️</span>
                       </div>

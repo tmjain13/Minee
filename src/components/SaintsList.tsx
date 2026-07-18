@@ -35,7 +35,7 @@ const mappedSaintsList = viharPravasTodayData.regions.Delhi_NCR.map((saint, inde
     id: index + 1,
     title: mapped.title,
     name: mapped.nameHi,
-    thana: `ठाणा-${saint.thana || 3}`,
+    thana: `ठाना-${saint.thana || 3}`,
     status: isHealth ? "स्वास्थ्य लाभ हेतु" : "",
     stay_place: saint.location,
     contacts: formatContacts(saint.contact_person, saint.contact, saint.contacts)
@@ -145,7 +145,7 @@ export default function SaintsList() {
         <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
         <input 
           type="text" 
-          placeholder="चारित्रात्मा का नाम, ठाणा या प्रवास स्थान खोजें..." 
+          placeholder="चारित्रात्मा का नाम, ठाना या प्रवास स्थान खोजें..." 
           value={searchTerm} 
           onChange={(e) => setSearchTerm(e.target.value)} 
           className="w-full pl-10 pr-4 py-3 bg-black/5 dark:bg-white/5 border border-[var(--border-color)] rounded-2xl text-[var(--text-spiritual)] text-xs sm:text-sm outline-none box-border placeholder-gray-400 dark:placeholder-gray-500 font-semibold focus:border-rose-500 transition-colors"

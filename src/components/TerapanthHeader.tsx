@@ -135,8 +135,8 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled
             ? isDarkActive
-              ? "bg-black/60 backdrop-blur-lg border-b border-white/10 shadow-lg text-white"
-              : "bg-white/70 backdrop-blur-lg border-b border-orange-100 shadow-md text-gray-800"
+              ? "bg-gradient-to-r from-orange-950/95 via-[#542004]/95 to-amber-950/95 backdrop-blur-lg border-b border-orange-900/40 shadow-lg text-white"
+              : "bg-gradient-to-r from-orange-600/90 via-orange-500/90 to-amber-500/90 backdrop-blur-lg border-b border-orange-600/30 shadow-md text-white"
             : "bg-gradient-to-r from-orange-500 via-orange-400 to-amber-500 text-white"
         }`}
       >
@@ -148,7 +148,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
             <div className="relative">
               <div
                 className={`w-9 h-9 rounded-full overflow-hidden flex items-center justify-center border-2 ${
-                  scrolled && !isDarkActive ? "border-orange-200" : "border-white/30"
+                  isDarkActive ? "border-orange-900/60" : "border-white/40"
                 }`}
               >
                 <img
@@ -167,10 +167,10 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
               />
             </div>
             <div>
-              <h1 className={`font-bold text-sm leading-tight ${scrolled && !isDarkActive ? "text-gray-900" : "text-white"}`}>
+              <h1 className="font-bold text-sm leading-tight text-white">
                 Terapanth AI
               </h1>
-              <p className={`text-[9px] uppercase tracking-widest font-semibold ${scrolled && !isDarkActive ? "text-orange-600" : "text-white/80"}`}>
+              <p className="text-[9px] uppercase tracking-widest font-semibold text-white/80">
                 Unified Knowledge
               </p>
             </div>
@@ -180,9 +180,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
           <div className="flex items-center gap-1">
             <button
               onClick={handleRefresh}
-              className={`p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer ${
-                scrolled && !isDarkActive ? "hover:bg-orange-50 text-gray-700" : "hover:bg-white/20 text-white"
-              }`}
+              className="p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer hover:bg-white/20 text-white"
               title="Refresh App"
             >
               <RefreshCcw size={16} />
@@ -190,9 +188,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
             
             <button
               onClick={onPenClick}
-              className={`p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer ${
-                scrolled && !isDarkActive ? "hover:bg-orange-50 text-gray-700" : "hover:bg-white/20 text-white"
-              }`}
+              className="p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer hover:bg-white/20 text-white"
               title="Quick Notes/Customizer"
             >
               <PenTool size={16} />
@@ -200,9 +196,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
 
             <button
               onClick={triggerOpenCustomizer}
-              className={`p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer ${
-                scrolled && !isDarkActive ? "hover:bg-orange-50 text-gray-700" : "hover:bg-white/20 text-white"
-              }`}
+              className="p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer hover:bg-white/20 text-white"
               title="Dashboard Settings"
             >
               <Grid3X3 size={16} />
@@ -210,9 +204,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
 
             <button
               onClick={triggerToggleTheme}
-              className={`p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer ${
-                scrolled && !isDarkActive ? "hover:bg-orange-50 text-gray-700" : "hover:bg-white/20 text-white"
-              }`}
+              className="p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer hover:bg-white/20 text-white"
               title="Toggle Theme"
             >
               {isDarkActive ? <Sun size={16} /> : <Moon size={16} />}
@@ -220,9 +212,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
 
             <button
               onClick={triggerToggleLanguage}
-              className={`px-1.5 py-1 rounded-lg text-xs font-bold transition-all active:scale-95 cursor-pointer ${
-                scrolled && !isDarkActive ? "hover:bg-orange-50 text-orange-600" : "hover:bg-white/20 text-white"
-              }`}
+              className="px-1.5 py-1 rounded-lg text-xs font-bold transition-all active:scale-95 cursor-pointer hover:bg-white/20 text-white"
               title="Toggle Language"
             >
               {activeLanguage === "hi" ? "EN" : "हि"}
@@ -239,9 +229,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
                     onProfileClick();
                   }
                 }}
-                className={`p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer relative ${
-                  scrolled && !isDarkActive ? "hover:bg-orange-50 text-gray-700" : "hover:bg-white/20 text-white"
-                }`}
+                className="p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer relative hover:bg-white/20 text-white"
                 title={currentUser ? "User Profile" : "Login"}
               >
                 <User size={16} />

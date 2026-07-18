@@ -133,7 +133,7 @@ function PravasCard({ data }: { data: PravasData }) {
         </div>
         <div className="flex items-center gap-1 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-400 px-2.5 py-1 rounded-lg text-[10px] font-black shrink-0 uppercase tracking-wider">
           <Users size={11} />
-          <span>ठाणा {data.thana}</span>
+          <span>ठाना {data.thana}</span>
         </div>
       </div>
 

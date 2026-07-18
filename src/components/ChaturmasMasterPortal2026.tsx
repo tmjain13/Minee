@@ -245,7 +245,7 @@ export default function ChaturmasMasterPortal2026({ onClose }: { onClose?: () =>
       ? `चातुर्मास प्रारंभ दिवस २०२६ - ${item.monk}`
       : `Chaturmas Commencement 2026 - ${item.monkEn}`;
     const description = language === 'hi'
-      ? `स्थल: ${item.venue}\nक्षेत्र: ${item.zone}\nठाणा संख्या: ${item.thana}\nस्रोत: ${item.source}`
+      ? `स्थल: ${item.venue}\nक्षेत्र: ${item.zone}\nठाना संख्या: ${item.thana}\nस्रोत: ${item.source}`
       : `Venue: ${item.venueEn}\nZone: ${item.zoneEn}\nThana group: ${item.thanaEn}\nSource: ${item.sourceEn}`;
     const location = language === 'hi' ? item.venue : item.venueEn;
 

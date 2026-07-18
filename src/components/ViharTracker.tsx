@@ -218,7 +218,7 @@ export default function ViharTracker() {
       contactText = ascetic.phone;
     }
     
-    const shareText = `📍 जैन श्वेतांबर तेरापंथ विहार अपडेट (${selectedDate})\n\nसाधु/साध्वी: ${ascetic.title ? ascetic.title + ' ' : ''}${ascetic.name}\nठाणा: ${ascetic.thana}\nस्थान: ${ascetic.location}\nक्षेत्र: ${ascetic.regionLabel}\nसंपर्क सूत्र: ${contactText}\n\nतेरापंथ एआई ऐप के माध्यम से साझा किया गया।`;
+    const shareText = `📍 जैन श्वेतांबर तेरापंथ विहार अपडेट (${selectedDate})\n\nसाधु/साध्वी: ${ascetic.title ? ascetic.title + ' ' : ''}${ascetic.name}\nठाना: ${ascetic.thana}\nस्थान: ${ascetic.location}\nक्षेत्र: ${ascetic.regionLabel}\nसंपर्क सूत्र: ${contactText}\n\nतेरापंथ एआई ऐप के माध्यम से साझा किया गया।`;
     
     if (navigator.share) {
       navigator.share({
@@ -986,7 +986,7 @@ export default function ViharTracker() {
                     <div id={`ascetic_thana_heading_${ascetic.id}`} className="flex flex-wrap items-center gap-1.5 mb-3">
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30">
                         <span className={`w-1.5 h-1.5 rounded-full ${ascetic.status && ascetic.status.includes('स्वास्थ्य') ? 'bg-amber-500' : 'bg-emerald-500'} animate-pulse`}></span>
-                        ठाणा: {ascetic.thana}
+                        ठाना: {ascetic.thana}
                       </span>
                       <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:text-zinc-300">
                         {ascetic.regionLabel}

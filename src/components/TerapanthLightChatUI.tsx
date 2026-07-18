@@ -559,7 +559,7 @@ export const TerapanthLightChatUI: React.FC<TerapanthLightChatUIProps> = ({
         msgType = 'location';
         locationData = searchResult.data;
         localResponse = `### **📍 प्रवास / चातुर्मास जानकारी**
-**${locationData.title || ''} ${locationData.name}** (ठाणा - ${locationData.thana})
+**${locationData.title || ''} ${locationData.name}** (ठाना - ${locationData.thana})
 
 * **स्थिति / Status**: ${locationData.status}
 * 🏢 **स्थान (Venue)**: ${locationData.location}

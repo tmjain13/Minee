@@ -116,7 +116,7 @@ export const ViharList: React.FC = () => {
     const contactText = monk.contacts 
       ? Object.entries(monk.contacts).map(([p, num]) => `${p}: ${num}`).join(', ')
       : `${monk.contact_person || 'प्रभारी'}: ${monk.contact || 'N/A'}`;
-    const textToCopy = `${monk.name} (${monk.nameEn || ''}) - ठाणा: ${monk.thana || 3}\n📍 स्थान: ${monk.location}\n📞 संपर्क: ${contactText}`;
+    const textToCopy = `${monk.name} (${monk.nameEn || ''}) - ठाना: ${monk.thana || 3}\n📍 स्थान: ${monk.location}\n📞 संपर्क: ${contactText}`;
     
     navigator.clipboard.writeText(textToCopy)
       .then(() => {
@@ -133,7 +133,7 @@ export const ViharList: React.FC = () => {
       ? saint.contacts.map((c: any) => `${c.label}: ${c.phone}`).join(', ')
       : 'N/A';
     
-    const shareText = `📍 जैन श्वेतांबर तेरापंथ विहार अपडेट (${selectedDate})\n\nसाधु/साध्वी: ${saint.title ? saint.title + ' ' : ''}${saint.name}\nठाणा: ${saint.thana}\nस्थान: ${saint.location}\nक्षेत्र: ${saint.regionLabel}\nसंपर्क सूत्र: ${contactText}\n\nतेरापंथ एआई ऐप के माध्यम से साझा किया गया।`;
+    const shareText = `📍 जैन श्वेतांबर तेरापंथ विहार अपडेट (${selectedDate})\n\nसाधु/साध्वी: ${saint.title ? saint.title + ' ' : ''}${saint.name}\nठाना: ${saint.thana}\nस्थान: ${saint.location}\nक्षेत्र: ${saint.regionLabel}\nसंपर्क सूत्र: ${contactText}\n\nतेरापंथ एआई ऐप के माध्यम से साझा किया गया।`;
     
     const uniqueShareId = `${saint.nameEn || saint.name}_${index}`;
     
@@ -503,7 +503,7 @@ export const ViharList: React.FC = () => {
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-100/50 dark:border-emerald-900/20">
                         <span className={`w-1.5 h-1.5 rounded-full ${saint.isHealth ? 'bg-amber-500' : 'bg-emerald-500'} animate-pulse`}></span>
-                        ठाणा: {saint.thana}
+                        ठाना: {saint.thana}
                       </span>
                       
                       {/* Visual Status Indicator Badge */}

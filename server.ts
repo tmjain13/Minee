@@ -56,10 +56,15 @@ async function startServer() {
         ownerEmail: "jainkaran8999@gmail.com",
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       });
-      console.log("Successfully seeded Firestore /config/admin document.");
+      console.log("[Firebase Admin] Successfully seeded Firestore /config/admin document.");
     }
-  } catch (error) {
-    console.warn("Failed to check/seed Firestore /config/admin document:", error);
+  } catch (error: any) {
+    if (error?.message?.includes("PERMISSION_DENIED") || error?.code === 7 || error?.message?.includes("Cloud Firestore API has not been used")) {
+      console.warn(`\n⚠️  [Firebase Admin] Cloud Firestore API is not enabled in Google Cloud Project "${projectId || "ethisoul-6f853"}".`);
+      console.warn(`👉 To enable it, please visit: https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=${projectId || "ethisoul-6f853"}\n`);
+    } else {
+      console.warn("[Firebase Admin] Failed to check/seed Firestore /config/admin document:", error.message || error);
+    }
   }
 
   app.use(express.json({ limit: "20kb" }));
