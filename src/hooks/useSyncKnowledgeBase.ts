@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { cacheKnowledgeForOffline } from '../lib/offlineSearch';
+import { cacheKnowledgeForOffline, getCachedDynamicQAs, saveDynamicQAsToIndexedDB } from '../lib/offlineSearch';
 import { KNOWLEDGE_BASE } from '../data/knowledge';
 import { quizMaster } from '../data/quizMaster';
 import { devLog } from '../lib/devLog';
@@ -35,6 +35,35 @@ export const useSyncKnowledgeBase = () => {
     return [...KNOWLEDGE_BASE, ...quizItems];
   });
 
+  // On mount, load cached dynamic QAs from IndexedDB to quickly update state
+  useEffect(() => {
+    const loadCachedOnMount = async () => {
+      try {
+        const cachedDynamic = await getCachedDynamicQAs();
+        if (cachedDynamic && cachedDynamic.length > 0) {
+          const quizItems = (quizMaster.jainQuizDatabase || []).map((q: any) => ({
+            id: `quiz-${q.id}`,
+            title: q.question,
+            category: 'Philosophy',
+            description: q.explanation || '',
+            details: q.options?.join(', ') || '',
+            tags: ['Quiz', 'FAQ']
+          }));
+          const allItems = [
+            ...KNOWLEDGE_BASE,
+            ...cachedDynamic,
+            ...quizItems
+          ];
+          setKnowledgeItems(allItems);
+          devLog("Initial load of dynamic QAs from IndexedDB successful.");
+        }
+      } catch (err) {
+        console.warn("Failed to load cached dynamic QAs from IndexedDB on mount:", err);
+      }
+    };
+    loadCachedOnMount();
+  }, []);
+
   useEffect(() => {
     const syncDynamicData = async () => {
       // Defer execution entirely to a background timeout to ensure instant UI rendering
@@ -51,20 +80,44 @@ export const useSyncKnowledgeBase = () => {
                 id: doc.id,
                 ...doc.data()
               }));
+              
+              // Save to IndexedDB (as primary storage) and localStorage (as secondary backup)
+              await saveDynamicQAsToIndexedDB(dynamicQAs);
               localStorage.setItem('terapanth_dynamic_qas', JSON.stringify(dynamicQAs));
               localStorage.setItem('knowledge_base_sync_progress', '30');
             } catch (firestoreError) {
-              console.warn("Firestore sync deferred or offline:", firestoreError);
+              console.warn("Firestore sync deferred or offline, falling back to IndexedDB:", firestoreError);
+              // If we are online but Firestore fails, try loading from IndexedDB first
+              const cached = await getCachedDynamicQAs();
+              if (cached && cached.length > 0) {
+                dynamicQAs = cached;
+              } else {
+                try {
+                  const localQAs = localStorage.getItem('terapanth_dynamic_qas');
+                  if (localQAs) {
+                    dynamicQAs = JSON.parse(localQAs);
+                  }
+                } catch (e) {
+                  console.error("Failed to parse cached dynamic QAs from localStorage:", e);
+                }
+              }
             }
           } else {
-            // Load previously saved dynamic QAs from localStorage if offline
+            // Load previously saved dynamic QAs from IndexedDB (primary) or localStorage (backup) if offline
             try {
-              const localQAs = localStorage.getItem('terapanth_dynamic_qas');
-              if (localQAs) {
-                dynamicQAs = JSON.parse(localQAs);
+              const cached = await getCachedDynamicQAs();
+              if (cached && cached.length > 0) {
+                dynamicQAs = cached;
+                devLog("Loaded dynamic QAs from IndexedDB while offline.");
+              } else {
+                const localQAs = localStorage.getItem('terapanth_dynamic_qas');
+                if (localQAs) {
+                  dynamicQAs = JSON.parse(localQAs);
+                  devLog("Loaded dynamic QAs from localStorage fallback while offline.");
+                }
               }
             } catch (e) {
-              console.error("Failed to parse cached dynamic QAs:", e);
+              console.error("Failed to read cached dynamic QAs while offline:", e);
             }
           }
 

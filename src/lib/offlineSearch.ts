@@ -3,10 +3,11 @@ import { openDB } from 'idb';
 const DB_NAME = 'terapanth_knowledge_db';
 const INVERTED_INDEX_STORE = 'inverted_index';
 const DOCS_STORE = 'knowledge_docs';
+const DYNAMIC_QAS_STORE = 'dynamic_qas_docs';
 
 // Initialize the database
 export const initSearchDB = async () => {
-  return openDB(DB_NAME, 2, {
+  return openDB(DB_NAME, 3, {
     upgrade(db, oldVersion) {
       if (oldVersion < 2) {
         if (db.objectStoreNames.contains('knowledge_index')) {
@@ -18,6 +19,9 @@ export const initSearchDB = async () => {
       }
       if (!db.objectStoreNames.contains(DOCS_STORE)) {
         db.createObjectStore(DOCS_STORE, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(DYNAMIC_QAS_STORE)) {
+        db.createObjectStore(DYNAMIC_QAS_STORE, { keyPath: 'id' });
       }
     },
   });
@@ -135,6 +139,35 @@ export const getOfflineKnowledge = async () => {
   } catch (error) {
     console.error('Failed to get offline knowledge:', error);
     return [];
+  }
+};
+
+// Retrieve cached dynamic QAs from IndexedDB
+export const getCachedDynamicQAs = async () => {
+  try {
+    const db = await initSearchDB();
+    return await db.getAll(DYNAMIC_QAS_STORE);
+  } catch (error) {
+    console.error('Failed to get cached dynamic QAs from IndexedDB:', error);
+    return [];
+  }
+};
+
+// Save fetched dynamic QAs to IndexedDB for offline access
+export const saveDynamicQAsToIndexedDB = async (qas: any[]) => {
+  try {
+    const db = await initSearchDB();
+    const tx = db.transaction(DYNAMIC_QAS_STORE, 'readwrite');
+    const store = tx.objectStore(DYNAMIC_QAS_STORE);
+    await store.clear();
+    for (const qa of qas) {
+      await store.put(qa);
+    }
+    await tx.done;
+    return true;
+  } catch (error) {
+    console.error('Failed to save dynamic QAs to IndexedDB:', error);
+    return false;
   }
 };
 
