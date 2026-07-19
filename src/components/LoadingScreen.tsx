@@ -72,6 +72,7 @@ export default function LoadingScreen() {
               alt="Terapanth Emblem"
               className="w-full h-full object-cover rounded-full"
               referrerPolicy="no-referrer"
+              loading="lazy"
             />
           </motion.div>
         </div>

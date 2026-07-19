@@ -348,13 +348,13 @@ const SadhanaDiary = memo(() => {
         const registration = await navigator.serviceWorker.ready;
         registration.showNotification("Sadhana Reminder Activated!", {
           body: "Great! We will remind you daily of your spiritual diary entries and prayers.",
-          icon: '/assets/logos/logo-terapanth.jpg',
-          badge: '/assets/logos/logo-terapanth.jpg',
+          icon: 'https://i.postimg.cc/rp8MS1YG/Untitled-design-20260719-150333-0000.png',
+          badge: 'https://i.postimg.cc/rp8MS1YG/Untitled-design-20260719-150333-0000.png',
         });
       } catch (e) {
         new Notification("Sadhana Reminder Activated!", {
           body: "Great! We will remind you daily of your spiritual diary entries and prayers.",
-          icon: '/assets/logos/logo-terapanth.jpg',
+          icon: 'https://i.postimg.cc/rp8MS1YG/Untitled-design-20260719-150333-0000.png',
         });
       }
     }
@@ -373,13 +373,13 @@ const SadhanaDiary = memo(() => {
           navigator.serviceWorker.ready.then(reg => {
             reg.showNotification("Daily Alarm Set (8:00 PM)", {
               body: "Sadhana reminder alarm successfully locked in. Keep your streak active!",
-              icon: '/assets/logos/logo-terapanth.jpg',
+              icon: 'https://i.postimg.cc/rp8MS1YG/Untitled-design-20260719-150333-0000.png',
             });
           });
         } catch (e) {
           new Notification("Daily Alarm Set (8:00 PM)", {
             body: "Sadhana reminder alarm successfully locked in. Keep your streak active!",
-            icon: '/assets/logos/logo-terapanth.jpg',
+            icon: 'https://i.postimg.cc/rp8MS1YG/Untitled-design-20260719-150333-0000.png',
           });
         }
       }

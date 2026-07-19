@@ -232,7 +232,7 @@ export default function ChaturmasMasterPortal2026({ onClose }: { onClose?: () =>
           body: language === 'hi' 
             ? `${item.monk} (${item.venue}) का चातुर्मास अनुस्मारक चालू हुआ।` 
             : `Set alerts for ${item.monkEn} at ${item.venueEn}.`,
-          icon: 'https://i.postimg.cc/ydXQL3gn/logo-(1).png'
+          icon: 'https://i.postimg.cc/rp8MS1YG/Untitled-design-20260719-150333-0000.png'
         }
       );
     } else {
