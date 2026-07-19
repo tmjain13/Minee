@@ -14,7 +14,9 @@ export const translations = {
     error: 'Error', offline: 'Offline', retry: 'Retry',
     offlineMode: 'Offline Mode', syncing: 'Syncing...', synced: 'Synced',
     settings: 'Settings', notifications: 'Notifications', faq: 'FAQ',
-    help: 'Help', about: 'About', privacy: 'Privacy', terms: 'Terms'
+    help: 'Help', about: 'About', privacy: 'Privacy', terms: 'Terms',
+    vihar: 'Vihar', gochari: 'Gochari', bhawan: 'Bhawan', upvas: 'Upvas',
+    parishad: 'Bahushrut Parishad', scholars: 'Scholars'
   },
   hi: {
     home: 'होम', chat: 'चैट', gallery: 'गैलरी', knowledge: 'ज्ञान',
@@ -31,6 +33,8 @@ export const translations = {
     error: 'त्रुटि', offline: 'ऑफ़लाइन', retry: 'पुनः प्रयास करें',
     offlineMode: 'ऑफ़लाइन मोड', syncing: 'सिंक हो रहा है...', synced: 'सिंक किया गया',
     settings: 'सेटिंग्स', notifications: 'सूचनाएं', faq: 'सामान्य प्रश्न',
-    help: 'सहायता', about: 'हमारे बारे में', privacy: 'गोपनीयता', terms: 'शर्तें'
+    help: 'सहायता', about: 'हमारे बारे में', privacy: 'गोपनीयता', terms: 'शर्तें',
+    vihar: 'विहार', gochari: 'गोचरी', bhawan: 'भवन', upvas: 'उपवास',
+    parishad: 'बहुश्रुत परिषद', scholars: 'विद्वान'
   }
 };

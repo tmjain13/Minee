@@ -89,6 +89,8 @@ export default defineConfig(({mode}) => {
               if (id.includes('html2canvas') || id.includes('jspdf')) return 'export-tools';
               if (id.includes('firebase')) return 'firebase-vendor';
               if (id.includes('lucide-react')) return 'icons-vendor';
+              if (id.includes('recharts') || id.includes('d3')) return 'charts-vendor';
+              if (id.includes('@sentry')) return 'sentry-vendor';
               return 'vendor';
             }
             if (id.includes('src/components/')) {

@@ -1,5 +1,6 @@
-import { pipeline } from '@xenova/transformers';
 import { fullJainDatabase } from '../data/jainQuizDatabase';
+
+export const KNOWLEDGE_VERSION = 2; // Bumped version for knowledge updates
 
 /**
  * Runs a local Machine Learning model to understand the *meaning* 
@@ -10,7 +11,8 @@ class OfflineAIEngine {
 
   static async getInstance() {
     if (this.instance === null) {
-      // Loads a tiny, browser-friendly feature extraction model
+      // Loads a tiny, browser-friendly feature extraction model dynamically (lazy-loaded)
+      const { pipeline } = await import('@xenova/transformers');
       this.instance = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
     }
     return this.instance;

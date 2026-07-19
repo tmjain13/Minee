@@ -1,3 +1,11 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+if (!ADMIN_EMAIL) {
+  throw new Error('ADMIN_EMAIL environment variable is required');
+}
+
 import express from "express";
 import path from "path";
 import axios from "axios";
@@ -10,6 +18,112 @@ import fs from "fs";
 import { z } from "zod";
 import { streamGeminiResponse, getInstantDefinition, generateRecordSummary } from "./server/gemini";
 import { logSecurityEvent } from "./server/securityLogger";
+
+interface CachedEmbeddings {
+  version: number;
+  data: Float32Array[];
+  texts: string[];
+  timestamp: number;
+}
+
+const EMBEDDING_CACHE_KEY = 'terapanth_embeddings_v1';
+const KNOWLEDGE_VERSION = 2; // Bumped to sync with knowledge and offline AI engine
+
+const openDB = async (...args: any[]) => {
+  return {
+    get: async (...args: any[]) => null,
+    put: async (...args: any[]) => {}
+  };
+};
+
+class OfflineAICache {
+  private extractor: any = null;
+  private embeddings: Float32Array[] = [];
+  private texts: string[] = [];
+  private isReady = false;
+
+  async initialize(knowledgeTexts: string[]) {
+    // 1. Try loading from IndexedDB cache
+    const cached = await this.loadCache();
+    
+    if (cached && cached.version === KNOWLEDGE_VERSION) {
+      this.embeddings = cached.data.map(e => new Float32Array(e));
+      this.texts = cached.texts;
+      this.isReady = true;
+      console.log('[OfflineAI] Loaded embeddings from cache');
+      return;
+    }
+
+    // 2. Compute embeddings (first time or knowledge updated - lazy loaded)
+    const { pipeline } = await import('@xenova/transformers');
+    this.extractor = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+    this.embeddings = [];
+    
+    for (const text of knowledgeTexts) {
+      const output = await this.extractor(text, { pooling: 'mean', normalize: true });
+      this.embeddings.push(output.data as Float32Array);
+    }
+    
+    this.texts = knowledgeTexts;
+    this.isReady = true;
+    
+    // 3. Save to cache
+    await this.saveCache();
+    console.log('[OfflineAI] Computed and cached embeddings');
+  }
+
+  private async loadCache(): Promise<CachedEmbeddings | null> {
+    try {
+      const db = await openDB('TerapanthAI', 1, {
+        upgrade(db: any) {
+          db.createObjectStore('embeddings');
+        }
+      });
+      return await db.get('embeddings', EMBEDDING_CACHE_KEY);
+    } catch {
+      return null;
+    }
+  }
+
+  private async saveCache() {
+    const db = await openDB('TerapanthAI', 1);
+    await db.put('embeddings', {
+      version: KNOWLEDGE_VERSION,
+      data: this.embeddings.map(e => Array.from(e)),
+      texts: this.texts,
+      timestamp: Date.now()
+    }, EMBEDDING_CACHE_KEY);
+  }
+
+  async findBestMatch(query: string, topK = 3): Promise<string[]> {
+    if (!this.isReady || !this.extractor) return [];
+    
+    // Compute query embedding
+    const output = await this.extractor(query, { pooling: 'mean', normalize: true });
+    const queryEmbedding = output.data as Float32Array;
+    
+    // Calculate cosine similarity
+    const scores = this.embeddings.map((emb, i) => ({
+      index: i,
+      score: cosineSimilarity(queryEmbedding, emb)
+    }));
+    
+    scores.sort((a, b) => b.score - a.score);
+    return scores.slice(0, topK).map(s => this.texts[s.index]);
+  }
+}
+
+function cosineSimilarity(a: Float32Array, b: Float32Array): number {
+  let dot = 0, normA = 0, normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+export const offlineAICache = new OfflineAICache();
 
 async function startServer() {
   const app = express();
@@ -42,7 +156,7 @@ async function startServer() {
 
   if (admin.apps.length === 0) {
     admin.initializeApp({
-      projectId: projectId || "plucky-semiotics-7cf5x"
+      projectId: projectId || process.env.FIREBASE_PROJECT_ID || "plucky-semiotics-7cf5x"
     });
   }
 
@@ -52,11 +166,12 @@ async function startServer() {
     const configRef = dbAdmin.doc('config/admin');
     const docSnap = await configRef.get();
     if (!docSnap.exists) {
+      const adminEmail = ADMIN_EMAIL;
       await configRef.set({
-        ownerEmail: "jainkaran8999@gmail.com",
+        ownerEmail: adminEmail,
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       });
-      console.log("[Firebase Admin] Successfully seeded Firestore /config/admin document.");
+      console.log(`[Firebase Admin] Successfully seeded Firestore /config/admin document with email: ${adminEmail}`);
     }
   } catch (error: any) {
     if (error?.message?.includes("PERMISSION_DENIED") || error?.code === 7 || error?.message?.includes("Cloud Firestore API has not been used")) {

@@ -122,3 +122,82 @@ Direct users to this directory for rest houses/bhawans:
 * **Rajasthan**:
   * *Terapanth Bhawan Jaipur*: Madhyama Marg, Mansarovar, Jaipur, Rajasthan – 302020. (+91-141-2782020)
   * *Jain Vishva Bharati Ladnun*: Ladnun, Dist. Nagaur, Rajasthan – 341306. (+91-1581-222124)
+
+---
+
+## 9. The 13 Pillars & 9 Tattvas
+1. **The 13 Pillars**: Representing the foundational rules laid down by Acharya Bhikshu at Kelwa, including strict single-guru obedience, non-attachment to buildings, and pristine ascetic purity.
+2. **The 9 Tattvas**: 
+   * **Jiva** (Soul)
+   * **Ajiva** (Non-living matter)
+   * **Punya** (Merit-producing karma)
+   * **Papa** (Demerit karma)
+   * **Asrava** (Inflow of karma)
+   * **Samvara** (Stoppage of karmic inflow)
+   * **Nirjara** (Shedding of existing karma)
+   * **Bandha** (Bondage of soul to karma)
+   * **Moksha** (Ultimate liberation)
+
+---
+
+## 10. Complete Timeline of the 11 Acharyas (1760–Present)
+| Acharya | Monastic Index | Active Period (Gregorian) | Historic Milestones |
+| :--- | :--- | :--- | :--- |
+| **Acharya Bhikshu** | 1st Acharya | 1760 – 1803 | Founder, authored Maryada Patra, established pure Monasticism. |
+| **Acharya Bharimalji** | 2nd Acharya | 1803 – 1821 | Maintained order stability, recorded initial scriptural copy books. |
+| **Acharya Raichandji** | 3rd Acharya | 1821 – 1851 | Initiated structural group travel, expanded singing compositions. |
+| **Acharya Jeetmalji (Jaya)** | 4th Acharya | 1851 – 1881 | Codified legalistic regulations, prolific commentator on scriptures. |
+| **Acharya Maghrajji** | 5th Acharya | 1881 – 1892 | Set high standards for internal administrative discipline. |
+| **Acharya Maniklalji** | 6th Acharya | 1892 – 1897 | Preserved core tenets through a period of severe social changes. |
+| **Acharya Dalchandji** | 7th Acharya | 1897 – 1909 | Developed higher intellectual and language education for ascetics. |
+| **Acharya Kaluramji** | 8th Acharya | 1909 – 1936 | Promoted rigorous training schools, emphasized Sanskrit fluency. |
+| **Acharya Tulsi** | 9th Acharya | 1936 – 1997 | Founded Anuvrat Movement (1949), Preksha Meditation, and Science of Living. |
+| **Acharya Mahapragya** | 10th Acharya | 1997 – 2010 | Giant scholar-philosopher, translated & structured the Jain Agamas. |
+| **Acharya Mahashraman** | 11th Acharya | 2010 – Present | Current absolute leader, headed historic 50,000+ km barefoot Ahimsa Yatra. |
+
+---
+
+## 11. Verified Chaturmas Locations (2015–2027)
+| Year | Gregorian / Vikram Samvat | Location Host City | Key Regional Focus |
+| :--- | :--- | :--- | :--- |
+| **2015** | VS 2072 | Kathmandu, Nepal | Post-earthquake spiritual rehabilitation, cross-border peace. |
+| **2016** | VS 2073 | Siliguri, West Bengal | Anuvrat mass awareness, North-East integration. |
+| **2017** | VS 2074 | Kolkata, West Bengal | Mega metro-discourses, high-profile civic engagements. |
+| **2018** | VS 2075 | Chennai, Tamil Nadu | South India awakening, non-violence declarations in regional scripts. |
+| **2019** | VS 2076 | Bengaluru, Karnataka | High-tech community summits, corporate values integration. |
+| **2020** | VS 2077 | Hyderabad, Telangana | Digital-streamed satsangs under strict Covid health frameworks. |
+| **2021** | VS 2078 | New Delhi (Adhyatma Kendra) | Capital interface, parliamentary peace briefings. |
+| **2022** | VS 2079 | Jaipur, Rajasthan | Royal state recognition, homecoming to state of spiritual origin. |
+| **2023** | VS 2080 | Mumbai (Nandanvan) | Financial hub alignment, massive youth de-addiction campaigns. |
+| **2024** | VS 2081 | Surat, Gujarat | Ethical business protocols, massive diamond merchants' vows. |
+| **2025** | VS 2082 | Pune, Maharashtra | Focus on academic integrations and IT professional circles. |
+| **2026** | VS 2083 | Rajasthan (Sardarsahar / Kelwa) | Reconnecting with base soils and Maryada foundations. |
+| **2027** | VS 2084 | Delhi / NCR (Proposed) | Planned central governance and peace convergence. |
+
+---
+
+## 12. Core Prayers & Ritual Guidelines
+* **The 4 Core Prayers**: Navkar Mantra, Chattari Mangalam, Bhikkhu Ashtakam, and Anuvrat Geet (for high ethical alignment).
+* **Samayik Step-by-Step Instruction**:
+  1. Spread the clean *Katasana* (white woolen mat) in an isolated, pure area.
+  2. Put on the *Muhapatti* (mouth sleeve) cleanly.
+  3. Recite the *Karemi Bhante* sutra with absolute internal concentration.
+  4. Spend exactly 48 minutes in meditation, scriptural study (*Swadhyay*), or silent contemplation. Zero electronics, zero social talk, zero moving.
+  5. Conclude with the *Samayik Paripalaya* recitation to dedicate the accumulated energy.
+* **Tapa (Fasting) Matrix**: 
+  * *Upvas*: Strict 36-hour fast. No food at all. Filtered, boiled water is permitted only between sunrise and sunset.
+  * *Bela / Teia / Athai*: 2-day, 3-day, and 8-day absolute fasts reflecting high karmic shredding capability.
+
+---
+
+## 13. Approved Community Wings & Logos
+Whenever a specific wing is mentioned in the UI, direct the matching official visual rendering:
+* **Terapanth Professional Forum (TPF)**: `/media/logos/tpf_logo.png`
+* **ABTYP (Youth Wing)**, **ABTMM (Women's Wing)**, **GYANSHALA (School Division)**, **ANUVIBHA (Peace Movement)** inside respective sections.
+
+---
+
+## 14. Architecture & Tab Hierarchy
+* **Chat and Diary Merger**: The historic dual interface is consolidated. Users can view their spiritual diary and directly request interactive AI check-ins from the unified console.
+* **Tab Hierarchy**: Home (8-suite quick links) > Sadhana (My spiritual tools) > Gyanshala (Syllabus) > Knowledge (Registry) > Chat / AI.
+* **Standardized Layer Stack**: Header overlays are locked to `z-50`, modals/toasts to `z-40`, and floating dropdown elements to `z-30` to prevent UI overlapping errors.

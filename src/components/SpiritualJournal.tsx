@@ -110,8 +110,8 @@ interface SpiritualJournalProps {
 export default function SpiritualJournal({ onBack }: SpiritualJournalProps) {
   const { user } = useAuth();
   const [text, setText] = useState(() => localStorage.getItem('spiritual_journal_draft') || "");
-  const [selectedMood, setSelectedMood] = useState("🧘 शांत");
-  const [emotionalState, setEmotionalState] = useState("");
+  const [selectedMood, setSelectedMood] = useState(() => localStorage.getItem('spiritual_journal_mood') || "🧘 शांत");
+  const [emotionalState, setEmotionalState] = useState(() => localStorage.getItem('spiritual_journal_emotional_state') || "");
   const [aiReflection, setAiReflection] = useState("");
   const [loadingAI, setLoadingAI] = useState(false);
   const [pastEntries, setPastEntries] = useState<JournalEntry[]>([]);
@@ -331,6 +331,8 @@ export default function SpiritualJournal({ onBack }: SpiritualJournalProps) {
   // Immediate LocalStorage Auto-Save & Debounced Firebase Sync
   useEffect(() => {
     localStorage.setItem('spiritual_journal_draft', text);
+    localStorage.setItem('spiritual_journal_mood', selectedMood);
+    localStorage.setItem('spiritual_journal_emotional_state', emotionalState);
 
     if (!text.trim()) {
       setSyncStatus('idle');
@@ -493,6 +495,8 @@ export default function SpiritualJournal({ onBack }: SpiritualJournalProps) {
           createdAt: new Date().toISOString()
         });
         localStorage.removeItem('spiritual_journal_draft');
+        localStorage.removeItem('spiritual_journal_mood');
+        localStorage.removeItem('spiritual_journal_emotional_state');
         localStorage.removeItem('spiritual_journal_needs_sync');
         setSyncStatus('synced');
       }
