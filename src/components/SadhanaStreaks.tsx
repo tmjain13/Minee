@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Flame, Check, ShieldAlert, Sparkles, BookOpen, Clock, Sunset, Award, RefreshCw } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { auth } from '../lib/firebase';
+import { syncSpiritualData } from '../utils/userDataMigration';
 
 interface SadhanaTask {
   id: string;
@@ -54,6 +56,13 @@ export default function SadhanaStreaks() {
       localStorage.setItem('terapanth_sadhana_daily_tasks', JSON.stringify(updatedTasks));
       localStorage.setItem('terapanth_sadhana_points', String(updatedPoints));
       localStorage.setItem('terapanth_sadhana_streak_count', String(updatedStreak));
+      
+      // If user is authenticated, trigger Firestore sync immediately
+      if (auth.currentUser?.uid) {
+        syncSpiritualData(auth.currentUser.uid).catch((err) => {
+          console.warn("[SadhanaStreaks] Background sync failed:", err);
+        });
+      }
     } catch (e) {
       console.error("Local storage save failed:", e);
     }

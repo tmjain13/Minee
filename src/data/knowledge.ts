@@ -11,7 +11,7 @@ export interface KnowledgeItem {
 }
 
 export const COMMUNITY_WINGS = {
-  TERAPANTH: 'https://i.postimg.cc/1zKwTGB8/4f9ba4b7a8d6fd8a83f711595c3f3242-(2).jpg',
+  TERAPANTH: 'https://i.postimg.cc/rp8MS1YG/Untitled-design-20260719-150333-0000.png',
   TPF: 'https://i.postimg.cc/ydXQL3gn/logo-(1).png',
   ABTYP: 'https://i.postimg.cc/Pqf904hh/Abtyp-logo.png',
   ABTMM: 'https://i.postimg.cc/VNbZy9dT/dz5x1oj15hmj06kinnr0.jpg',

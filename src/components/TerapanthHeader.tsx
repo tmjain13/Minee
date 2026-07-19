@@ -152,7 +152,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
                 }`}
               >
                 <img
-                  src="https://i.postimg.cc/1zKwTGB8/4f9ba4b7a8d6fd8a83f711595c3f3242-(2).jpg"
+                  src="https://i.postimg.cc/rp8MS1YG/Untitled-design-20260719-150333-0000.png"
                   alt="Terapanth Logo"
                   className="w-full h-full object-cover"
                   loading="eager"

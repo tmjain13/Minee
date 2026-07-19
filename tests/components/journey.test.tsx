@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { AuthContext } from '../../src/context/AuthContext';
+import { LanguageProvider } from '../../src/context/LanguageContext';
 import SadhanaTab from '../../src/components/SadhanaTab';
 
 // Mock Firebase & other services
@@ -44,7 +45,9 @@ describe('Auth -> Sadhana Logging Journey Test', () => {
   it('renders login screen or active state based on authentication', async () => {
     render(
       <AuthContext.Provider value={mockAuthValue as any}>
-        <SadhanaTab />
+        <LanguageProvider>
+          <SadhanaTab />
+        </LanguageProvider>
       </AuthContext.Provider>
     );
     

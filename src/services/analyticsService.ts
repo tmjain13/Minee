@@ -1,5 +1,6 @@
-import { db } from '../lib/firebase';
+import { db, auth } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, setDoc, increment } from 'firebase/firestore';
+import { syncSpiritualData } from '../utils/userDataMigration';
 
 /**
  * Atomic counter logger for tab clicks to optimize database usage and performance.
@@ -61,6 +62,13 @@ export const analyticsService = {
     }
 
     localStorage.setItem('sadhana_logs', JSON.stringify(logs));
+
+    // If user is authenticated, trigger Firestore sync immediately
+    if (auth.currentUser?.uid) {
+      syncSpiritualData(auth.currentUser.uid).catch((err) => {
+        console.warn("[AnalyticsService] Background sync failed:", err);
+      });
+    }
   },
 
   // Retrieve data for charts/graphs

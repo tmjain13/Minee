@@ -1487,7 +1487,7 @@ export default function UnifiedHomeDashboard({
           {/* Horizontal Scrollable Thumbnails */}
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none snap-x">
             {[
-              { id: 1, img: "https://i.postimg.cc/vmrrKKDp/4f9ba4b7a8d6fd8a83f711595c3f3242-3.jpg", title: "आचार्य श्री" },
+              { id: 1, img: "https://i.postimg.cc/rp8MS1YG/Untitled-design-20260719-150333-0000.png", title: "आचार्य श्री" },
               { id: 2, img: "https://images.unsplash.com/photo-1544928147-79a2dbc1f389?auto=format&fit=crop&w=200&q=80", title: "प्रवास" },
               { id: 3, img: "https://images.unsplash.com/photo-1582560469780-e83f2a87a1d1?auto=format&fit=crop&w=200&q=80", title: "समारोह" },
               { id: 4, img: "https://images.unsplash.com/photo-1601058268499-e52658b8bb88?auto=format&fit=crop&w=200&q=80", title: "अणुव्रत" }
@@ -1528,7 +1528,7 @@ export default function UnifiedHomeDashboard({
               { id: "ABTMM", logo: "https://i.postimg.cc/VNbZy9dT/dz5x1oj15hmj06kinnr0.jpg", padding: "p-0" },
               { id: "ANUVIBHA", logo: "https://i.postimg.cc/tg92YCmK/Anuvibha-logo.png", padding: "p-1" },
               { id: "GYANSHALA", logo: "https://i.postimg.cc/fR5DtNCD/Gyanshala-2.png", padding: "p-1.5" },
-              { id: "TERAPANTH", logo: "https://i.postimg.cc/vmrrKKDp/4f9ba4b7a8d6fd8a83f711595c3f3242-3.jpg", padding: "p-0" }
+              { id: "TERAPANTH", logo: "https://i.postimg.cc/rp8MS1YG/Untitled-design-20260719-150333-0000.png", padding: "p-0" }
             ].map((wing) => (
               <div key={wing.id} className="flex flex-col items-center justify-center gap-1.5 w-full">
                 <div className={`w-14 h-14 rounded-full shadow-xs flex items-center justify-center transition-all active:scale-95 cursor-pointer hover:border-orange-300 overflow-hidden ${wing.padding} ${isDarkMode ? 'bg-stone-950 border border-stone-800' : 'bg-white border border-stone-200/60'}`}>

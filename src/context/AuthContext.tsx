@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { syncAdminStatus } from '../lib/auth-sync';
 import { devLog } from '../lib/devLog';
 import * as Sentry from '@sentry/react';
+import { syncSpiritualData } from '../utils/userDataMigration';
 
 // In-memory cache (lives for session, no localStorage needed)
 let cachedOwnerEmail: string | null = null;
@@ -127,6 +128,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             } else {
               devLog("[AuthContext] Background Sync: User document not found in database.");
             }
+
+            // Sync user's sensitive spiritual data from localStorage to Firestore
+            await syncSpiritualData(currentUser.uid);
           } catch (error) {
             console.error("[AuthContext] Background Sync Error:", error);
             handleFirestoreError(error as any, OperationType.WRITE, userPath);

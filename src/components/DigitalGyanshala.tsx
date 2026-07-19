@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import gyanshalaData from '../data/gyanshalaUnifiedDataset.json';
 import { 
   BookOpen, 
   ChevronRight, 
@@ -308,6 +309,10 @@ export default function DigitalGyanshala() {
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [malaCount, setMalaCount] = useState(0);
   const [unlockedQuizIndices, setUnlockedQuizIndices] = useState<number[]>([]);
+  const [quizCategoryFilter, setQuizCategoryFilter] = useState<string>('All');
+  const [quizLevelFilter, setQuizLevelFilter] = useState<string>('All');
+  const [quizSearchQuery, setQuizSearchQuery] = useState<string>('');
+  const [quizVisibleCount, setQuizVisibleCount] = useState<number>(6);
   const mantraIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Audio System (Real Web Audio API)
@@ -762,51 +767,172 @@ export default function DigitalGyanshala() {
 
             {/* Box 3: Kids Quiz Flashcards Grid */}
             <div className="bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-gray-900/40 dark:to-gray-900/20 p-6 rounded-3xl border border-amber-500/10 space-y-4">
-              <div className="flex items-center gap-2">
-                <span className="p-1 px-2.5 bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-lg text-xs font-black">PAD 3</span>
-                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">बाल तत्वज्ञान क्विज़ चुनौती (Interactive Flashcards)</span>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="p-1 px-2.5 bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-lg text-xs font-black">PAD 3</span>
+                  <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">बाल तत्वज्ञान क्विज़ चुनौती (Interactive Flashcards)</span>
+                </div>
+                {gyanshalaData?.gyanshala_unified_knowledge_base?.verified_q_and_a && (
+                  <span className="text-xs font-bold text-amber-700 bg-amber-100 dark:bg-amber-500/20 dark:text-amber-400 px-2.5 py-1 rounded-full">
+                    {gyanshalaData.gyanshala_unified_knowledge_base.verified_q_and_a.filter((item: any) => {
+                      const matchesCategory = quizCategoryFilter === 'All' || item.category === quizCategoryFilter;
+                      const matchesLevel = quizLevelFilter === 'All' || item.level === quizLevelFilter;
+                      const query = quizSearchQuery.toLowerCase();
+                      const matchesSearch = 
+                        item.question_hi.toLowerCase().includes(query) ||
+                        item.question_en.toLowerCase().includes(query) ||
+                        item.answer_hi.toLowerCase().includes(query) ||
+                        item.answer_en.toLowerCase().includes(query) ||
+                        item.chapter.toLowerCase().includes(query);
+                      return matchesCategory && matchesLevel && matchesSearch;
+                    }).length} प्रश्न उपलब्ध
+                  </span>
+                )}
               </div>
 
-              <h4 className="serif-text font-black text-gray-900 dark:text-white text-base">स्वाध्याय ज्ञान-परीक्षण</h4>
-              <p className="text-xs text-gray-500 tracking-wide">प्रश्नों पर टैप करें और तुरंत सही धार्मिक नैतिक बोध की शास्त्रीय व्याख्या देखें।</p>
+              <h4 className="serif-text font-black text-gray-900 dark:text-white text-base">स्वाध्याय ज्ञान-परीक्षण एवं तत्वबोध लाइब्रेरी</h4>
+              <p className="text-xs text-gray-500 tracking-wide">प्रश्नों पर टैप करें और तुरंत सही धार्मिक नैतिक बोध की शास्त्रीय व्याख्या देखें। अपनी रुचि के अनुसार फ़िल्टर करें।</p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                {KIDS_QUIZZES.map((quiz, idx) => {
-                  const isUnlocked = unlockedQuizIndices.includes(idx);
-                  return (
-                    <div 
-                      key={idx} 
-                      onClick={() => toggleQuizCard(idx)}
-                      className={`p-4 rounded-2xl border transition-all cursor-pointer text-left ${
-                        isUnlocked 
-                          ? 'bg-white dark:bg-gray-800 border-amber-550 shadow-sm ring-1 ring-amber-500/20' 
-                          : 'bg-black/5 dark:bg-white/5 border-black/5 hover:border-amber-500/30'
+              {/* Dynamic Filtering Controls */}
+              <div className="space-y-3 pt-2">
+                {/* Search Bar */}
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                    <Search size={14} />
+                  </span>
+                  <input
+                    type="text"
+                    value={quizSearchQuery}
+                    onChange={(e) => {
+                      setQuizSearchQuery(e.target.value);
+                      setQuizVisibleCount(6); // Reset pagination on search
+                    }}
+                    placeholder="खोजें (जैसे: आत्मा, व्रत, अहिंसा, TPF, Level 1...)"
+                    className="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-black/10 dark:border-white/15 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  />
+                </div>
+
+                {/* Level / Age Bracket Filter */}
+                <div className="flex flex-wrap gap-1.5 items-center">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1">आयु वर्ग:</span>
+                  {['All', 'Level 1 (Age 5-7)', 'Level 2 (Age 8-10)', 'Level 3 (Age 11-13)'].map((lvl) => (
+                    <button
+                      key={lvl}
+                      onClick={() => {
+                        playChime(440, 0.05);
+                        setQuizLevelFilter(lvl);
+                        setQuizVisibleCount(6);
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
+                        quizLevelFilter === lvl
+                          ? 'bg-amber-500 text-white shadow-sm'
+                          : 'bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-black/10'
                       }`}
                     >
-                      <div className="flex justify-between items-start gap-2">
-                        <h5 className="font-extrabold text-xs text-gray-900 dark:text-white leading-snug">
-                          {quiz.question}
+                      {lvl === 'All' ? 'सभी वर्ग' : lvl.replace('Level', 'स्तर')}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Category Pills */}
+                <div className="flex flex-wrap gap-1.5 items-center">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1">श्रेणी (Category):</span>
+                  {['All', 'Spiritual Principles', 'Jain Conduct & Vows', 'Spiritual Practices', 'Karma Philosophy', 'Jain Cosmology', 'Community Wings'].map((cat) => {
+                    const count = (gyanshalaData?.gyanshala_unified_knowledge_base?.verified_q_and_a || []).filter((e: any) => cat === 'All' || e.category === cat).length;
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => {
+                          playChime(440, 0.05);
+                          setQuizCategoryFilter(cat);
+                          setQuizVisibleCount(6);
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
+                          quizCategoryFilter === cat
+                            ? 'bg-amber-600 text-white shadow-sm'
+                            : 'bg-black/5 dark:bg-white/5 text-gray-500 dark:text-gray-400 hover:bg-black/10'
+                        }`}
+                      >
+                        {cat === 'All' ? `सभी (${count})` : `${cat === 'Spiritual Principles' ? 'सिद्धांत' : cat === 'Jain Conduct & Vows' ? 'व्रत और नियम' : cat === 'Spiritual Practices' ? 'साधना' : cat === 'Karma Philosophy' ? 'कर्म सिद्धांत' : cat === 'Jain Cosmology' ? 'ब्रह्मांड' : cat === 'Community Wings' ? 'संस्थागत पंख' : cat} (${count})`}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Grid of Flashcards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3">
+                {((gyanshalaData?.gyanshala_unified_knowledge_base?.verified_q_and_a || []) as any[]).filter((item: any) => {
+                  const matchesCategory = quizCategoryFilter === 'All' || item.category === quizCategoryFilter;
+                  const matchesLevel = quizLevelFilter === 'All' || item.level === quizLevelFilter;
+                  const query = quizSearchQuery.toLowerCase();
+                  const matchesSearch = 
+                    item.question_hi.toLowerCase().includes(query) ||
+                    item.question_en.toLowerCase().includes(query) ||
+                    item.answer_hi.toLowerCase().includes(query) ||
+                    item.answer_en.toLowerCase().includes(query) ||
+                    item.chapter.toLowerCase().includes(query);
+                  return matchesCategory && matchesLevel && matchesSearch;
+                }).slice(0, quizVisibleCount).map((quiz: any) => {
+                  const isUnlocked = unlockedQuizIndices.includes(quiz.id);
+                  return (
+                    <div 
+                      key={quiz.id} 
+                      onClick={() => {
+                        playChime(587.33, 0.06);
+                        setUnlockedQuizIndices((prev) => 
+                          prev.includes(quiz.id) ? prev.filter(i => i !== quiz.id) : [...prev, quiz.id]
+                        );
+                      }}
+                      className={`p-4 rounded-2xl border transition-all cursor-pointer text-left flex flex-col justify-between ${
+                        isUnlocked 
+                          ? 'bg-white dark:bg-gray-800 border-amber-550 shadow-sm ring-1 ring-amber-500/20' 
+                          : 'bg-white dark:bg-gray-800 border-black/5 dark:border-white/10 hover:border-amber-500/30 shadow-xs'
+                      }`}
+                    >
+                      <div className="space-y-1">
+                        {/* Tags */}
+                        <div className="flex justify-between items-center text-[8px] font-extrabold tracking-widest text-gray-400 uppercase">
+                          <span>{quiz.level.replace('Level ', 'स्तर ')} • {quiz.chapter}</span>
+                          <span className={`px-1.5 py-0.5 rounded-md ${
+                            isUnlocked ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400' : 'bg-black/5 dark:bg-white/5'
+                          }`}>
+                            {isUnlocked ? 'उत्तर बंद' : 'उत्तर देखें'}
+                          </span>
+                        </div>
+                        
+                        <h5 className="font-extrabold text-xs text-gray-900 dark:text-white leading-snug pt-1">
+                          {quiz.question_hi}
                         </h5>
-                        <span className={`text-[10px] uppercase font-black tracking-widest px-1.5 py-0.5 rounded-md shrink-0 ${
-                          isUnlocked ? 'bg-amber-100 text-amber-800' : 'bg-black/10 text-gray-400'
-                        }`}>
-                          {isUnlocked ? 'उत्तर' : 'खोलें'}
-                        </span>
+                        <p className="text-[10px] text-gray-400 font-medium">
+                          {quiz.question_en}
+                        </p>
                       </div>
-                      
+
                       <AnimatePresence>
                         {isUnlocked ? (
                           <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
                             exit={{ opacity: 0, height: 0 }}
-                            className="mt-3 pt-2.5 border-t border-black/5 dark:border-white/5 text-xs font-semibold text-spiritual leading-relaxed"
+                            className="mt-3 pt-2.5 border-t border-black/5 dark:border-white/5 text-xs font-semibold leading-relaxed space-y-2"
                           >
-                            💡 {quiz.answer}
+                            <p className="text-spiritual dark:text-amber-300">
+                              💡 <span className="font-bold text-gray-800 dark:text-gray-100">उत्तर:</span> {quiz.answer_hi}
+                            </p>
+                            <p className="text-gray-600 dark:text-gray-300 text-[11px] leading-snug">
+                              {quiz.answer_en}
+                            </p>
+                            {quiz.moral_value && (
+                              <div className="bg-emerald-500/5 border border-emerald-500/15 p-2 rounded-lg text-[10px] text-emerald-800 dark:text-emerald-300 font-medium">
+                                🌟 <span className="font-black">नैतिक मूल्य:</span> {quiz.moral_value}
+                              </div>
+                            )}
                           </motion.div>
                         ) : (
-                          <p className="text-[10px] text-gray-400 italic mt-1.5">
-                            💡 संकेत: {quiz.hint}
+                          <p className="text-[9px] text-gray-400 italic mt-2 flex items-center gap-1">
+                            <span>✨ श्रेणी:</span>
+                            <span className="font-bold text-gray-500 dark:text-gray-300">{quiz.category}</span>
                           </p>
                         )}
                       </AnimatePresence>
@@ -814,6 +940,60 @@ export default function DigitalGyanshala() {
                   );
                 })}
               </div>
+
+              {/* No items fallback */}
+              {((gyanshalaData?.gyanshala_unified_knowledge_base?.verified_q_and_a || []) as any[]).filter((item: any) => {
+                const matchesCategory = quizCategoryFilter === 'All' || item.category === quizCategoryFilter;
+                const matchesLevel = quizLevelFilter === 'All' || item.level === quizLevelFilter;
+                const query = quizSearchQuery.toLowerCase();
+                const matchesSearch = 
+                  item.question_hi.toLowerCase().includes(query) ||
+                  item.question_en.toLowerCase().includes(query) ||
+                  item.answer_hi.toLowerCase().includes(query) ||
+                  item.answer_en.toLowerCase().includes(query) ||
+                  item.chapter.toLowerCase().includes(query);
+                return matchesCategory && matchesLevel && matchesSearch;
+              }).length === 0 && (
+                <div className="text-center py-10 bg-black/5 dark:bg-white/5 rounded-2xl border border-dashed border-black/10">
+                  <p className="text-xs text-gray-500 font-bold">कोई मिलान करने वाले प्रश्न नहीं मिले।</p>
+                  <button 
+                    onClick={() => {
+                      setQuizSearchQuery('');
+                      setQuizCategoryFilter('All');
+                      setQuizLevelFilter('All');
+                    }}
+                    className="mt-2 text-[10px] font-black text-amber-600 hover:underline uppercase"
+                  >
+                    सारे फ़िल्टर हटाएं
+                  </button>
+                </div>
+              )}
+
+              {/* Pagination control */}
+              {((gyanshalaData?.gyanshala_unified_knowledge_base?.verified_q_and_a || []) as any[]).filter((item: any) => {
+                const matchesCategory = quizCategoryFilter === 'All' || item.category === quizCategoryFilter;
+                const matchesLevel = quizLevelFilter === 'All' || item.level === quizLevelFilter;
+                const query = quizSearchQuery.toLowerCase();
+                const matchesSearch = 
+                  item.question_hi.toLowerCase().includes(query) ||
+                  item.question_en.toLowerCase().includes(query) ||
+                  item.answer_hi.toLowerCase().includes(query) ||
+                  item.answer_en.toLowerCase().includes(query) ||
+                  item.chapter.toLowerCase().includes(query);
+                return matchesCategory && matchesLevel && matchesSearch;
+              }).length > quizVisibleCount && (
+                <div className="flex justify-center pt-2">
+                  <button
+                    onClick={() => {
+                      playChime(440, 0.08);
+                      setQuizVisibleCount(prev => prev + 6);
+                    }}
+                    className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider shadow-sm transition-all cursor-pointer"
+                  >
+                    ➕ और लोड करें (Load More Questions)
+                  </button>
+                </div>
+              )}
             </div>
           </motion.div>
         )}

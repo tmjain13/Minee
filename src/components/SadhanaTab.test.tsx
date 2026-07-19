@@ -28,6 +28,7 @@ jest.mock('firebase/firestore', () => ({
 
 import SadhanaTab from './SadhanaTab';
 import { AuthContext } from '../context/AuthContext';
+import { LanguageProvider } from '../context/LanguageContext';
 
 // Mock the AuthContext
 const mockAuth = {
@@ -42,7 +43,9 @@ describe('SadhanaTab Component', () => {
   test('renders without crashing', () => {
     render(
       <AuthContext.Provider value={mockAuth as any}>
-        <SadhanaTab />
+        <LanguageProvider>
+          <SadhanaTab />
+        </LanguageProvider>
       </AuthContext.Provider>
     );
     // Just verify the component mounted; might need to find a specific text/element

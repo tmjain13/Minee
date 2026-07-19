@@ -68,7 +68,7 @@ export default function LoadingScreen() {
             className="w-24 h-24 bg-white dark:bg-gray-900 rounded-full flex items-center justify-center shadow-lg border border-saffron/10 relative overflow-hidden z-10"
           >
             <img 
-              src="https://i.postimg.cc/vmrrKKDp/4f9ba4b7a8d6fd8a83f711595c3f3242-(3).jpg" 
+              src="https://i.postimg.cc/rp8MS1YG/Untitled-design-20260719-150333-0000.png" 
               alt="Terapanth Emblem"
               className="w-full h-full object-cover rounded-full"
               referrerPolicy="no-referrer"
