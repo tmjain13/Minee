@@ -1,10 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
-if (!ADMIN_EMAIL) {
-  throw new Error('ADMIN_EMAIL environment variable is required');
-}
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "jainkaran8999@gmail.com";
 
 import express from "express";
 import path from "path";
