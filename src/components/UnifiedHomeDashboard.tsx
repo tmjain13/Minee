@@ -659,7 +659,7 @@ export default function UnifiedHomeDashboard({
 
   return (
     <div 
-      className={`w-full flex flex-col gap-4 pt-44 pb-4 px-3 animate-in fade-in duration-200 transition-colors bg-transparent ${isDarkMode ? 'text-stone-100' : 'text-stone-800'}`}
+      className={`w-full flex flex-col gap-4 py-4 px-3 animate-in fade-in duration-200 transition-colors bg-transparent ${isDarkMode ? 'text-stone-100' : 'text-stone-800'}`}
       onTouchStart={(e) => {
         // Only stop propagation if it's clearly a horizontal gesture, 
         // allow vertical scrolling to pass through.
