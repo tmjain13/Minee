@@ -290,6 +290,33 @@ export default function App() {
     }),
   };
 
+  const slideUpFadeVariants = {
+    enter: {
+      y: shouldReduceMotion ? 0 : 25,
+      opacity: 0,
+    },
+    center: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        y: { type: "spring" as const, stiffness: 350, damping: 32 },
+        opacity: { duration: 0.28, ease: "easeOut" }
+      }
+    },
+    exit: {
+      y: shouldReduceMotion ? 0 : -20,
+      opacity: 0,
+      transition: {
+        y: { type: "spring" as const, stiffness: 350, damping: 32 },
+        opacity: { duration: 0.22, ease: "easeIn" }
+      }
+    }
+  };
+
+  const isHomeChatTransition = useMemo(() => {
+    return (activeTab === 'home' && prevTab === 'chat') || (activeTab === 'chat' && prevTab === 'home');
+  }, [activeTab, prevTab]);
+
   const isTransitioningBetweenCoreTabs = useMemo(() => {
     const coreTabs = ['home', 'chat', 'sadhana'];
     return coreTabs.includes(activeTab) && coreTabs.includes(prevTab);
@@ -784,7 +811,7 @@ export default function App() {
             {activeTab === "chat" && (
               <motion.div
                 key="chat"
-                variants={isTransitioningBetweenCoreTabs ? fadeSlideVariants : tabSlideVariants}
+                variants={isHomeChatTransition ? slideUpFadeVariants : isTransitioningBetweenCoreTabs ? fadeSlideVariants : tabSlideVariants}
                 custom={direction}
                 initial="enter"
                 animate="center"
@@ -1114,7 +1141,7 @@ export default function App() {
             {activeTab === 'home' && (
               <motion.div
                 key="home"
-                variants={isTransitioningBetweenCoreTabs ? fadeSlideVariants : tabSlideVariants}
+                variants={isHomeChatTransition ? slideUpFadeVariants : isTransitioningBetweenCoreTabs ? fadeSlideVariants : tabSlideVariants}
                 custom={direction}
                 initial="enter"
                 animate="center"
