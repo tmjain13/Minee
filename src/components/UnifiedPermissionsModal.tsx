@@ -216,12 +216,12 @@ export default function UnifiedPermissionsModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
             transition={{ type: "spring", duration: 0.5 }}
-            className="relative w-full max-w-lg bg-[#FAF9F6] dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 rounded-3xl overflow-hidden shadow-2xl border border-orange-500/10 flex flex-col max-h-[90dvh]"
+            className="relative w-full max-w-lg bg-[#FAF9F6] dark:bg-[#1f0e04] text-zinc-900 dark:text-zinc-100 rounded-3xl overflow-hidden shadow-2xl border border-orange-500/20 flex flex-col max-h-[90dvh]"
           >
             {/* Elegant Header with custom style colors */}
             <div
               id="unified-perms-header"
-              className="p-6 pb-4 border-b border-zinc-200/60 dark:border-zinc-800/60 flex items-start justify-between"
+              className="p-6 pb-4 border-b border-orange-100 dark:border-orange-950/40 flex items-start justify-between"
             >
               <div className="flex gap-3">
                 <div
@@ -382,7 +382,7 @@ export default function UnifiedPermissionsModal({
             {/* Bottom Actions Row */}
             <div
               id="unified-perms-footer"
-              className="p-6 bg-zinc-50 dark:bg-zinc-850 border-t border-zinc-200/60 dark:border-zinc-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+              className="p-6 bg-[#fcfaf7] dark:bg-[#2c1507] border-t border-orange-100 dark:border-orange-950/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
             >
               <button
                 id="unified-perms-skip-btn"

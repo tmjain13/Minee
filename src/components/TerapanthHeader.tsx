@@ -24,6 +24,7 @@ export interface TerapanthHeaderProps {
   onProfileClick?: () => void;
   onLoginClick?: () => void;
   zenMode?: boolean;
+  activeTab?: string;
 
   // Props requested by Kimi / user
   onRefresh?: () => void;
@@ -45,6 +46,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
   onProfileClick,
   onLoginClick,
   zenMode = false,
+  activeTab,
 
   onRefresh,
   onOpenCustomizer,
@@ -129,6 +131,8 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
   const auth = getAuth();
   const currentUser = auth.currentUser;
 
+  const isFront = activeTab === "home";
+
   return (
     <>
       <header
@@ -137,148 +141,287 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
             ? isDarkActive
               ? "bg-gradient-to-r from-orange-950/95 via-[#542004]/95 to-amber-950/95 backdrop-blur-lg border-b border-orange-900/40 shadow-lg text-white"
               : "bg-gradient-to-r from-orange-600/90 via-orange-500/90 to-amber-500/90 backdrop-blur-lg border-b border-orange-600/30 shadow-md text-white"
-            : "bg-gradient-to-r from-orange-500 via-orange-400 to-amber-500 text-white"
+            : isFront
+              ? isDarkActive
+                ? "bg-gradient-to-b from-orange-950/40 to-transparent backdrop-blur-xs text-white"
+                : "bg-gradient-to-b from-orange-500/10 to-transparent backdrop-blur-xs text-stone-850"
+              : "bg-gradient-to-r from-orange-500 via-orange-400 to-amber-500 text-white"
         }`}
       >
-        <div className={`max-w-lg mx-auto px-3 flex items-center justify-between transition-all duration-300 ${
-          scrolled ? "py-1" : "py-2"
+        <div className={`max-w-lg mx-auto px-3 flex transition-all duration-300 ${
+          isFront && !scrolled
+            ? "flex-col items-center justify-center py-4 gap-3.5"
+            : "items-center justify-between py-2"
         }`}>
-          {/* Group 1: Logo and Brand */}
-          <div className="flex items-center gap-2.5">
-            <div className="relative">
-              <div
-                className={`w-9 h-9 rounded-full overflow-hidden flex items-center justify-center border-2 ${
-                  isDarkActive ? "border-orange-900/60" : "border-white/40"
-                }`}
-              >
-                <img
-                  src="https://i.postimg.cc/rp8MS1YG/Untitled-design-20260719-150333-0000.png"
-                  alt="Terapanth Logo"
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
+          {isFront && !scrolled ? (
+            /* Centered large logo layout for front page when not scrolled */
+            <div className="flex flex-col items-center justify-center gap-3 w-full">
+              <div className="relative flex items-center justify-center">
+                <div className="w-24 h-24 flex items-center justify-center transition-all duration-300 transform hover:scale-105">
+                  <img
+                    src="https://i.postimg.cc/rp8MS1YG/Untitled-design-20260719-150333-0000.png"
+                    alt="Terapanth Logo"
+                    className="w-full h-full object-contain"
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+                <div
+                  className={`absolute bottom-0.5 right-1.5 w-3 h-3 rounded-full border-2 ${
+                    isDarkActive ? "border-black" : "border-white"
+                  } ${isOnline ? "bg-green-400" : "bg-red-400"}`}
+                  title={isOnline ? "Online" : "Offline"}
                 />
               </div>
-              <div
-                className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 ${
-                  scrolled ? (isDarkActive ? "border-black" : "border-white") : "border-orange-500"
-                } ${isOnline ? "bg-green-400" : "bg-red-400"}`}
-                title={isOnline ? "Online" : "Offline"}
-              />
-            </div>
-            <div>
-              <h1 className="font-bold text-sm leading-tight text-white">
-                Terapanth AI
-              </h1>
-              <p className="text-[9px] uppercase tracking-widest font-semibold text-white/80">
-                Unified Knowledge
-              </p>
-            </div>
-          </div>
-
-          {/* Group 2: Action Icons */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={handleRefresh}
-              className="p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer hover:bg-white/20 text-white"
-              title="Refresh App"
-            >
-              <RefreshCcw size={16} />
-            </button>
-            
-            <button
-              onClick={onPenClick}
-              className="p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer hover:bg-white/20 text-white"
-              title="Quick Notes/Customizer"
-            >
-              <PenTool size={16} />
-            </button>
-
-            <button
-              onClick={triggerOpenCustomizer}
-              className="p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer hover:bg-white/20 text-white"
-              title="Dashboard Settings"
-            >
-              <Grid3X3 size={16} />
-            </button>
-
-            <button
-              onClick={triggerToggleTheme}
-              className="p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer hover:bg-white/20 text-white"
-              title="Toggle Theme"
-            >
-              {isDarkActive ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
-
-            <button
-              onClick={triggerToggleLanguage}
-              className="px-1.5 py-1 rounded-lg text-xs font-bold transition-all active:scale-95 cursor-pointer hover:bg-white/20 text-white"
-              title="Toggle Language"
-            >
-              {activeLanguage === "hi" ? "EN" : "हि"}
-            </button>
-
-            <div className="relative">
-              <button
-                onClick={() => {
-                  if (currentUser) {
-                    setShowProfileMenu(!showProfileMenu);
-                  } else if (onLoginClick) {
-                    onLoginClick();
-                  } else if (onProfileClick) {
-                    onProfileClick();
-                  }
-                }}
-                className="p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer relative hover:bg-white/20 text-white"
-                title={currentUser ? "User Profile" : "Login"}
-              >
-                <User size={16} />
-                {currentUser && (
-                  <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-orange-500 rounded-full" />
-                )}
-              </button>
-
-              {showProfileMenu && currentUser && (
-                <div
-                  className={`absolute right-0 top-full mt-2 w-48 rounded-xl shadow-xl border overflow-hidden z-50 ${
-                    isDarkActive ? "bg-gray-900 border-gray-700 text-white" : "bg-white border-gray-100 text-gray-900"
-                  }`}
+              
+              {/* Subtle centered action bar so they are still accessible */}
+              <div className={`flex items-center gap-2.5 px-3.5 py-1.5 rounded-full border backdrop-blur-md shadow-xs transition-colors duration-300 ${
+                isDarkActive 
+                  ? "bg-stone-900/80 border-stone-800 text-orange-400" 
+                  : "bg-white/80 border-stone-200/50 text-orange-600"
+              }`}>
+                {/* Action Buttons */}
+                <button
+                  onClick={handleRefresh}
+                  className="p-1 rounded-lg transition-all active:scale-95 cursor-pointer hover:bg-orange-500/10"
+                  title="Refresh App"
                 >
-                  <div className="p-3 border-b border-gray-100 dark:border-gray-700">
-                    <p className="text-xs text-orange-500 font-semibold uppercase tracking-wider">जय जिनेन्द्र!</p>
-                    <p className="text-sm font-medium truncate">{currentUser.displayName || currentUser.email || "Sravaka"}</p>
-                  </div>
+                  <RefreshCcw size={15} />
+                </button>
+                
+                <button
+                  onClick={onPenClick}
+                  className="p-1 rounded-lg transition-all active:scale-95 cursor-pointer hover:bg-orange-500/10"
+                  title="Quick Notes/Customizer"
+                >
+                  <PenTool size={15} />
+                </button>
+
+                <button
+                  onClick={triggerOpenCustomizer}
+                  className="p-1 rounded-lg transition-all active:scale-95 cursor-pointer hover:bg-orange-500/10"
+                  title="Dashboard Settings"
+                >
+                  <Grid3X3 size={15} />
+                </button>
+
+                <button
+                  onClick={triggerToggleTheme}
+                  className="p-1 rounded-lg transition-all active:scale-95 cursor-pointer hover:bg-orange-500/10"
+                  title="Toggle Theme"
+                >
+                  {isDarkActive ? <Sun size={15} /> : <Moon size={15} />}
+                </button>
+
+                <button
+                  onClick={triggerToggleLanguage}
+                  className="px-1.5 py-0.5 rounded-lg text-xs font-bold transition-all active:scale-95 cursor-pointer hover:bg-orange-500/10"
+                  title="Toggle Language"
+                >
+                  {activeLanguage === "hi" ? "EN" : "हि"}
+                </button>
+
+                <div className="relative">
                   <button
                     onClick={() => {
-                      triggerOpenCustomizer?.();
-                      setShowProfileMenu(false);
+                      if (currentUser) {
+                        setShowProfileMenu(!showProfileMenu);
+                      } else if (onLoginClick) {
+                        onLoginClick();
+                      } else if (onProfileClick) {
+                        onProfileClick();
+                      }
                     }}
-                    className="w-full px-3 py-2 text-left text-sm hover:bg-orange-50 dark:hover:bg-gray-800 flex items-center gap-2"
+                    className="p-1 rounded-lg transition-all active:scale-95 cursor-pointer relative hover:bg-orange-500/10"
+                    title={currentUser ? "User Profile" : "Login"}
                   >
-                    <Settings size={14} /> Dashboard Settings
+                    <User size={15} />
+                    {currentUser && (
+                      <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-orange-500 rounded-full" />
+                    )}
                   </button>
-                  <button
-                    onClick={() => {
-                      onProfileClick?.();
-                      setShowProfileMenu(false);
-                    }}
-                    className="w-full px-3 py-2 text-left text-sm hover:bg-orange-50 dark:hover:bg-gray-800 flex items-center gap-2"
-                  >
-                    <User size={14} /> View Profile
-                  </button>
-                  <button
-                    onClick={() => {
-                      auth.signOut();
-                      setShowProfileMenu(false);
-                    }}
-                    className="w-full px-3 py-2 text-left text-sm hover:bg-red-50 dark:hover:bg-red-950/20 text-red-600 flex items-center gap-2"
-                  >
-                    <LogOut size={14} /> Logout
-                  </button>
+
+                  {showProfileMenu && currentUser && (
+                    <div
+                      className={`absolute right-0 top-full mt-2 w-48 rounded-xl shadow-xl border overflow-hidden z-50 ${
+                        isDarkActive ? "bg-gray-900 border-gray-700 text-white" : "bg-white border-gray-100 text-gray-900"
+                      }`}
+                    >
+                      <div className="p-3 border-b border-gray-100 dark:border-gray-700">
+                        <p className="text-xs text-orange-500 font-semibold uppercase tracking-wider">जय जिनेन्द्र!</p>
+                        <p className="text-sm font-medium truncate">{currentUser.displayName || currentUser.email || "Sravaka"}</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          triggerOpenCustomizer?.();
+                          setShowProfileMenu(false);
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-orange-50 dark:hover:bg-gray-800 flex items-center gap-2"
+                      >
+                        <Settings size={14} /> Dashboard Settings
+                      </button>
+                      <button
+                        onClick={() => {
+                          onProfileClick?.();
+                          setShowProfileMenu(false);
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-orange-50 dark:hover:bg-gray-800 flex items-center gap-2"
+                      >
+                        <User size={14} /> View Profile
+                      </button>
+                      <button
+                        onClick={() => {
+                          auth.signOut();
+                          setShowProfileMenu(false);
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-red-50 dark:hover:bg-red-950/20 text-red-600 flex items-center gap-2"
+                      >
+                        <LogOut size={14} /> Logout
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
-          </div>
+          ) : (
+            /* Standard Compact Layout (or Front page when scrolled) */
+            <>
+              {/* Group 1: Logo (which has ONLY logo when isFront is true, or logo + brand name when on other tabs) */}
+              <div className="flex items-center gap-2.5">
+                <div className="relative">
+                  <div className={`flex items-center justify-center transition-all duration-300 ${isFront ? 'w-12 h-12' : 'w-10 h-10'}`}>
+                    <img
+                      src="https://i.postimg.cc/rp8MS1YG/Untitled-design-20260719-150333-0000.png"
+                      alt="Terapanth Logo"
+                      className="w-full h-full object-contain"
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                  <div
+                    className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 ${
+                      scrolled ? (isDarkActive ? "border-black" : "border-white") : "border-orange-500"
+                    } ${isOnline ? "bg-green-400" : "bg-red-400"}`}
+                    title={isOnline ? "Online" : "Offline"}
+                  />
+                </div>
+                {!isFront && (
+                  <div>
+                    <h1 className="font-bold text-sm leading-tight text-white">
+                      Terapanth AI
+                    </h1>
+                    <p className="text-[9px] uppercase tracking-widest font-semibold text-white/80">
+                      Unified Knowledge
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Group 2: Action Icons */}
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={handleRefresh}
+                  className="p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer hover:bg-white/20 text-white"
+                  title="Refresh App"
+                >
+                  <RefreshCcw size={16} />
+                </button>
+                
+                <button
+                  onClick={onPenClick}
+                  className="p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer hover:bg-white/20 text-white"
+                  title="Quick Notes/Customizer"
+                >
+                  <PenTool size={16} />
+                </button>
+
+                <button
+                  onClick={triggerOpenCustomizer}
+                  className="p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer hover:bg-white/20 text-white"
+                  title="Dashboard Settings"
+                >
+                  <Grid3X3 size={16} />
+                </button>
+
+                <button
+                  onClick={triggerToggleTheme}
+                  className="p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer hover:bg-white/20 text-white"
+                  title="Toggle Theme"
+                >
+                  {isDarkActive ? <Sun size={16} /> : <Moon size={16} />}
+                </button>
+
+                <button
+                  onClick={triggerToggleLanguage}
+                  className="px-1.5 py-1 rounded-lg text-xs font-bold transition-all active:scale-95 cursor-pointer hover:bg-white/20 text-white"
+                  title="Toggle Language"
+                >
+                  {activeLanguage === "hi" ? "EN" : "हि"}
+                </button>
+
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      if (currentUser) {
+                        setShowProfileMenu(!showProfileMenu);
+                      } else if (onLoginClick) {
+                        onLoginClick();
+                      } else if (onProfileClick) {
+                        onProfileClick();
+                      }
+                    }}
+                    className="p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer relative hover:bg-white/20 text-white"
+                    title={currentUser ? "User Profile" : "Login"}
+                  >
+                    <User size={16} />
+                    {currentUser && (
+                      <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-orange-500 rounded-full" />
+                    )}
+                  </button>
+
+                  {showProfileMenu && currentUser && (
+                    <div
+                      className={`absolute right-0 top-full mt-2 w-48 rounded-xl shadow-xl border overflow-hidden z-50 ${
+                        isDarkActive ? "bg-gray-900 border-gray-700 text-white" : "bg-white border-gray-100 text-gray-900"
+                      }`}
+                    >
+                      <div className="p-3 border-b border-gray-100 dark:border-gray-700">
+                        <p className="text-xs text-orange-500 font-semibold uppercase tracking-wider">जय जिनेन्द्र!</p>
+                        <p className="text-sm font-medium truncate">{currentUser.displayName || currentUser.email || "Sravaka"}</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          triggerOpenCustomizer?.();
+                          setShowProfileMenu(false);
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-orange-50 dark:hover:bg-gray-800 flex items-center gap-2"
+                      >
+                        <Settings size={14} /> Dashboard Settings
+                      </button>
+                      <button
+                        onClick={() => {
+                          onProfileClick?.();
+                          setShowProfileMenu(false);
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-orange-50 dark:hover:bg-gray-800 flex items-center gap-2"
+                      >
+                        <User size={14} /> View Profile
+                      </button>
+                      <button
+                        onClick={() => {
+                          auth.signOut();
+                          setShowProfileMenu(false);
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-red-50 dark:hover:bg-red-950/20 text-red-600 flex items-center gap-2"
+                      >
+                        <LogOut size={14} /> Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Sub-header Greeting Banner */}

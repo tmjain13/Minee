@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Sparkles } from 'lucide-react';
-import SakuraWatermark from './SakuraWatermark';
 
 export default function LoadingScreen() {
   return (
@@ -9,68 +8,27 @@ export default function LoadingScreen() {
       {/* Decorative Atmosphere Filter */}
       <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-orange-500/5 to-transparent pointer-events-none z-0" />
 
-      {/* Dynamic Watermark of Flower patterns, Sakura (Cherry Blossoms), Mount Fuji, and Jain Terapanth Emblem 🌸 */}
-      <SakuraWatermark />
-
       <div className="text-center relative z-10">
-        <div className="relative w-28 h-28 mx-auto mb-8 flex items-center justify-center">
-          {/* Radiant Glowing Background Aura */}
-          <div className="absolute inset-0 bg-saffron/10 dark:bg-saffron/15 rounded-full blur-xl animate-pulse" />
-          
-          {/* Stable inner glow base ring */}
-          <div className="absolute inset-0 border border-saffron/5 rounded-full" />
+        <div className="relative w-64 h-64 mx-auto mb-6 flex items-center justify-center">
+          {/* Subtle Radiant Glowing Background Aura */}
+          <div className="absolute inset-4 bg-orange-500/5 rounded-full blur-2xl animate-pulse" />
 
-          {/* Outer Ring 1: Medium speed counter-clockwise rotation */}
-          <motion.div
-            animate={{ rotate: -360 }}
-            transition={{
-              duration: 15,
-              repeat: Infinity,
-              ease: "linear"
-            }}
-            className="absolute inset-[2px] border border-dashed border-saffron/20 dark:border-saffron/40 rounded-full"
-          />
-
-          {/* Outer Ring 2: Core continuous clockwise rotation */}
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{
-              duration: 10,
-              repeat: Infinity,
-              ease: "linear"
-            }}
-            className="absolute inset-[-4px] border-2 border-dashed border-saffron/30 rounded-full"
-          />
-
-          {/* Rotating orbit dot that tracks the outer wheel */}
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{
-              duration: 8,
-              repeat: Infinity,
-              ease: "linear"
-            }}
-            className="absolute inset-0 pointer-events-none"
-          >
-            <div className="absolute top-[-8px] left-[calc(50%-4px)] w-2.5 h-2.5 bg-saffron rounded-full shadow-md shadow-saffron/50" />
-          </motion.div>
-
-          {/* Central Logo: Stays perfectly upright, clear, and readable with subtle breathing pulse */}
+          {/* Central Logo: Ring-free, centered, and enlarged with a subtle breathing pulse */}
           <motion.div
             animate={{
-              scale: [1, 1.04, 1],
+              scale: [1, 1.03, 1],
             }}
             transition={{
               duration: 3,
               repeat: Infinity,
               ease: "easeInOut"
             }}
-            className="w-24 h-24 bg-white dark:bg-gray-900 rounded-full flex items-center justify-center shadow-lg border border-saffron/10 relative overflow-hidden z-10"
+            className="w-56 h-56 flex items-center justify-center relative overflow-hidden z-10"
           >
             <img 
               src="https://i.postimg.cc/rp8MS1YG/Untitled-design-20260719-150333-0000.png" 
               alt="Terapanth Emblem"
-              className="w-full h-full object-cover rounded-full"
+              className="w-full h-full object-contain"
               referrerPolicy="no-referrer"
               loading="lazy"
             />

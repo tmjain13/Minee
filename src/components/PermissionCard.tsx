@@ -21,7 +21,7 @@ export default function PermissionCard({
 }: PermissionCardProps) {
   return (
     <div
-      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-sm transition-all"
+      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-white dark:bg-[#180a02] border border-orange-100/70 dark:border-orange-950/40 rounded-3xl shadow-sm transition-all"
     >
       {/* Left side: Icon & Text */}
       <div className="flex items-start gap-3 flex-1 min-w-0">

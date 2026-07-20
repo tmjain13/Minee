@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Compass, MessageSquare, Award, ArrowRight, CheckCircle2 } from 'lucide-react';
-import SakuraWatermark from './SakuraWatermark';
 
 interface OnboardingProps {
   onComplete: () => void;
@@ -45,9 +44,6 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     <div className="fixed inset-0 bg-[#FCF8F2] z-[9999] flex flex-col justify-between p-6 font-sans select-none overflow-hidden">
       {/* Decorative Atmosphere Filter */}
       <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-orange-500/5 to-transparent pointer-events-none z-0" />
-
-      {/* Dynamic Watermark of Flower patterns, Sakura (Cherry Blossoms), Mount Fuji, and Jain Terapanth Emblem 🌸 */}
-      <SakuraWatermark />
 
       {/* Top Slide Tracker Indicators */}
       <div className="flex gap-2 w-full max-w-md mx-auto pt-4 relative z-10">

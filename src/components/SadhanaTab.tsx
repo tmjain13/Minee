@@ -1,7 +1,7 @@
 import { memo, useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 const confetti = (...args: any[]) => {};
-import { Clock, Play, Pause, RotateCcw, Sparkles, Volume2, VolumeX, ShieldCheck, Calendar, Plus, Trash2, CheckCircle2, ChevronRight, Info, Coffee, Sun, Moon, BookOpen, TrendingUp, Download, FileText, Wind, Flame, Timer, RefreshCw, Mic, FlameKindling, CheckSquare, X, Loader2, Send } from 'lucide-react';
+import { Clock, Play, Pause, RotateCcw, Sparkles, Volume2, VolumeX, ShieldCheck, Calendar, Plus, Trash2, CheckCircle2, ChevronRight, Info, Coffee, Sun, Moon, BookOpen, TrendingUp, Download, FileText, Wind, Flame, Timer, RefreshCw, Mic, FlameKindling, CheckSquare, X, Loader2, Send, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -300,7 +300,14 @@ const SadhanaTab = memo(({
   handleKnowledgeView,
   setActiveTab,
   setShareToast,
-  initialSubTab
+  initialSubTab,
+  todos = [],
+  setTodos,
+  todoInput = "",
+  setTodoInput,
+  handleAddTodo,
+  handleToggleTodo,
+  handleDeleteTodo
 }: { 
   mantraAudioCueEnabled?: boolean; 
   dailyStreak?: number; 
@@ -312,7 +319,14 @@ const SadhanaTab = memo(({
   handleKnowledgeView?: (item: any) => void;
   setActiveTab?: (tab: any) => void;
   setShareToast?: (toast: { show: boolean; message: string }) => void;
-  initialSubTab?: 'timer' | 'fasting' | 'mantra' | 'breathwork' | 'diary' | 'swadhya' | 'gratitude' | 'suvichar' | 'pratikraman' | 'audio' | 'seva' | 'notifications' | 'salah' | 'streaks' | 'habits';
+  initialSubTab?: 'timer' | 'fasting' | 'mantra' | 'breathwork' | 'diary' | 'swadhya' | 'gratitude' | 'suvichar' | 'pratikraman' | 'audio' | 'seva' | 'notifications' | 'salah' | 'streaks' | 'habits' | 'goals';
+  todos?: any[];
+  setTodos?: any;
+  todoInput?: string;
+  setTodoInput?: any;
+  handleAddTodo?: () => void;
+  handleToggleTodo?: (id: string) => void;
+  handleDeleteTodo?: (id: string) => void;
 }) => {
   const { user } = useAuth();
   const { language } = useLanguage();
@@ -396,7 +410,7 @@ const SadhanaTab = memo(({
     }
   };
 
-  const [activeSubTab, setActiveSubTab] = useState<'timer' | 'fasting' | 'mantra' | 'breathwork' | 'diary' | 'swadhya' | 'gratitude' | 'suvichar' | 'pratikraman' | 'audio' | 'seva' | 'notifications' | 'salah' | 'streaks' | 'habits'>('timer');
+  const [activeSubTab, setActiveSubTab] = useState<'timer' | 'fasting' | 'mantra' | 'breathwork' | 'diary' | 'swadhya' | 'gratitude' | 'suvichar' | 'pratikraman' | 'audio' | 'seva' | 'notifications' | 'salah' | 'streaks' | 'habits' | 'goals'>('timer');
 
   useEffect(() => {
     if (initialSubTab) {
@@ -1574,13 +1588,14 @@ const SadhanaTab = memo(({
       </div>
 
       <div className="flex gap-1.5 p-0.5 bg-black/5 dark:bg-white/5 rounded-2xl sticky top-0 z-20 backdrop-blur-md overflow-x-auto no-scrollbar scroll-smooth">
-        {(['timer', 'salah', 'breathwork', 'mantra', 'fasting', 'diary', 'swadhya', 'gratitude', 'suvichar', 'pratikraman', 'audio', 'seva', 'notifications', 'streaks', 'habits'] as const).map((tab) => (
+        {(['timer', 'goals', 'salah', 'breathwork', 'mantra', 'fasting', 'diary', 'swadhya', 'gratitude', 'suvichar', 'pratikraman', 'audio', 'seva', 'notifications', 'streaks', 'habits'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveSubTab(tab)}
             className={`flex-none px-3 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${activeSubTab === tab ? 'bg-white dark:bg-gray-800 text-spiritual shadow-sm shadow-black/5' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
           >
             {tab === 'timer' && 'Samayik'}
+            {tab === 'goals' && (language === 'hi' ? 'दैनिक लक्ष्य' : 'Daily Goals')}
             {tab === 'salah' && 'रोज की सलाह'}
             {tab === 'breathwork' && 'Breathwork'}
             {tab === 'mantra' && 'Jaap'}
@@ -2730,6 +2745,27 @@ const SadhanaTab = memo(({
             <HabitsCalendar />
           </motion.div>
         )}
+
+        {activeSubTab === 'goals' && (
+          <motion.div
+            key="goals"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="pb-4"
+          >
+            <SadhanaGoalsSection 
+              todos={todos} 
+              setTodos={setTodos} 
+              todoInput={todoInput} 
+              setTodoInput={setTodoInput} 
+              handleAddTodo={handleAddTodo} 
+              handleToggleTodo={handleToggleTodo} 
+              handleDeleteTodo={handleDeleteTodo}
+              language={language}
+            />
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* 🧘‍♂️ SADHANA JOURNAL MODAL (NEW FEATURE INTEGRATION) */}
@@ -2916,5 +2952,283 @@ const SadhanaTab = memo(({
 });
 
 SadhanaTab.displayName = 'SadhanaTab';
+
+const SadhanaGoalsSection = ({
+  todos = [],
+  setTodos,
+  todoInput = "",
+  setTodoInput,
+  handleAddTodo = () => {},
+  handleToggleTodo = () => {},
+  handleDeleteTodo = () => {},
+  language = "en"
+}: {
+  todos?: any[];
+  setTodos: any;
+  todoInput?: string;
+  setTodoInput: any;
+  handleAddTodo?: () => void;
+  handleToggleTodo?: (id: string) => void;
+  handleDeleteTodo?: (id: string) => void;
+  language?: string;
+}) => {
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  const completedCount = todos.filter(t => t.completed).length;
+  const totalCount = todos.length;
+  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+  // Native drag & drop handlers for desktop/supported browsers
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggingIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", index.toString());
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggingIndex === null || draggingIndex === index) return;
+    setDragOverIndex(index);
+  };
+
+  const handleDragEnd = () => {
+    if (draggingIndex !== null && dragOverIndex !== null && draggingIndex !== dragOverIndex) {
+      const updated = [...todos];
+      const [removed] = updated.splice(draggingIndex, 1);
+      updated.splice(dragOverIndex, 0, removed);
+      setTodos(updated);
+    }
+    setDraggingIndex(null);
+    setDragOverIndex(null);
+  };
+
+  // Keyboard / Tap reordering helpers
+  const moveUp = (index: number) => {
+    if (index === 0) return;
+    const updated = [...todos];
+    const temp = updated[index];
+    updated[index] = updated[index - 1];
+    updated[index - 1] = temp;
+    setTodos(updated);
+  };
+
+  const moveDown = (index: number) => {
+    if (index === todos.length - 1) return;
+    const updated = [...todos];
+    const temp = updated[index];
+    updated[index] = updated[index + 1];
+    updated[index + 1] = temp;
+    setTodos(updated);
+  };
+
+  return (
+    <div className="space-y-6 pb-6 text-left">
+      {/* Decorative Brand Header */}
+      <div className="p-6 bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-transparent rounded-[2rem] border border-orange-500/10 relative overflow-hidden text-left">
+        <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 rotate-12 opacity-5 pointer-events-none">
+          <CheckSquare size={160} />
+        </div>
+        <span className="text-[10px] bg-orange-500/10 text-orange-600 dark:text-orange-400 px-3 py-1 rounded-full font-black uppercase tracking-widest leading-none inline-block">
+          {language === 'hi' ? 'दैनिक साधना लक्ष्य' : 'DAILY SADHANA GOALS'}
+        </span>
+        <h3 className="serif-text text-2xl font-bold mt-3 text-spiritual">
+          {language === 'hi' ? 'आध्यात्मिक संकल्प सूची' : 'Spiritual Priority Checklist'}
+        </h3>
+        <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+          {language === 'hi' 
+            ? 'अपने दैनिक आध्यात्मिक लक्ष्यों को यहाँ प्राथमिकता दें। उन्हें अपनी दैनिक साधना के अनुसार पुनर्व्यवस्थित करने के लिए खींचें और छोड़ें (Drag and Drop)।' 
+            : 'Prioritize your spiritual goals here. Drag & drop or use arrow buttons to reorder them based on your daily spiritual routine.'}
+        </p>
+      </div>
+
+      {/* Progress & Stats Card */}
+      <div className="p-5 bg-black/5 dark:bg-white/5 rounded-3xl border border-black/5 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="flex-1 min-w-0 w-full">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+              {language === 'hi' ? 'आज की साधना प्रगति' : 'SADHANA GOALS PROGRESS'}
+            </span>
+            <span className="text-xs font-black text-spiritual">
+              {completedCount} / {totalCount} {language === 'hi' ? 'पूर्ण' : 'Completed'}
+            </span>
+          </div>
+          {/* Progress bar */}
+          <div className="w-full h-3 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-orange-500 transition-all duration-500 rounded-full"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 font-mono text-3xl font-black text-orange-650 dark:text-orange-400">
+          {progressPercent}%
+        </div>
+      </div>
+
+      {/* Goal Entry Input */}
+      <div className="space-y-2">
+        <label className="text-[10px] font-black uppercase tracking-wider text-gray-400 ml-1">
+          {language === 'hi' ? 'नया संकल्प जोड़ें' : 'Add Custom Sadhana Goal'}
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={todoInput}
+            onChange={(e) => setTodoInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAddTodo()}
+            placeholder={language === 'hi' ? 'जैसे: 15 मिनट मौन, स्वाध्याय...' : 'e.g. 15 minutes of silence, read Agam...'}
+            className="flex-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl px-4 py-3 text-sm text-gray-700 dark:text-gray-150 focus:outline-none focus:border-orange-500/50"
+          />
+          <button
+            onClick={handleAddTodo}
+            className="p-3 bg-orange-500 text-white rounded-2xl flex items-center justify-center hover:bg-orange-600 transition-colors focus:outline-none cursor-pointer"
+          >
+            <Plus size={20} />
+          </button>
+        </div>
+      </div>
+
+      {/* List Container */}
+      <div className="space-y-3">
+        {totalCount === 0 ? (
+          <div className="p-8 border-2 border-dashed border-black/5 rounded-[2rem] text-center space-y-2">
+            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
+              {language === 'hi' ? 'कोई संकल्प नहीं मिला' : 'No goals found'}
+            </p>
+            <p className="text-[10px] text-gray-400">
+              {language === 'hi' ? 'साधना शुरू करने के लिए ऊपर एक नया संकल्प जोड़ें।' : 'Add a new goal above to begin tracking.'}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2.5">
+            {todos.map((todo, index) => {
+              const isDragging = index === draggingIndex;
+              const isDragOver = index === dragOverIndex;
+              return (
+                <motion.div
+                  key={todo.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDragEnd={handleDragEnd}
+                    className={`flex items-center justify-between p-4 bg-white dark:bg-zinc-900 hover:bg-orange-500/5 dark:hover:bg-orange-500/5 rounded-2xl border border-black/5 dark:border-zinc-800 shadow-sm transition-all duration-200 cursor-grab active:cursor-grabbing ${
+                      isDragging ? 'opacity-40 border-orange-500 border-dashed scale-[0.98]' : ''
+                    } ${
+                      isDragOver ? 'border-orange-500 border-dashed translate-y-1' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-3.5 flex-1 min-w-0">
+                      {/* Drag Handle */}
+                      <div className="text-gray-400 hover:text-gray-650 cursor-grab shrink-0 p-1">
+                        <GripVertical size={16} />
+                      </div>
+
+                      {/* Completion Toggle */}
+                      <button
+                        onClick={() => handleToggleTodo(todo.id)}
+                        className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                          todo.completed 
+                            ? 'bg-green-500 border-green-500 text-white' 
+                            : 'border-gray-300 dark:border-zinc-700 hover:border-orange-500'
+                        }`}
+                      >
+                        {todo.completed && <CheckCircle2 size={12} className="text-white fill-white" />}
+                      </button>
+
+                      {/* Text */}
+                      <span 
+                        className={`text-sm font-semibold truncate select-none ${
+                          todo.completed 
+                            ? 'text-gray-400 line-through font-normal' 
+                            : 'text-gray-800 dark:text-gray-150'
+                        }`}
+                      >
+                        {todo.text}
+                      </span>
+                    </div>
+
+                    {/* Reordering and Delete Actions */}
+                    <div className="flex items-center gap-1.5 shrink-0 pl-2">
+                      {/* Move Up */}
+                      <button
+                        onClick={() => moveUp(index)}
+                        disabled={index === 0}
+                        className="p-1.5 rounded-lg text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent transition-all cursor-pointer"
+                        title={language === 'hi' ? 'ऊपर ले जाएं' : 'Move Up'}
+                      >
+                        <ArrowUp size={14} />
+                      </button>
+
+                      {/* Move Down */}
+                      <button
+                        onClick={() => moveDown(index)}
+                        disabled={index === totalCount - 1}
+                        className="p-1.5 rounded-lg text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent transition-all cursor-pointer"
+                        title={language === 'hi' ? 'नीचे ले जाएं' : 'Move Down'}
+                      >
+                        <ArrowDown size={14} />
+                      </button>
+
+                      {/* Delete */}
+                      <button
+                        onClick={() => handleDeleteTodo(todo.id)}
+                        className="p-1.5 rounded-lg text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
+                        title={language === 'hi' ? 'हटाएं' : 'Delete'}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Preset Recommendations */}
+      <div className="space-y-3">
+        <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
+          {language === 'hi' ? 'अनुशंसित साधना संकल्प' : 'Recommended Presets'}
+        </h4>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { hi: "15 मिनट ध्यान (Meditation)", en: "15 mins Meditation" },
+            { hi: "जाप माला (Jaap Chanting)", en: "Mantra Chanting" },
+            { hi: "अहिंसा व्रत अभ्यास (Ahimsa)", en: "Ahimsa Practice" },
+            { hi: "मौन साधना (Silence Practice)", en: "Silence Practice" },
+            { hi: "तप / उपवास (Tapa Observance)", en: "Tapa Observance" }
+          ].map((preset, idx) => {
+            const label = language === 'hi' ? preset.hi : preset.en;
+            const alreadyExists = todos.some(t => t.text.toLowerCase().includes(label.toLowerCase()));
+            if (alreadyExists) return null;
+            return (
+              <button
+                key={idx}
+                onClick={() => {
+                  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                    navigator.vibrate(30);
+                  }
+                  const newTodo = { id: Date.now().toString() + idx, text: label, completed: false };
+                  setTodos([...todos, newTodo]);
+                }}
+                className="px-3.5 py-2 text-xs font-bold rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 hover:bg-orange-500 hover:text-white transition-all cursor-pointer"
+              >
+                + {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default SadhanaTab;

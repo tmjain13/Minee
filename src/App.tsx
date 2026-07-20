@@ -40,7 +40,6 @@ import { ACHARYAS } from "./data/acharyas";
 import LoadingScreen from "./components/LoadingScreen";
 import Onboarding from "./components/Onboarding";
 import AppTour from "./components/AppTour";
-import SakuraWatermark from "./components/SakuraWatermark";
 import TerapanthHeader from "./components/TerapanthHeader";
 import TerapanthFooterNav from "./components/TerapanthFooterNav";
 import { GlobalAudioPlayer } from "./components/GlobalAudioPlayer";
@@ -336,7 +335,28 @@ export default function App() {
   const [showUnifiedRegistry, setShowUnifiedRegistry] = useState(false);
 
   // --- INTERACTIVE FEATURES STATES (TODOS / CODES) ---
-  const [todos, setTodos] = useState<Todo[]>([]);
+  const [todos, setTodos] = useState<Todo[]>(() => {
+    const saved = localStorage.getItem("sadhana_todos");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Error parsing sadhana_todos from localStorage", e);
+      }
+    }
+    return [
+      { id: "1", text: "Navkar Mantra Chanting (जाप साधना)", completed: false },
+      { id: "2", text: "Samayik Meditation - 48 mins (सामायिक साधना)", completed: false },
+      { id: "3", text: "Swadhya - Spiritual Self-Study (स्वाध्याय)", completed: false },
+      { id: "4", text: "Chauvihar - No food after sunset (चौविहार व्रत)", completed: false },
+      { id: "5", text: "Pratikraman - Evening Ritual (प्रतिक्रमण)", completed: false }
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem("sadhana_todos", JSON.stringify(todos));
+  }, [todos]);
+
   const [todoInput, setTodoInput] = useState("");
   const [timelineIndex, setTimelineIndex] = useState(0);
 
@@ -396,6 +416,54 @@ export default function App() {
   // --- SERVICE WORKER UPDATE STATES ---
   const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null);
   const [showUpdateBanner, setShowUpdateBanner] = useState(false);
+
+  // --- PWA INSTALL BANNER STATES ---
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+
+  // --- PWA INSTALL PROMPT EVENT LISTENER ---
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      setDeferredPrompt(e);
+      // Update UI to notify the user they can install the PWA
+      setShowInstallBanner(true);
+      devLog("[PWA] beforeinstallprompt event fired, prompt stashed and banner enabled.");
+    };
+
+    const handleAppInstalled = () => {
+      // Clear the deferredPrompt so it can be garbage collected
+      setDeferredPrompt(null);
+      setShowInstallBanner(false);
+      devLog("[PWA] App successfully installed! Banner hidden.");
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (!deferredPrompt) return;
+    
+    devLog("[PWA] Prompting user to install the application...");
+    // Show the install prompt
+    deferredPrompt.prompt();
+    
+    // Wait for the user to respond to the prompt
+    const { outcome } = await deferredPrompt.userChoice;
+    devLog(`[PWA] User response to the install prompt: ${outcome}`);
+    
+    // We've used the prompt, and can't use it again, clear it
+    setDeferredPrompt(null);
+    setShowInstallBanner(false);
+  };
 
   // --- SERVICE WORKER UPDATE LISTENER ---
   useEffect(() => {
@@ -680,9 +748,6 @@ export default function App() {
       {/* If dark mode is active, apply a subtle dark glass layer above the texture */}
       {theme === 'dark' && <div className="absolute inset-0 bg-stone-950/85 pointer-events-none z-0" />}
 
-      {/* Dynamic Watermark of Flower patterns, Sakura (Cherry Blossoms), Mount Fuji, and Jain Terapanth Emblem 🌸 */}
-      <SakuraWatermark />
-
       {/* HEADER SECTION */}
       {activeTab !== "chat" && (
         <TerapanthHeader
@@ -700,6 +765,7 @@ export default function App() {
           onProfileClick={() => setActiveTab('profile')}
           onLoginClick={() => setIsLoginModalOpen(true)}
           zenMode={zenMode}
+          activeTab={activeTab}
         />
       )}
 
@@ -756,6 +822,13 @@ export default function App() {
                   spiritualSoundscape={spiritualSoundscape}
                   setActiveTab={setActiveTab}
                   initialSubTab={sadhanaSubTab as any}
+                  todos={todos}
+                  setTodos={setTodos}
+                  todoInput={todoInput}
+                  setTodoInput={setTodoInput}
+                  handleAddTodo={handleAddTodo}
+                  handleToggleTodo={handleToggleTodo}
+                  handleDeleteTodo={handleDeleteTodo}
                 />
               </motion.div>
             )}
@@ -1279,15 +1352,15 @@ export default function App() {
             transition={{ duration: 0.3 }}
             className="fixed bottom-[84px] left-4 right-4 md:left-auto md:right-4 md:w-96 z-50"
           >
-            <div className="p-4 rounded-xl shadow-xl flex flex-col gap-3 bg-stone-900 border border-orange-500/30 text-white">
+            <div className="p-4 rounded-xl shadow-xl flex flex-col gap-3 bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 border border-orange-400/40 text-white shadow-xl shadow-orange-600/15">
               <div className="flex items-start justify-between">
                 <div className="flex gap-3">
-                  <span className="text-orange-500 text-base">✨</span>
+                  <span className="text-white text-base">✨</span>
                   <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-orange-400">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-white">
                       {language === 'hi' ? 'नया संस्करण उपलब्ध है' : 'New Version Available'}
                     </h4>
-                    <p className="text-[11px] text-zinc-300 mt-1 leading-relaxed">
+                    <p className="text-[11px] text-orange-50 mt-1 leading-relaxed">
                       {language === 'hi' 
                         ? 'नवीनतम आध्यात्मिक सुविधाओं और सुधारों का लाभ उठाने के लिए अभी अपडेट करें।' 
                         : 'Update now to get the latest spiritual features and stability improvements.'}
@@ -1296,7 +1369,7 @@ export default function App() {
                 </div>
                 <button 
                   onClick={() => setShowUpdateBanner(false)}
-                  className="p-1 hover:bg-white/10 rounded-full transition-colors text-zinc-400 hover:text-white"
+                  className="p-1 hover:bg-white/20 rounded-full transition-colors text-orange-100 hover:text-white"
                 >
                   <X size={14} />
                 </button>
@@ -1304,15 +1377,67 @@ export default function App() {
               <div className="flex justify-end gap-2">
                 <button
                   onClick={() => setShowUpdateBanner(false)}
-                  className="px-3 py-1 text-[10px] uppercase font-bold tracking-wider text-zinc-400 hover:text-white transition-colors"
+                  className="px-3 py-1 text-[10px] uppercase font-bold tracking-wider text-orange-100 hover:text-white transition-colors"
                 >
                   {language === 'hi' ? 'बाद में' : 'Later'}
                 </button>
                 <button
                   onClick={handleUpdateApp}
-                  className="px-4 py-1.5 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-extrabold uppercase tracking-widest text-[10px] rounded-lg transition-all duration-300 shadow-md shadow-orange-500/20"
+                  className="px-4 py-1.5 bg-white text-orange-600 hover:bg-orange-50 active:scale-95 font-extrabold uppercase tracking-widest text-[10px] rounded-lg transition-all duration-300 shadow-md"
                 >
                   {language === 'hi' ? 'अभी अपडेट करें' : 'Update Now'}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* PWA INSTALL BANNER */}
+      <AnimatePresence>
+        {showInstallBanner && deferredPrompt && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.3 }}
+            className={`fixed ${showUpdateBanner ? "bottom-[230px]" : "bottom-[84px]"} left-4 right-4 md:left-auto md:right-4 md:w-96 z-50`}
+          >
+            <div className="p-4 rounded-xl shadow-xl flex flex-col gap-3 bg-gradient-to-r from-orange-600 via-orange-50 to-amber-500 border border-orange-400/40 text-white shadow-xl shadow-orange-600/15" style={{ background: 'linear-gradient(135deg, #ea580c 0%, #f59e0b 100%)' }}>
+              <div className="flex items-start justify-between">
+                <div className="flex gap-3">
+                  <span className="text-white text-base">✨</span>
+                  <div>
+                    <h4 className="text-xs font-black uppercase tracking-wider text-white">
+                      {language === 'hi' ? 'ऐप इंस्टॉल करें' : 'Install App'}
+                    </h4>
+                    <p className="text-[11px] text-orange-50 mt-1 leading-relaxed">
+                      {language === 'hi' 
+                        ? 'आसान पहुंच और त्वरित आध्यात्मिक अनुभव के लिए तेरापंथ एआई हब को अपनी होमस्क्रीन पर जोड़ें।' 
+                        : 'Add Terapanth AI Hub to your homescreen for instant, offline-friendly access.'}
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowInstallBanner(false)}
+                  className="p-1 hover:bg-white/20 rounded-full transition-colors text-orange-100 hover:text-white"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setShowInstallBanner(false)}
+                  className="px-3 py-1 text-[10px] uppercase font-bold tracking-wider text-orange-100 hover:text-white transition-colors"
+                >
+                  {language === 'hi' ? 'बाद में' : 'Later'}
+                </button>
+                <button
+                  onClick={handleInstallApp}
+                  className="px-4 py-1.5 bg-white text-orange-600 hover:bg-orange-50 active:scale-95 font-extrabold uppercase tracking-widest text-[10px] rounded-lg transition-all duration-300 shadow-md flex items-center gap-1.5"
+                >
+                  <CloudDownload size={12} />
+                  {language === 'hi' ? 'इंस्टॉल करें' : 'Install'}
                 </button>
               </div>
             </div>
