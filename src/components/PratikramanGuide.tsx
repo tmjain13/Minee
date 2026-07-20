@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RefreshCw, ChevronLeft, ChevronRight, CheckCircle2, History, Trash2, Clock, AlertCircle, BookOpen, ShieldCheck, HelpCircle } from 'lucide-react';
+import { Play, Pause, RefreshCw, ChevronLeft, ChevronRight, CheckCircle2, History, Trash2, Clock, AlertCircle, BookOpen, ShieldCheck, HelpCircle, Printer } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db } from '../lib/firebase';
 import { collection, addDoc, query, orderBy, limit, onSnapshot, doc, deleteDoc, serverTimestamp } from 'firebase/firestore';
@@ -270,26 +270,36 @@ export default function PratikramanGuide({ onBack }: { onBack?: () => void }) {
         </div>
 
         {guidedStepIndex === null && (
-          <div className="flex gap-1 bg-black/5 dark:bg-white/5 p-1 rounded-2xl w-fit">
-            {(['devsi', 'rai', 'pakkhi', 'samvatsari'] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => {
-                  setActiveMode(mode);
-                  setJustCompletedMode(null);
-                }}
-                className={`py-1.5 px-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${
-                  activeMode === mode
-                    ? 'bg-emerald-600 text-white shadow-sm font-extrabold'
-                    : 'text-gray-500 dark:text-gray-400 hover:bg-black/5 dark:hover:bg-white/5'
-                }`}
-              >
-                {mode === 'devsi' && 'देवसी'}
-                {mode === 'rai' && 'रात्रि'}
-                {mode === 'pakkhi' && 'पाक्खी'}
-                {mode === 'samvatsari' && 'संवत्सरी'}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-1.5 py-2 px-3 border border-[var(--border-color)] hover:bg-black/5 dark:hover:bg-white/5 text-gray-600 dark:text-gray-300 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-sm"
+              title="Print current guide as a booklet"
+            >
+              <Printer size={14} />
+              <span>प्रिंट (Print)</span>
+            </button>
+            <div className="flex gap-1 bg-black/5 dark:bg-white/5 p-1 rounded-2xl w-fit">
+              {(['devsi', 'rai', 'pakkhi', 'samvatsari'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => {
+                    setActiveMode(mode);
+                    setJustCompletedMode(null);
+                  }}
+                  className={`py-1.5 px-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${
+                    activeMode === mode
+                      ? 'bg-emerald-600 text-white shadow-sm font-extrabold'
+                      : 'text-gray-500 dark:text-gray-400 hover:bg-black/5 dark:hover:bg-white/5'
+                  }`}
+                >
+                  {mode === 'devsi' && 'देवसी'}
+                  {mode === 'rai' && 'रात्रि'}
+                  {mode === 'pakkhi' && 'पाक्खी'}
+                  {mode === 'samvatsari' && 'संवत्सरी'}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -498,12 +508,21 @@ export default function PratikramanGuide({ onBack }: { onBack?: () => void }) {
                 </div>
               </div>
 
-              <button
-                onClick={startGuidedMode}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs uppercase tracking-widest px-5 py-3.5 rounded-2xl transition-all shadow-md shadow-emerald-500/10 active:scale-95 shrink-0"
-              >
-                प्रारम्भ करें (Start Guided)
-              </button>
+              <div className="flex flex-wrap gap-2.5 items-center sm:justify-end">
+                <button
+                  onClick={() => window.print()}
+                  className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 dark:bg-white/5 dark:hover:bg-white/10 dark:text-gray-300 dark:border-white/10 font-extrabold text-[11px] uppercase tracking-widest px-5 py-3.5 rounded-2xl transition-all active:scale-95 shrink-0 flex items-center gap-2 shadow-sm"
+                >
+                  <Printer size={14} />
+                  पुस्तिका प्रिंट (Print Booklet)
+                </button>
+                <button
+                  onClick={startGuidedMode}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[11px] uppercase tracking-widest px-5 py-3.5 rounded-2xl transition-all shadow-md shadow-emerald-500/10 active:scale-95 shrink-0"
+                >
+                  प्रारम्भ करें (Start Guided)
+                </button>
+              </div>
             </div>
 
             {/* List of steps to be chanted */}
@@ -595,6 +614,184 @@ export default function PratikramanGuide({ onBack }: { onBack?: () => void }) {
         )}
 
       </AnimatePresence>
+
+      {/* 
+        ========================================
+        BEAUTIFUL SACRED TEXT PRINT BOOKLET VIEW
+        ========================================
+        Visible ONLY during print layout. It implements standard physical booklet 
+        conventions, with double-borders, elegant Noto/Georgia typography, 
+        and automatic page breaks avoiding orphan headings.
+      */}
+      <div className="hidden print:block w-full bg-white text-black p-8 font-serif" id="pratikraman-print-booklet">
+        {/* Style block for specialized print media overrides */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          @media print {
+            body {
+              background: #ffffff !important;
+              color: #000000 !important;
+              font-family: "Noto Serif", "Georgia", "Times New Roman", serif !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            /* Hide everything in the body except the printable booklet */
+            body > *:not(#pratikraman-print-booklet) {
+              display: none !important;
+            }
+            #root, #root > *, header, footer, nav, aside, button, .no-print, #pratikraman-guide-module {
+              display: none !important;
+            }
+            #pratikraman-print-booklet {
+              display: block !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              background: #ffffff !important;
+              color: #000000 !important;
+              position: absolute !important;
+              left: 0 !important;
+              top: 0 !important;
+              visibility: visible !important;
+            }
+            #pratikraman-print-booklet * {
+              visibility: visible !important;
+              color: #000000 !important;
+            }
+            @page {
+              size: A4 portrait;
+              margin: 2cm 1.8cm 2cm 1.8cm;
+            }
+            
+            /* Cover Page Styling */
+            .booklet-cover {
+              page-break-after: always;
+              break-after: page;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              height: 90vh;
+              text-align: center;
+              border: 8px double #059669 !important;
+              padding: 60px 30px;
+              margin: 40px auto;
+              box-sizing: border-box;
+            }
+
+            .booklet-divider {
+              width: 50%;
+              height: 3px;
+              background-color: #059669 !important;
+              margin: 30px auto;
+            }
+
+            .sutra-card {
+              page-break-inside: avoid;
+              break-inside: avoid;
+              border-bottom: 2px solid #e2e8f0;
+              padding: 30px 0;
+              margin-bottom: 24px;
+            }
+
+            .sutra-title {
+              font-size: 20pt !important;
+              font-weight: bold;
+              color: #047857 !important;
+              margin-bottom: 12px;
+              page-break-after: avoid;
+              break-after: avoid;
+            }
+
+            .sutra-purpose {
+              font-size: 12pt !important;
+              font-style: italic;
+              color: #374151 !important;
+              margin-bottom: 16px;
+              page-break-after: avoid;
+              break-after: avoid;
+              border-left: 4px solid #059669 !important;
+              padding-left: 12px;
+            }
+
+            .sutra-text {
+              font-size: 15pt !important;
+              line-height: 2.0 !important;
+              color: #000000 !important;
+              text-align: justify;
+              text-justify: inter-word;
+              font-weight: 500;
+            }
+
+            .sacred-om {
+              font-size: 42pt !important;
+              color: #047857 !important;
+              margin-bottom: 24px;
+            }
+          }
+        `}} />
+
+        {/* COVER PAGE */}
+        <div className="booklet-cover">
+          <div className="sacred-om">ॐ</div>
+          <h1 className="text-4xl font-extrabold text-emerald-800 leading-tight mb-2" style={{ fontFamily: 'Georgia, serif' }}>
+            प्रतिक्रमण साधना पुस्तिका
+          </h1>
+          <p className="text-lg uppercase tracking-widest text-emerald-600 font-bold mb-4">
+            {MODE_LABELS[activeMode]}
+          </p>
+          <div className="booklet-divider"></div>
+          <p className="text-sm text-gray-700 max-w-lg mx-auto leading-relaxed italic mb-8">
+            "खामेमि सव्वजीवे, सव्वे जीवा खमंतु मे, मित्ती मे सव्वभूएसु, वेरं मज्झं न केणइ।"<br />
+            संसार के समस्त चर-अचर प्राणियों से क्षमायाचना और जीव-कल्याण की पावनतम साधना।
+          </p>
+          <div className="mt-12 text-xs text-gray-500 uppercase tracking-widest font-semibold">
+            जैन श्वेतांबर तेरापंथ धर्म संघ • आध्यात्मिक स्वाध्याय एवं आत्म-विशुद्धि पुस्तिका
+          </div>
+        </div>
+
+        {/* BRIEF INTRODUCTION SECTION */}
+        <div className="py-6 border-b-2 border-emerald-600 mb-8" style={{ pageBreakAfter: 'avoid', breakAfter: 'avoid' }}>
+          <h2 className="text-2xl font-bold text-emerald-800 mb-3">प्रतिक्रमण विधि एवं नियम</h2>
+          <p className="text-sm leading-relaxed text-gray-800 mb-4">
+            प्रतिक्रमण का अर्थ है पीछे लौटना। दिनभर या निश्चित समय में की गई भूलों, मर्यादाओं के अतिक्रमण और कषायों के पश्चाताप हेतु गुरु-निर्देशानुसार या शुद्ध आसन पर बैठकर एकाग्र चित्त से मंत्रोच्चार करें।
+          </p>
+          <ul className="list-disc pl-5 text-xs text-gray-700 space-y-2">
+            <li><strong>आसन:</strong> शांत, पवित्र स्थान पर पूर्व या उत्तर की ओर मुख करके बैठें।</li>
+            <li><strong>उच्चारण:</strong> प्रत्येक प्राकृत एवं संस्कृत सूत्रों का शुद्ध व स्पष्ट स्वर में वाचन करें।</li>
+            <li><strong>मनोभाव:</strong> हृदय में पूर्ण क्षमाशीलता, मैत्री भाव और राग-द्वेष रहित वीतराग भाव रखें।</li>
+          </ul>
+        </div>
+
+        {/* SACRED SUTRAS */}
+        <div className="sutras-list">
+          {steps.map((step, idx) => (
+            <div key={idx} className="sutra-card">
+              <h3 className="sutra-title">
+                {idx + 1}. {step.name}
+              </h3>
+              <div className="sutra-purpose">
+                <strong>प्रयोजन व अर्थ:</strong> {step.purpose}
+              </div>
+              <div className="sutra-text">
+                {step.text}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* COLOPHON / CONCLUSION */}
+        <div className="text-center mt-12 pt-8 border-t border-gray-300" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+          <p className="text-base font-bold text-emerald-800">
+            तस्स मिच्छामि दुक्कडं ॥
+          </p>
+          <p className="text-xs text-gray-500 mt-2">
+            प्रतिक्रमण साधना पुस्तिका • जैन तेरापंथ एआई हब
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

@@ -13,8 +13,8 @@ import { rateLimit } from "express-rate-limit";
 import admin from "firebase-admin";
 import fs from "fs";
 import { z } from "zod";
-import { streamGeminiResponse, getInstantDefinition, generateRecordSummary } from "./server/gemini";
-import { logSecurityEvent } from "./server/securityLogger";
+import { streamGeminiResponse, getInstantDefinition, generateRecordSummary } from "./server/gemini.ts";
+import { logSecurityEvent } from "./server/securityLogger.ts";
 
 interface CachedEmbeddings {
   version: number;

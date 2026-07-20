@@ -27,15 +27,7 @@ export default defineConfig(({mode}) => {
           brotliSize: true,
         })
       ] : []),
-      ...(process.env.SENTRY_AUTH_TOKEN ? [
-        sentryVitePlugin({
-          org: "terapanth-ai",
-          project: "terapanth-ai-hub",
-          errorHandler(err) {
-            console.warn("Sentry upload failed, ignoring to prevent build failure:", err);
-          }
-        })
-      ] : []),
+      // Build-time Sentry plugin removed to prevent container upload and authorization failures during deployment
       VitePWA({
         registerType: 'autoUpdate',
         strategies: 'injectManifest',

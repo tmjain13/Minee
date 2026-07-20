@@ -9,9 +9,11 @@ import {
   User,
   LogOut,
   ArrowUp,
+  Search,
 } from "lucide-react";
 import { getAuth } from "firebase/auth";
 import { useLanguage } from "../context/LanguageContext";
+import { useLocation } from "../context/LocationContext";
 import { motion, AnimatePresence } from "motion/react";
 
 export interface TerapanthHeaderProps {
@@ -25,6 +27,7 @@ export interface TerapanthHeaderProps {
   onLoginClick?: () => void;
   zenMode?: boolean;
   activeTab?: string;
+  onSearchClick?: () => void;
 
   // Props requested by Kimi / user
   onRefresh?: () => void;
@@ -47,6 +50,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
   onLoginClick,
   zenMode = false,
   activeTab,
+  onSearchClick,
 
   onRefresh,
   onOpenCustomizer,
@@ -67,6 +71,8 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
   const contextLang = useLanguage();
   const activeLanguage = customLanguage || contextLang.language;
   const triggerToggleLanguage = onToggleLanguage || contextLang.toggleLanguage;
+
+  const { activeCity } = useLocation();
 
   const [scrollY, setScrollY] = useState(0);
 
@@ -149,24 +155,32 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
         }`}>
           {/* Group 1: Logo and Brand */}
           <div className="flex items-center gap-2.5">
-            <div className="relative">
-              <div
-                className="w-12 h-12 flex items-center justify-center"
-              >
-                <img
-                  src="https://i.postimg.cc/rp8MS1YG/Untitled-design-20260719-150333-0000.png"
-                  alt="Terapanth Logo"
-                  className="w-full h-full object-contain"
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
+            <div className="flex flex-col items-center">
+              <div className="relative">
+                <div
+                  className="w-10 h-10 flex items-center justify-center"
+                >
+                  <img
+                    src="https://i.postimg.cc/rp8MS1YG/Untitled-design-20260719-150333-0000.png"
+                    alt="Terapanth Logo"
+                    className="w-full h-full object-contain"
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+                <div
+                  className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 ${
+                    scrolled ? (isDarkActive ? "border-black" : "border-white") : "border-orange-500"
+                  } ${isOnline ? "bg-green-400" : "bg-red-400"}`}
+                  title={isOnline ? "Online" : "Offline"}
                 />
               </div>
-              <div
-                className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 ${
-                  scrolled ? (isDarkActive ? "border-black" : "border-white") : "border-orange-500"
-                } ${isOnline ? "bg-green-400" : "bg-red-400"}`}
-                title={isOnline ? "Online" : "Offline"}
-              />
+              <div 
+                className="text-[9px] font-extrabold text-amber-200 tracking-wider mt-0.5 leading-none max-w-[60px] truncate text-center uppercase"
+                title={activeCity?.name || "Delhi"}
+              >
+                {activeCity?.name || "Delhi"}
+              </div>
             </div>
             <div>
               <h1 className="font-bold text-sm leading-tight text-white">
@@ -180,6 +194,14 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
 
           {/* Group 2: Action Icons */}
           <div className="flex items-center gap-1">
+            <button
+              onClick={onSearchClick}
+              className="p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer hover:bg-white/20 text-white animate-pulse"
+              title="Global Search"
+            >
+              <Search size={16} />
+            </button>
+
             <button
               onClick={handleRefresh}
               className="p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer hover:bg-white/20 text-white"

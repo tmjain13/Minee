@@ -42,6 +42,7 @@ import Onboarding from "./components/Onboarding";
 import AppTour from "./components/AppTour";
 import TerapanthHeader from "./components/TerapanthHeader";
 import TerapanthFooterNav from "./components/TerapanthFooterNav";
+import { GlobalSearchModal } from "./components/GlobalSearchModal";
 import { GlobalAudioPlayer } from "./components/GlobalAudioPlayer";
 import QuickActions from "./components/QuickActions";
 import { AdminGuard } from "./components/AdminGuard";
@@ -217,6 +218,19 @@ export default function App() {
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
   const [showTour, setShowTour] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>('home');
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState<boolean>(false);
+
+  // Global Ctrl/Cmd + K listener for search modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchModalOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -291,26 +305,26 @@ export default function App() {
   };
 
   const slideUpFadeVariants = {
-    enter: {
+    enter: (dir: number) => ({
       y: shouldReduceMotion ? 0 : 25,
       opacity: 0,
-    },
+    }),
     center: {
       y: 0,
       opacity: 1,
       transition: {
         y: { type: "spring" as const, stiffness: 350, damping: 32 },
-        opacity: { duration: 0.28, ease: "easeOut" }
+        opacity: { duration: 0.28, ease: "easeOut" as const }
       }
     },
-    exit: {
+    exit: (dir: number) => ({
       y: shouldReduceMotion ? 0 : -20,
       opacity: 0,
       transition: {
         y: { type: "spring" as const, stiffness: 350, damping: 32 },
-        opacity: { duration: 0.22, ease: "easeIn" }
+        opacity: { duration: 0.22, ease: "easeIn" as const }
       }
-    }
+    })
   };
 
   const isHomeChatTransition = useMemo(() => {
@@ -390,8 +404,9 @@ export default function App() {
   // --- ACCESS PREFERENCES & CONTRAST ENGINGE ---
   const [theme, setTheme] = useState<"light" | "dark" | "system">(() => {
     const saved = localStorage.getItem("app_theme");
-    return (saved as "light" | "dark" | "system") || "system";
+    return (saved as "light" | "dark" | "system") || "light";
   });
+  const isDarkActive = theme === "dark" || (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
   const [palette, setPalette] = useState<"default" | "sunset" | "ocean" | "forest" | "saffron" >(() => {
     const saved = localStorage.getItem("app_palette");
     return (saved as "default" | "sunset" | "ocean" | "forest" | "saffron") || "default";
@@ -642,12 +657,12 @@ export default function App() {
   useEffect(() => {
     const root = window.document.documentElement;
     localStorage.setItem("app_theme", theme);
-    if (theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+    if (isDarkActive) {
       root.classList.add("dark");
     } else {
       root.classList.remove("dark");
     }
-  }, [theme]);
+  }, [theme, isDarkActive]);
 
   // --- MANAGE PALETTE CLASS ---
   useEffect(() => {
@@ -762,7 +777,7 @@ export default function App() {
         ...appStyle,
         backgroundColor: 'var(--bg-cream)',
         // Safe luxury subtle geometric pattern instead of broken postimg URLs
-        backgroundImage: theme === 'dark' 
+        backgroundImage: isDarkActive 
           ? `radial-gradient(#2e251e 0.5px, transparent 0.5px), radial-gradient(#2e251e 0.5px, #141210 0.5px)`
           : `radial-gradient(#e6dccb 0.5px, transparent 0.5px), radial-gradient(#e6dccb 0.5px, var(--bg-cream) 0.5px)`,
         backgroundSize: '20px 20px',
@@ -773,13 +788,13 @@ export default function App() {
       } ${theme}`}
     >
       {/* If dark mode is active, apply a subtle dark glass layer above the texture */}
-      {theme === 'dark' && <div className="absolute inset-0 bg-stone-950/85 pointer-events-none z-0" />}
+      {isDarkActive && <div className="absolute inset-0 bg-stone-950/85 pointer-events-none z-0" />}
 
       {/* HEADER SECTION */}
       {activeTab !== "chat" && (
         <TerapanthHeader
           theme={theme}
-          toggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
+          toggleTheme={() => setTheme(isDarkActive ? "light" : "dark")}
           streak={sadhanaStreak}
           onRefreshClick={() => window.location.reload()}
           onThemePreferencesClick={() => setIsCustomizerOpen(true)}
@@ -793,6 +808,7 @@ export default function App() {
           onLoginClick={() => setIsLoginModalOpen(true)}
           zenMode={zenMode}
           activeTab={activeTab}
+          onSearchClick={() => setIsSearchModalOpen(true)}
         />
       )}
 
@@ -822,7 +838,7 @@ export default function App() {
                   onBack={() => setActiveTab("home")}
                   setActiveTab={setActiveTab}
                   setSadhanaSubTab={setSadhanaSubTab}
-                  isDarkMode={theme === "dark"}
+                  isDarkMode={isDarkActive}
                   setIsChatInputFocused={() => {}}
                   isFocusMode={false}
                   onToggleFocusMode={() => {}}
@@ -1150,7 +1166,7 @@ export default function App() {
               >
                 <UnifiedHomeDashboard 
                   setActiveTab={setActiveTab} 
-                  isDarkMode={theme === "dark"} 
+                  isDarkMode={isDarkActive} 
                   knowledgeItems={knowledgeItems} 
                   setIsLoginModalOpen={setIsLoginModalOpen} 
                 />
@@ -1489,6 +1505,15 @@ export default function App() {
 
       {/* --- ALL ACCESS MODAL LAYERS --- */}
       <Suspense fallback={null}>
+        {/* Global Search Modal */}
+        <GlobalSearchModal
+          isOpen={isSearchModalOpen}
+          onClose={() => setIsSearchModalOpen(false)}
+          knowledgeItems={knowledgeItems}
+          isDarkMode={isDarkActive}
+          setActiveTab={setActiveTab}
+        />
+
         {/* Login Screen Modal */}
         <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
 
