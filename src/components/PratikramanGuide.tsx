@@ -86,6 +86,18 @@ export default function PratikramanGuide({ onBack }: { onBack?: () => void }) {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [justCompletedMode, setJustCompletedMode] = useState<string | null>(null);
 
+  // Print & Booklet Customization States
+  const [printOrientation, setPrintOrientation] = useState<'portrait' | 'landscape'>('portrait');
+  const [printFontSize, setPrintFontSize] = useState<number>(14);
+  const [printSections, setPrintSections] = useState({
+    cover: true,
+    intro: true,
+    sutras: true,
+    glossary: true,
+    colophon: true,
+  });
+  const [isPrintCustomizerOpen, setIsPrintCustomizerOpen] = useState<boolean>(false);
+
   const steps = STEPS_DATA[activeMode] || STEPS_DATA.devsi;
   const currentStep = guidedStepIndex !== null ? steps[guidedStepIndex] : null;
 
@@ -510,11 +522,15 @@ export default function PratikramanGuide({ onBack }: { onBack?: () => void }) {
 
               <div className="flex flex-wrap gap-2.5 items-center sm:justify-end">
                 <button
-                  onClick={() => window.print()}
-                  className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 dark:bg-white/5 dark:hover:bg-white/10 dark:text-gray-300 dark:border-white/10 font-extrabold text-[11px] uppercase tracking-widest px-5 py-3.5 rounded-2xl transition-all active:scale-95 shrink-0 flex items-center gap-2 shadow-sm"
+                  onClick={() => setIsPrintCustomizerOpen(!isPrintCustomizerOpen)}
+                  className={`font-extrabold text-[11px] uppercase tracking-widest px-5 py-3.5 rounded-2xl transition-all active:scale-95 shrink-0 flex items-center gap-2 shadow-sm border ${
+                    isPrintCustomizerOpen
+                      ? 'bg-emerald-700 text-white border-emerald-700 hover:bg-emerald-600 dark:bg-emerald-600 dark:border-emerald-600'
+                      : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-200 dark:bg-white/5 dark:hover:bg-white/10 dark:text-gray-300 dark:border-white/10'
+                  }`}
                 >
                   <Printer size={14} />
-                  पुस्तिका प्रिंट (Print Booklet)
+                  प्रिंट सेटअप (Print Options)
                 </button>
                 <button
                   onClick={startGuidedMode}
@@ -524,6 +540,155 @@ export default function PratikramanGuide({ onBack }: { onBack?: () => void }) {
                 </button>
               </div>
             </div>
+
+            {/* Highly Polished Booklet Customizer Card */}
+            <AnimatePresence>
+              {isPrintCustomizerOpen && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="bg-[var(--card-bg)] border border-emerald-500/30 rounded-3xl p-6 shadow-md overflow-hidden space-y-6"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--border-color)] pb-4">
+                    <div className="flex items-start gap-2.5">
+                      <span className="text-xl mt-0.5">🖨️</span>
+                      <div>
+                        <h4 className="font-extrabold text-sm text-emerald-800 dark:text-emerald-400">
+                          साधना पुस्तिका प्रिंट विन्यास (Physical Booklet Configuration)
+                        </h4>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          Configure layout, fonts, and contents prior to generating your high-fidelity physical booklet.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => window.print()}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] uppercase tracking-widest px-4.5 py-2.5 rounded-xl transition-all active:scale-95 flex items-center gap-1.5 self-start sm:self-auto shadow-sm"
+                    >
+                      <Printer size={12} />
+                      प्रिंट / PRINT NOW
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Layout & Orientation Option */}
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400 block">
+                        पृष्ठ अभिविन्यास (Page Orientation)
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => setPrintOrientation('portrait')}
+                          className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border ${
+                            printOrientation === 'portrait'
+                              ? 'bg-emerald-600/10 border-emerald-500 text-emerald-700 dark:text-emerald-300'
+                              : 'bg-transparent border-[var(--border-color)] text-gray-500 hover:bg-black/5 dark:hover:bg-white/5'
+                          }`}
+                        >
+                          📄 खड़े पृष्ठ (Portrait)
+                        </button>
+                        <button
+                          onClick={() => setPrintOrientation('landscape')}
+                          className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border ${
+                            printOrientation === 'landscape'
+                              ? 'bg-emerald-600/10 border-emerald-500 text-emerald-700 dark:text-emerald-300'
+                              : 'bg-transparent border-[var(--border-color)] text-gray-500 hover:bg-black/5 dark:hover:bg-white/5'
+                          }`}
+                        >
+                          📖 आड़े पृष्ठ (Landscape)
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-relaxed">
+                        * Landscape is optimized for tables, wider booklets, or dual-column spreads.
+                      </p>
+                    </div>
+
+                    {/* Font Size Option */}
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400 block flex justify-between items-center">
+                        <span>अक्षर का आकार (Font Size)</span>
+                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono font-black">
+                          {printFontSize}pt
+                        </span>
+                      </label>
+                      <div className="flex items-center gap-3 pt-1">
+                        <input
+                          type="range"
+                          min="10"
+                          max="24"
+                          step="1"
+                          value={printFontSize}
+                          onChange={(e) => setPrintFontSize(parseInt(e.target.value))}
+                          className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-gray-200 dark:bg-white/10 rounded-lg appearance-none"
+                        />
+                      </div>
+                      <div className="flex justify-between text-[10px] text-gray-400 font-mono">
+                        <span>10pt (Small)</span>
+                        <span>14pt (Regular)</span>
+                        <span>24pt (Large)</span>
+                      </div>
+                    </div>
+
+                    {/* Section Toggles Option */}
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400 block">
+                        पुस्तिका खंड (Included Sections)
+                      </label>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <label className="flex items-center gap-2 p-1.5 rounded-xl border border-[var(--border-color)] cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={printSections.cover}
+                            onChange={(e) => setPrintSections({ ...printSections, cover: e.target.checked })}
+                            className="rounded border-gray-300 dark:border-white/10 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          <span className="font-semibold text-gray-700 dark:text-gray-300">Cover Page</span>
+                        </label>
+                        <label className="flex items-center gap-2 p-1.5 rounded-xl border border-[var(--border-color)] cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={printSections.intro}
+                            onChange={(e) => setPrintSections({ ...printSections, intro: e.target.checked })}
+                            className="rounded border-gray-300 dark:border-white/10 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          <span className="font-semibold text-gray-700 dark:text-gray-300">Rules Intro</span>
+                        </label>
+                        <label className="flex items-center gap-2 p-1.5 rounded-xl border border-[var(--border-color)] cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={printSections.sutras}
+                            onChange={(e) => setPrintSections({ ...printSections, sutras: e.target.checked })}
+                            className="rounded border-gray-300 dark:border-white/10 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          <span className="font-semibold text-gray-700 dark:text-gray-300">Sutras</span>
+                        </label>
+                        <label className="flex items-center gap-2 p-1.5 rounded-xl border border-[var(--border-color)] cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={printSections.glossary}
+                            onChange={(e) => setPrintSections({ ...printSections, glossary: e.target.checked })}
+                            className="rounded border-gray-300 dark:border-white/10 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          <span className="font-semibold text-gray-700 dark:text-gray-300">Glossary</span>
+                        </label>
+                        <div className="col-span-2">
+                          <label className="flex items-center gap-2 p-1.5 rounded-xl border border-[var(--border-color)] cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={printSections.colophon}
+                              onChange={(e) => setPrintSections({ ...printSections, colophon: e.target.checked })}
+                              className="rounded border-gray-300 dark:border-white/10 text-emerald-600 focus:ring-emerald-500"
+                            />
+                            <span className="font-semibold text-gray-700 dark:text-gray-300">Colophon / Conclusion</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* List of steps to be chanted */}
             <div className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-3xl p-5 shadow-sm">
@@ -615,6 +780,19 @@ export default function PratikramanGuide({ onBack }: { onBack?: () => void }) {
 
       </AnimatePresence>
 
+      {/* Floating Print Button */}
+      <button
+        onClick={() => window.print()}
+        className="fixed bottom-24 right-6 z-50 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white p-4 rounded-full shadow-2xl transition-all duration-300 hover:scale-110 cursor-pointer flex items-center justify-center gap-2 group print:hidden"
+        title="Print Sacred Guide (प्रिंट करें)"
+        id="floating-print-btn"
+      >
+        <Printer size={20} className="group-hover:rotate-12 transition-transform" />
+        <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 ease-in-out font-bold text-xs uppercase tracking-wider whitespace-nowrap">
+          प्रिंट / Print
+        </span>
+      </button>
+
       {/* 
         ========================================
         BEAUTIFUL SACRED TEXT PRINT BOOKLET VIEW
@@ -635,12 +813,13 @@ export default function PratikramanGuide({ onBack }: { onBack?: () => void }) {
               padding: 0 !important;
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
+              counter-reset: page;
             }
             /* Hide everything in the body except the printable booklet */
             body > *:not(#pratikraman-print-booklet) {
               display: none !important;
             }
-            #root, #root > *, header, footer, nav, aside, button, .no-print, #pratikraman-guide-module {
+            #root, #root > *, header, footer, nav, aside, button, .no-print, #pratikraman-guide-module, #floating-print-btn, #floating-print-btn * {
               display: none !important;
             }
             #pratikraman-print-booklet {
@@ -661,8 +840,8 @@ export default function PratikramanGuide({ onBack }: { onBack?: () => void }) {
               color: #000000 !important;
             }
             @page {
-              size: A4 portrait;
-              margin: 2cm 1.8cm 2cm 1.8cm;
+              size: A4 ${printOrientation};
+              margin: 20mm 20mm 25mm 20mm;
             }
             
             /* Cover Page Styling */
@@ -697,7 +876,7 @@ export default function PratikramanGuide({ onBack }: { onBack?: () => void }) {
             }
 
             .sutra-title {
-              font-size: 20pt !important;
+              font-size: ${printFontSize + 4}pt !important;
               font-weight: bold;
               color: #047857 !important;
               margin-bottom: 12px;
@@ -706,7 +885,7 @@ export default function PratikramanGuide({ onBack }: { onBack?: () => void }) {
             }
 
             .sutra-purpose {
-              font-size: 12pt !important;
+              font-size: ${printFontSize - 2}pt !important;
               font-style: italic;
               color: #374151 !important;
               margin-bottom: 16px;
@@ -717,12 +896,17 @@ export default function PratikramanGuide({ onBack }: { onBack?: () => void }) {
             }
 
             .sutra-text {
-              font-size: 15pt !important;
+              font-size: ${printFontSize}pt !important;
               line-height: 2.0 !important;
               color: #000000 !important;
-              text-align: justify;
-              text-justify: inter-word;
+              text-align: justify !important;
+              text-justify: inter-word !important;
               font-weight: 500;
+            }
+
+            .booklet-intro {
+              font-size: ${printFontSize - 1}pt !important;
+              text-align: justify !important;
             }
 
             .sacred-om {
@@ -730,66 +914,157 @@ export default function PratikramanGuide({ onBack }: { onBack?: () => void }) {
               color: #047857 !important;
               margin-bottom: 24px;
             }
+
+            /* Repeating Watermark */
+            .booklet-page-watermark {
+              position: fixed;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%) rotate(-30deg);
+              font-size: 72pt !important;
+              font-weight: 900 !important;
+              color: rgba(5, 150, 105, 0.04) !important;
+              text-transform: uppercase !important;
+              letter-spacing: 0.1em !important;
+              white-space: nowrap !important;
+              pointer-events: none !important;
+              z-index: -1000 !important;
+              font-family: sans-serif !important;
+            }
+
+            /* Repeating Footer for Page Numbers (Page X of Y) */
+            .booklet-footer {
+              position: fixed;
+              bottom: -15mm;
+              left: 0;
+              right: 0;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              font-size: 9pt !important;
+              color: #4b5563 !important;
+              font-family: "Noto Serif", "Georgia", serif !important;
+              border-top: 1px solid #e5e7eb;
+              padding-top: 6px;
+            }
+
+            .page-number-text::after {
+              counter-increment: page;
+              content: "पृष्ठ / Page " counter(page) " of " counter(pages);
+              font-weight: bold;
+            }
           }
         `}} />
 
+        {/* REPEATING WATERMARK ON EACH PRINT PAGE */}
+        <div className="booklet-page-watermark">Terapanth AI</div>
+
         {/* COVER PAGE */}
-        <div className="booklet-cover">
-          <div className="sacred-om">ॐ</div>
-          <h1 className="text-4xl font-extrabold text-emerald-800 leading-tight mb-2" style={{ fontFamily: 'Georgia, serif' }}>
-            प्रतिक्रमण साधना पुस्तिका
-          </h1>
-          <p className="text-lg uppercase tracking-widest text-emerald-600 font-bold mb-4">
-            {MODE_LABELS[activeMode]}
-          </p>
-          <div className="booklet-divider"></div>
-          <p className="text-sm text-gray-700 max-w-lg mx-auto leading-relaxed italic mb-8">
-            "खामेमि सव्वजीवे, सव्वे जीवा खमंतु मे, मित्ती मे सव्वभूएसु, वेरं मज्झं न केणइ।"<br />
-            संसार के समस्त चर-अचर प्राणियों से क्षमायाचना और जीव-कल्याण की पावनतम साधना।
-          </p>
-          <div className="mt-12 text-xs text-gray-500 uppercase tracking-widest font-semibold">
-            जैन श्वेतांबर तेरापंथ धर्म संघ • आध्यात्मिक स्वाध्याय एवं आत्म-विशुद्धि पुस्तिका
+        {printSections.cover && (
+          <div className="booklet-cover">
+            <div className="sacred-om">ॐ</div>
+            <h1 className="text-4xl font-extrabold text-emerald-800 leading-tight mb-2" style={{ fontFamily: 'Georgia, serif' }}>
+              प्रतिक्रमण साधना पुस्तिका
+            </h1>
+            <p className="text-lg uppercase tracking-widest text-emerald-600 font-bold mb-4">
+              {MODE_LABELS[activeMode]}
+            </p>
+            <div className="booklet-divider"></div>
+            <p className="text-sm text-gray-700 max-w-lg mx-auto leading-relaxed italic mb-8 booklet-intro" style={{ textAlign: 'justify' }}>
+              "खामेमि सव्वजीवे, सव्वे जीवा खमंतु मे, मित्ती मे सव्वभूएसु, वेरं मज्झं न केणइ।"<br />
+              संसार के समस्त चर-अचर प्राणियों से क्षमायाचना और जीव-कल्याण की पावनतम साधना।
+            </p>
+            <div className="mt-12 text-xs text-gray-500 uppercase tracking-widest font-semibold">
+              जैन श्वेतांबर तेरापंथ धर्म संघ • आध्यात्मिक स्वाध्याय एवं आत्म-विशुद्धि पुस्तिका
+            </div>
           </div>
-        </div>
+        )}
 
         {/* BRIEF INTRODUCTION SECTION */}
-        <div className="py-6 border-b-2 border-emerald-600 mb-8" style={{ pageBreakAfter: 'avoid', breakAfter: 'avoid' }}>
-          <h2 className="text-2xl font-bold text-emerald-800 mb-3">प्रतिक्रमण विधि एवं नियम</h2>
-          <p className="text-sm leading-relaxed text-gray-800 mb-4">
-            प्रतिक्रमण का अर्थ है पीछे लौटना। दिनभर या निश्चित समय में की गई भूलों, मर्यादाओं के अतिक्रमण और कषायों के पश्चाताप हेतु गुरु-निर्देशानुसार या शुद्ध आसन पर बैठकर एकाग्र चित्त से मंत्रोच्चार करें।
-          </p>
-          <ul className="list-disc pl-5 text-xs text-gray-700 space-y-2">
-            <li><strong>आसन:</strong> शांत, पवित्र स्थान पर पूर्व या उत्तर की ओर मुख करके बैठें।</li>
-            <li><strong>उच्चारण:</strong> प्रत्येक प्राकृत एवं संस्कृत सूत्रों का शुद्ध व स्पष्ट स्वर में वाचन करें।</li>
-            <li><strong>मनोभाव:</strong> हृदय में पूर्ण क्षमाशीलता, मैत्री भाव और राग-द्वेष रहित वीतराग भाव रखें।</li>
-          </ul>
-        </div>
+        {printSections.intro && (
+          <div className="py-6 border-b-2 border-emerald-600 mb-8" style={{ pageBreakAfter: 'avoid', breakAfter: 'avoid' }}>
+            <h2 className="text-2xl font-bold text-emerald-800 mb-3" style={{ pageBreakAfter: 'avoid', breakAfter: 'avoid' }}>प्रतिक्रमण विधि एवं नियम</h2>
+            <p className="text-sm leading-relaxed text-gray-800 mb-4 booklet-intro">
+              प्रतिक्रमण का अर्थ है पीछे लौटना। दिनभर या निश्चित समय में की गई भूलों, मर्यादाओं के अतिक्रमण और कषायों के पश्चाताप हेतु गुरु-निर्देशानुसार या शुद्ध आसन पर बैठकर एकाग्र चित्त से मंत्रोच्चार करें।
+            </p>
+            <ul className="list-disc pl-5 text-xs text-gray-700 space-y-2">
+              <li><strong>आसन:</strong> शांत, पवित्र स्थान पर पूर्व या उत्तर की ओर मुख करके बैठें।</li>
+              <li><strong>उच्चारण:</strong> प्रत्येक प्राकृत एवं संस्कृत सूत्रों का शुद्ध व स्पष्ट स्वर में वाचन करें।</li>
+              <li><strong>मनोभाव:</strong> हृदय में पूर्ण क्षमाशीलता, मैत्री भाव और राग-द्वेष रहित वीतराग भाव रखें।</li>
+            </ul>
+          </div>
+        )}
 
         {/* SACRED SUTRAS */}
-        <div className="sutras-list">
-          {steps.map((step, idx) => (
-            <div key={idx} className="sutra-card">
-              <h3 className="sutra-title">
-                {idx + 1}. {step.name}
-              </h3>
-              <div className="sutra-purpose">
-                <strong>प्रयोजन व अर्थ:</strong> {step.purpose}
+        {printSections.sutras && (
+          <div className="sutras-list">
+            {steps.map((step, idx) => (
+              <div key={idx} className="sutra-card">
+                <h3 className="sutra-title">
+                  {idx + 1}. {step.name}
+                </h3>
+                <div className="sutra-purpose">
+                  <strong>प्रयोजन व अर्थ:</strong> {step.purpose}
+                </div>
+                <div className="sutra-text">
+                  {step.text}
+                </div>
               </div>
-              <div className="sutra-text">
-                {step.text}
+            ))}
+          </div>
+        )}
+
+        {/* GLOSSARY SECTION */}
+        {printSections.glossary && (
+          <div className="py-8 border-t border-emerald-600 mt-8" style={{ pageBreakBefore: 'always', breakBefore: 'page' }}>
+            <h2 className="text-2xl font-bold text-emerald-800 mb-6" style={{ pageBreakAfter: 'avoid', breakAfter: 'avoid' }}>पारिभाषिक शब्दावली (Glossary)</h2>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="border-b border-gray-200 pb-3" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                  <h4 className="text-base font-bold text-emerald-700">प्रतिक्रमण (Pratikraman)</h4>
+                  <p className="text-sm text-gray-800 mt-1 leading-relaxed">पीछे लौटना - भूलों का परिमार्जन व आत्म-विशुद्धि की आध्यात्मिक प्रक्रिया।</p>
+                </div>
+                <div className="border-b border-gray-200 pb-3" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                  <h4 className="text-base font-bold text-emerald-700">अतिचार (Atichara)</h4>
+                  <p className="text-sm text-gray-800 mt-1 leading-relaxed">व्रतों में लगने वाले सूक्ष्म दोष या सीमाओं का अनजाने में उल्लंघन।</p>
+                </div>
+                <div className="border-b border-gray-200 pb-3" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                  <h4 className="text-base font-bold text-emerald-700">कायोत्सर्ग (Kayotsarga)</h4>
+                  <p className="text-sm text-gray-800 mt-1 leading-relaxed">शरीर के प्रति ममत्व का त्याग कर स्थिर ध्यानलीन होने की मुद्रा।</p>
+                </div>
+                <div className="border-b border-gray-200 pb-3" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                  <h4 className="text-base font-bold text-emerald-700">मिच्छामि दुक्कडं (Michchhami Dukkadam)</h4>
+                  <p className="text-sm text-gray-800 mt-1 leading-relaxed">मेरा दुष्कृत्य मिथ्या हो - प्राणी मात्र से हृदयपूर्वक क्षमायाचना।</p>
+                </div>
+                <div className="border-b border-gray-200 pb-3" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                  <h4 className="text-base font-bold text-emerald-700">सामायिक (Samayika)</h4>
+                  <p className="text-sm text-gray-800 mt-1 leading-relaxed">समभाव की साधना - नियत समय के लिए समस्त पापकारी प्रवृत्तियों का त्याग।</p>
+                </div>
+                <div className="border-b border-gray-200 pb-3" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                  <h4 className="text-base font-bold text-emerald-700">तस्स मिच्छामि दुक्कडं (Tassa Michchhami Dukkadam)</h4>
+                  <p className="text-sm text-gray-800 mt-1 leading-relaxed">सारे पापमय आचरणों के कुप्रभाव का पूर्णतया विसर्जन होना।</p>
+                </div>
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        )}
 
         {/* COLOPHON / CONCLUSION */}
-        <div className="text-center mt-12 pt-8 border-t border-gray-300" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-          <p className="text-base font-bold text-emerald-800">
-            तस्स मिच्छामि दुक्कडं ॥
-          </p>
-          <p className="text-xs text-gray-500 mt-2">
-            प्रतिक्रमण साधना पुस्तिका • जैन तेरापंथ एआई हब
-          </p>
+        {printSections.colophon && (
+          <div className="text-center mt-12 pt-8 border-t border-gray-300 mb-16" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+            <p className="text-base font-bold text-emerald-800">
+              तस्स मिच्छामि दुक्कडं ॥
+            </p>
+            <p className="text-xs text-gray-500 mt-2">
+              प्रतिक्रमण साधना पुस्तिका • जैन तेरापंथ एआई हब
+            </p>
+          </div>
+        )}
+
+        {/* Repeating Footer for Page Numbers (automatically repeated on print via fixed positioning) */}
+        <div className="booklet-footer hidden print:flex">
+          <span className="text-xs text-gray-500 font-sans">जैन तेरापंथ धर्म संघ</span>
+          <span className="page-number-text font-serif text-xs text-emerald-800"></span>
         </div>
       </div>
     </div>

@@ -1235,6 +1235,102 @@ export const KNOWLEDGE_BASE: KnowledgeItem[] = [
     description: 'The audited official blueprints and contact listing for permanent Terapanth Bhawans across India.',
     details: 'The All India Terapanth Bhawan Directory holds the audited official blueprint records and contact exchanges for core administrative and staying facilities of the Terapanth Dharmsangh.\n\nHere are some of the master registry points:\n\n• DELHI / NCR & NORTHERN REGION:\n  - नई दिल्ली (Daryaganj): तेरापंथ भवन - 1-ए, बहादुर शाह जफर मार्ग, दरियागंज, नई दिल्ली-110002. कार्यालय संपर्क: 011-23311915 / 23312957\n  - नई दिल्ली (Mandi House): अणुव्रत भवन - 210, दीनदयाल उपाध्याय मार्ग, मंडी हाउस के पास, नई दिल्ली-110002. केंद्रीय कार्यालय: 011-23212150 / 23231012\n  - फरीदाबाद (Faridabad): तेरापंथ भवन - डी-2/13, अणुव्रत मार्ग, सेक्टर-10, फरीदाबाद, हरियाणा. भवन ट्रस्ट प्रभाग: 7827509290\n  - रोहिणी (Rohini): तेरापंथ भवन - पॉकेट एफ-22, सेक्टर-05, रोहिणी, दिल्ली-110085. स्थायी ट्रस्ट कार्यालय: 9915501240\n\n• GUJARAT REGION:\n  - सूरत (City Light): तेरापंथ भवन - नियोन एवेन्यू के पास, सिटीलाइट रोड, सूरत-395007. सूरत सभा प्रभाग: 0261-2211933\n  - सूरत (Udhana): तेरापंथ भवन (तुलसी निकेतन) - स्टेशन रोड, उधना, सूरत-394210. उधना मुख्य कार्यालय: 9911716974\n  - अहमदाबाद (Shahibaug): तेरापंथ भवन - अर्हम कुंज, शाहीबाग रोड, अहमदाबाद-380004. अहमदाबाद सभा ट्रस्ट: 7021591184\n  - अहमदाबाद (Maninagar): तेरापंथ भवन - कांकरिया झील मार्ग, मणिनगर, अहमदाबाद-380008. भवन व्यवस्था समिति: 9408472957\n\n• MAHARASHTRA REGION:\n  - मुम्बई (Kalbadevi): तेरापंथ भवन (केंद्रीय) - १०-१२, कावसाजी पटेल स्ट्रीट, कालबादेवी, मुम्बई-400002. मुम्बई सभा ट्रस्ट: 022-22013915\n  - मुम्बई (Chembur): तेरापंथ भवन - श्रावक संघ मार्ग, चेम्बूर, मुम्बई-400071. ट्रस्ट डेस्क: 7061598749\n  - ठाणे (Kopri): तेरापंथ भवन - किशोर नगर, गांवदेवी मंदिर के सामने, कोपरी ठाणे (पूर्व)-400603. कार्यालय संपर्क: 9892302847\n  - कांदिवली (Kandivali): तेरापंथ भवन - ठाकुर कॉम्प्लेक्स, कांदिवली (पूर्व), मुम्बई-400101. क्षेत्रीय प्रभार: 8850280184\n\n• RAJASTHAN REGION:\n  - लाडनूं (Ladnun): जैन विश्व भारती कार्यालय - महाश्रमण विहार परिसर, लाडनूं, नागौर प्रान्त. केंद्रीय प्रशासनिक विंग: 01581-222114 / 222315\n  - सिरियारी (Siriyari): महाप्रज्ञ भवन (तुलसी समाधि स्थल) - मुख्य बस स्टैंड मार्ग, सिरियारी, पाली प्रान्त. सिरियारी संस्थान ट्रस्ट: 02934-282205\n  - बालोतरा (Balotra): तेरापंथ भवन - आचार्य श्री महाश्रमण मार्ग, अग्रवाल कॉलोनी, बालोतरा. बालोतरा सभा प्रभाग: 9649509233\n  - जयपुर (Barkat Nagar): तेरापंथ भवन - किसान मार्ग, बरकत नगर, टोंक रोड, जयपुर-302015. जयपुर सभा काउंटर: 9660692852\n\n• SOUTH INDIA (TAMIL NADU & KARNATAKA):\n  - चेन्नई (Chennai Road): तेरापंथ भवन - एलिस रोड, माउंट रोड के पास, चेन्नई-600002. चेन्नई ट्रस्ट डेस्क: 044-28588040\n  - कोयंबतूर (Coimbatore): तेरापंथ भवन - अवनाशी रोड, कोयंबतूर, तमिलनाडु. स्थायी कार्यालय: 9363105602\n  - बैंगलोर (Bangalore): तेरापंथ भवन - गांधीनगर, मजेस्टिक के पास, बैंगलोर-560009. बैंगलोर सभा डेस्क: 080-22261915\n\nThese facilities support travelling ascetics (vihar stays) and hold historical significance, while coordinating region-wise operations of the Jain Shvetamber Terapanth sect.',
     tags: ['Bhawan', 'Directory', 'Delhi', 'Mumbai', 'Surat', 'Ladnun', 'Siriyari', 'Addresses', 'Contact']
+  },
+  {
+    id: '24-tirthankaras',
+    title: 'The 24 Tirthankaras (चौबीस तीर्थंकर)',
+    category: 'Philosophy',
+    description: 'The 24 divine spiritual guides and builders of the path in the current time cycle.',
+    details: 'The 24 Tirthankaras of the current time cycle are divine souls who attained liberation (Moksha) and established the four-fold order (Sadhu, Sadhvi, Shravak, Shravika) of Jainism:\n\n* भगवान ऋषभ प्रभु (Adinath)\n* भगवान अजित प्रभु\n* भगवान संभव प्रभु\n* भगवान अभिनन्दन प्रभु\n* भगवान सुमति प्रभु\n* भगवान पद्म प्रभु\n* भगवान सुपार्श्व प्रभु\n* भगवान चन्द्र प्रभु\n* भगवान सुविधि प्रभु\n* भगवान शीतल प्रभु\n* भगवान श्रेयांस प्रभु\n* भगवान वासुपूज्य प्रभु\n* भगवान विमल प्रभु\n* भगवान अनन्त प्रभु\n* भगवान धर्म प्रभु\n* भगवान शान्ति प्रभु\n* भगवान कुन्थु प्रभु\n* भगवान अर प्रभु\n* भगवान मल्लि प्रभु\n* भगवान मुनिसुव्रत प्रभु\n* भगवान नमि प्रभु\n* भगवान अरिष्टनेमि प्रभु\n* भगवान पार्श्व प्रभु\n* भगवान महावीर प्रभु\n\nThey represent the pinnacle of spiritual growth, absolute non-violence (Ahimsa), and perfect knowledge (Kevala Jnana).',
+    tags: ['Tirthankaras', 'Lineage', 'Philosophy', 'Sacred', 'Kevali']
+  },
+  {
+    id: '11-ganadharas',
+    title: 'The 11 Ganadharas (ग्यारह गणधर)',
+    category: 'History',
+    description: 'The 11 chief disciples of Lord Mahavira who compiled his teachings into Agams.',
+    details: 'Ganadharas are the chief disciples of a Tirthankara. Lord Mahavira had 11 Ganadharas who were highly learned scholars and initiated into monkhood:\n\n* श्री इन्द्रभूति (Gautam Swami)\n* श्री अग्निभूति\n* श्री वायुभूति\n* श्री व्यक्त\n* श्री सुधर्मा (successor of Lord Mahavira)\n* श्री मण्डित\n* श्री मौर्यपुत्र\n* श्री अकम्पित\n* श्री अचलभ्राता\n* श्री मेतार्य\n* श्री प्रभास\n\nThey compiled the direct words (Divya Dhwani) of the Lord into the canonical Anga Sutras (Agams) using their extraordinary memory and wisdom.',
+    tags: ['Disciples', 'Mahavira', 'Agams', 'History', 'Lineage']
+  },
+  {
+    id: '16-maha-satis',
+    title: 'The 16 Maha Satis (सोलह महासती)',
+    category: 'History',
+    description: 'The 16 exceptionally pious and resolute women celebrated for their unyielding character and virtues.',
+    details: 'The 16 Maha Satis (Satis) are women celebrated in Jain tradition for their supreme character, celibacy (Brahmacharya), devotion, and unwavering commitment to moral laws under extreme trials:\n\n* महासती ब्राह्मी (First disciple of Adinath)\n* महासती सुन्दरी\n* महासती कौशल्या\n* महासती सीता\n* महासती राजीमती\n* महासती कुन्ती\n* महासती द्रौपदी\n* महासती चन्दनबाला\n* महासती मृगावती\n* महासती पुष्पचूला\n* महासती प्रभावती\n* महासती सुभद्रा\n* महासती दमयन्ती\n* महासती सुलसा\n* महासती शिवा\n* महासती पद्मावती\n\nTheir daily remembrance (Stuti) is considered highly auspicious and inspires laywomen (Shravikas) and nuns (Sadhvis) to uphold spiritual virtues.',
+    tags: ['Satis', 'Women', 'Virtues', 'Purity', 'Stuti', 'History']
+  },
+  {
+    id: 'terapanth-acharyas-list',
+    title: 'The 11 Terapanth Acharyas (तेरापंथ के ११ आचार्य)',
+    category: 'History',
+    description: 'The complete chronological lineage of supreme spiritual leaders (Ek Guru) since 1760 CE.',
+    details: 'Since the founding of the Terapanth sect in 1760 AD, 11 Acharyas have held absolute command as the singular leaders (Ek Guru) of the order, maintaining rigorous discipline and spiritual purity:\n\n* आचार्यश्री भीखणजी (Swami Bhikshu - Founder)\n* आचार्यश्री भारीमालजी\n* आचार्यश्री रायचन्दजी\n* आचार्यश्री जीतमलजी (Jayacharya)\n* आचार्यश्री मघराजजी\n* आचार्यश्री माणकलालजी\n* आचार्यश्री डालचन्दजी\n* आचार्यश्री कालूरामजी (Kalu Gani)\n* आचार्यश्री तुलसीरामजी (Ganaadhipati Tulsi)\n* आचार्यश्री महाप्रज्ञजी\n* आचार्यश्री महाश्रमणजी (Current head of the dharmsangh).\n\nUnder this unbroken chain of single leadership, the sect remains united and has flourished globally.',
+    tags: ['Acharyas', 'Lineage', 'History', 'Leaders', 'Ek Guru']
+  },
+  {
+    id: '20-viharamana-tirthankaras',
+    title: 'The 20 Viharamana Tirthankaras (बीस विहरमान तीर्थंकर)',
+    category: 'Philosophy',
+    description: 'The 20 active Tirthankaras currently teaching and guiding souls in the Mahavideha Kshetra.',
+    details: 'According to Jain cosmology, in the vast continent of Mahavideha Kshetra, there are always active, living Tirthankaras who preach the truth and guide souls to liberation. In the current era, there are 20 such Viharamana (active/wandering) Tirthankaras:\n\n* श्री सीमंधर स्वामी (Shree Seemandhar Swami)\n* श्री युगमंधर स्वामी\n* श्री बाहु स्वामी\n* श्री सुबाहु स्वामी\n* श्री सुजाति स्वामी\n* श्री स्वयंप्रभ स्वामी\n* श्री ऋषभानन स्वामी\n* श्री अनन्तवीर्य स्वामी\n* श्री सूरप्रभु स्वामी\n* श्री विशालधर स्वामी\n* श्री वज्रधर स्वामी\n* श्री चन्द्रानन स्वामी\n* श्री चन्द्रबाहु स्वामी\n* श्री भुजंग स्वामी\n* श्री ईश्वर स्वामी\n* श्री नेमिप्रभ स्वामी\n* श्री वीरसेन स्वामी\n* श्री महाभद्र स्वामी\n* श्री देवयश स्वामी\n* श्री अजितवीर्य स्वामी.\n\nDisciples in Bharata Kshetra (our region) perform Japa and pray to Seemandhar Swami and others to establish connection and secure birth in Mahavideha to attain ultimate Moksha.',
+    tags: ['Viharamana', 'Cosmology', 'Mahavideha', 'Seemandhar Swami']
+  },
+  {
+    id: '12-chakravartis',
+    title: 'The 12 Chakravartis (बारह चक्रवर्ती)',
+    category: 'History',
+    description: 'The 12 supreme emperors who conquered all six divisions of Bharata Kshetra.',
+    details: 'A Chakravarti is a sovereign world conqueror who possesses the Chakra-ratna and rules over the six divisions of Bharata Kshetra. In Jain history, there are 12 celebrated Chakravartis:\n\n* भरत (Son of first Tirthankara Adinath)\n* सगर\n* मघवा\n* राजशार्दूल (सनत्कुमार)\n* शान्ति (also 16th Tirthankara)\n* कुन्थु (also 17th Tirthankara)\n* अर (also 18th Tirthankara)\n* कुरुवंशज सुभूम\n* महापद्म\n* राजशार्दूल (हरिषेण)\n* नरपति जय\n* ब्रह्मदत्त.\n\nWhile they possessed absolute material power and luxury, several of them eventually renounced their empires to become ascetics and achieve spiritual liberation.',
+    tags: ['Emperors', 'Chakravarti', 'History', 'Conquerors']
+  },
+  {
+    id: '9-baladevas',
+    title: 'The 9 Baladevas (नौ बलदेव)',
+    category: 'History',
+    description: 'The 9 gentle and virtuous heroes of Jain history, elder brothers to Vasudevas.',
+    details: 'In Jain universal history, the 9 Baladevas are half-brothers of Vasudevas. They are celebrated for their gentle nature, extreme brotherly love, adherence to non-violence, and spiritual inclination:\n\n* अचल\n* विजय\n* भद्र\n* सुप्रभ\n* सुदर्शन\n* आनन्द\n* नन्दन\n* पद्म (Rama of Ramayana)\n* राम (Balarama of Mahabharata).\n\nThey carry a shield and a plow, always guide their brother Vasudeva, and most of them achieve Moksha or reach higher heavens due to their pious life.',
+    tags: ['Baladeva', 'Rama', 'Balarama', 'History', 'Heroes']
+  },
+  {
+    id: '9-vasudevas-prativasudevas',
+    title: 'The 9 Vasudevas & 9 Prativasudevas (नौ वासुदेव एवं नौ प्रतिवासुदेव)',
+    category: 'History',
+    description: 'The legendary heroic rivals of Jain history, symbolizing the ultimate clash of power.',
+    details: 'In Jain history, Vasudevas (or Narayanas) are exceptionally powerful heroes who rule three divisions of the world, while Prativasudevas (their rivals) are mighty rulers who oppose them. The clash always results in the victory of the Vasudeva. Here is the canonical list of the 9 pairs:\n\n| No. | Vasudeva (वासुदेव) | Prativasudeva (प्रतिवासुदेव) |\n|---|---|---|\n| 1 | त्रिपृष्ठ (Tripushtha) | अश्वग्रीव (Ashvagriva) |\n| 2 | द्विपृष्ठ (Dwipushtha) | तारक (Tarak) |\n| 3 | स्वयंभू (Swayambhu) | मेरक (Merak) |\n| 4 | पुरुषोत्तम (Purushottam) | मधुकैटभ (Madhukaitabha) |\n| 5 | पुरुषसिंह (Purushasimha) | निशुंभ (Nishumbha) |\n| 6 | पुरुषपुण्डरीक (Purushapundarika) | बलि (Bali) |\n| 7 | दत्त (Datta) | प्रह्लाद (Prahlada) |\n| 8 | नारायण (Narayana / Lakshmana) | रावण (Ravana) |\n| 9 | कृष्ण (Krishna) | जरासंध (Jarasandha) |\n\nThese narratives illustrate the laws of Karma, destiny, and the inevitability of results arising from worldly attachments and ego.',
+    tags: ['Vasudeva', 'Prativasudeva', 'Krishna', 'Ravana', 'Lakshmana', 'History']
+  },
+  {
+    id: 'types-of-shravakas',
+    title: 'Types of Shravakas (श्रावक के चार प्रकार)',
+    category: 'Philosophy',
+    description: 'The four categories of laypersons based on their attitude towards the ascetic order and community.',
+    details: 'Jain Shastras classify laypersons (Shravakas) into four distinct types based on their behavioral patterns, affection, and devotion towards the spiritual order:\n\n* **माता-पिता तुल्य (Like Parents):** They protect, care for, and support the ascetics and the community unconditionally with selfless love, just as parents nurture their children.\n* **भाई तुल्य (Like Brothers):** They share responsibilities, cooperate during crises, and stand shoulder to shoulder with the community, maintaining strong equal relationships.\n* **मित्र तुल्य (Like Friends):** They engage with pleasant friendliness, join social and spiritual gatherings, and offer warm support based on mutual affection.\n* **सौत तुल्य (Like Co-wives/Fault-finders):** They harbor hidden envy, constantly search for minor flaws (Atichara) in others, backbite, and generate negativity within the community instead of practicing forgiveness (Kshama).',
+    tags: ['Shravaka', 'Categories', 'Layperson', 'Conduct', 'Behavior']
+  },
+  {
+    id: '32-doshas-of-samayik',
+    title: 'The 32 Doshas of Samayik (सामायिक के बत्तीस दोष)',
+    category: 'Rules',
+    description: 'The 32 flaws of Mind, Speech, and Body to be avoided during Samayik meditation.',
+    details: 'During the 48-minute Samayik meditation, a Shravak must remain highly alert and avoid the 32 specific flaws (Doshas) of Mind (10), Speech (10), and Body (12) to ensure pure self-realization:\n\n• **मन के दस दोष (10 Flaws of Mind):**\n1. *अविवेक* (Lack of alertness)\n2. *यश-कीर्ति* (Desire for fame)\n3. *लाभार्थ* (Desire for material profit)\n4. *गर्व* (Ego/Pride of practice)\n5. *भय* (Fear of environment/insects)\n6. *निदान* (Desiring worldly pleasures as reward)\n7. *संशय* (Doubt in fruits of meditation)\n8. *रोष* (Anger/Irritation)\n9. *अविनय* (Disrespect to scriptures/guides)\n10. *अबहुमान* (Lack of enthusiasm/devotion).\n\n• **वचन के दस दोष (10 Flaws of Speech):**\n11. *कुवचन* (Speaking harsh/abusive words)\n12. *सहसाकार* (Speaking without thinking/suddenly)\n13. *स्वच्छन्द* (Chanting arbitrarily/without rules)\n14. *संक्षेप* (Truncating mantras/prayers)\n15. *कलह* (Arguments/Quarreling)\n16. *विकथा* (Gossip/Worldly talks of politics, country, women, food)\n17. *हास्य* (Laughing or joking)\n18. *अशुद्ध* (Incorrect pronunciation of sacred sutras)\n19. *निरपेक्ष* (Disregarding context/speaking contextless)\n20. *मुनमुना* (Mumbling indistinctly).\n\n• **काया के बारह दोष (12 Flaws of Body):**\n21. *कुआसन* (Sitting in improper, arrogant, or lazy postures)\n22. *चलासन* (Unstable sitting, moving repeatedly)\n23. *चलदृष्टि* (Wandering eyes, looking around)\n24. *सावद्य क्रिया* (Doing harmful physical activities)\n25. *आलम्बन* (Leaning on walls or pillows without need)\n26. *आकुंचन प्रसारण* (Purposeless stretching of limbs)\n27. *आलस्य* (Lethargy/Yawning lazily)\n28. *मोटन* (Cracking fingers/joints)\n29. *मल* (Cleaning dirt/scratching body)\n30. *विмаसन* (Sitting in deep grief or sorrow, head on hands)\n31. *निद्रा* (Dozing off/Sleeping)\n32. *वैयावृत्य* (Unnecessary body servicing/demanding massages).\n\nAvoiding these defects preserves the purity (Shuddhi) of Samayik.',
+    tags: ['Samayik', 'Doshas', 'Rules', 'Introspection', 'Meditation']
+  },
+  {
+    id: '12-bhavanas-reflections',
+    title: 'The 12 Bhavanas (बारह भावना - अनुप्रेक्षा)',
+    category: 'Philosophy',
+    description: 'The 12 mental contemplations used to cultivate detachment and spiritual focus.',
+    details: 'The 12 Bhavanas (or Anuprekshas) are spiritual reflections designed to detach the soul from worldly infatuations and turn it inward towards absolute truth:\n\n1. *अनित्य भावना* (Transience): Realizing everything in the material world (wealth, body, relations) is temporary.\n2. *अशरण भावना* (Helplessness): Recognizing that nothing but soul-realization can save us from spiritual death and old age.\n3. *संसार भावना* (Cycle of life): Contemplating the endless, painful cycles of rebirth (Samsara).\n4. *एकत्व भावना* (Solitariness): Knowing the soul is born alone, dies alone, and reaps its karma alone.\n5. *अन्यत्व भावना* (Otherness): Experiencing that the soul is distinct from the physical body and other objects.\n6. *अशुचि भावना* (Impurity): Reflecting on the impure nature of the physical body to conquer bodily attachment.\n7. *आस्रव भावना* (Influx of Karma): Observing how negative actions, speech, and thoughts attract karmic particles.\n8. *संवर भावना* (Stoppage of Karma): Understanding the methods to block karmic influx through self-restraint.\n9. *निर्जरा भावना* (Shedding of Karma): Focusing on shedding existing karmas through Tapasya (austerity) and penance.\n10. *लोक भावना* (Universe): Contemplating the vast shape, divisions, and nature of the cosmos.\n11. *बोधि-दुर्लभ भावना* (Rarity of Enlightenment): Reflecting on the extreme rarity of attaining human life and spiritual truth.\n12. *धर्म भावना* (Religion): Recognizing that the true path of non-violence, truth, and equanimity is the only absolute refuge.\n\n*(Note: The 16 Bhavanas list includes these 12 and adds मैत्री (Friendship), प्रमोद (Joy), करुणा (Compassion), and मध्यस्थ (Equanimity)).*',
+    tags: ['Bhavana', 'Anupreksha', 'Contemplation', 'Philosophy', 'Detachment']
+  },
+  {
+    id: 'planetary-peacemaking-chants',
+    title: 'Planetary Peacemaking Chants (ग्रह शान्ति तीर्थंकर जाप)',
+    category: 'Rituals',
+    description: 'The canonical mapping of Tirthankaras to planetary alignment energies for cosmic peace.',
+    details: 'Jain Jyotish and Mantra-Shastra map specific Tirthankaras to planets to harmonize cosmic planetary energies, invoke spiritual protection, and pacify planetary defects (Grah Doshas). Reciting these chants with the prescribed count, direction, and color is believed to bring peace and eliminate suffering:\n\n| Planet (ग्रह) | Tirthankar (तीर्थंकर) | Direction (दिशा) | Mala Color (माला रंग) | Count (संख्या) |\n|---|---|---|---|---|\n| सूर्य (Sun) | पद्मप्रभु (Padmaprabhu) | पूर्व (East) | लाल (Red) | 7,000 |\n| चन्द्र (Moon) | चन्द्रप्रभु (Chandraprabhu) | उत्तर (North) | श्वेत (White) | 11,000 |\n| मंगल (Mars) | वासुपूज्य (Vasupujya) | पूर्व (East) | लाल (Red) | 10,000 |\n| बुध (Mercury) | शान्तिनाथ (Shantinath) | पूर्व (East) | पीला (Yellow) | 4,000 |\n| बृहस्पति (Jupiter) | ऋषभनाथ (Adinath) | ईशानकोण (Northeast) | पीला (Yellow) | 15,000 |\n| शुक्र (Venus) | सुविधिनाथ (Pushpadanta) | पूर्व (East) | श्वेत (White) | 16,000 |\n| शनि (Saturn) | मुनिसुव्रत (Munisuvrat) | पश्चिम (West) | श्याम (Black/Dark) | 23,000 |\n| राहु (Rahu) | नेमिनाथ (Neminath) | पूर्व या पश्चिम (East/West) | श्याम (Black/Dark) | 18,000 |\n| केतु (Ketu) | पार्श्वनाथ (Parshvanath) | पूर्व (East) | नीला (Blue) | 7,000 |\n\nDisciples sit facing the specified direction and use a rosary (mala) of the recommended color to complete the specified count during the Japa for optimal spiritual resonance.',
+    tags: ['Planetary', 'Grah Shanti', 'Chants', 'Japa', 'Astrology', 'Rituals']
   }
 ];
 
