@@ -123,7 +123,7 @@ export default function ArticleReader({ isOpen, onClose, article }: ArticleReade
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm" id="article-reader-modal-overlay">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-stone-150/70 dark:bg-[#120601]/85 backdrop-blur-md" id="article-reader-modal-overlay">
         <motion.div
           initial={{ opacity: 0, y: 50, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}

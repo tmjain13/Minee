@@ -733,11 +733,11 @@ export default function App() {
     <div
       style={{
         ...appStyle,
-        backgroundColor: '#e9dbdb',
+        backgroundColor: 'var(--bg-cream)',
         // Safe luxury subtle geometric pattern instead of broken postimg URLs
         backgroundImage: theme === 'dark' 
           ? `radial-gradient(#2e251e 0.5px, transparent 0.5px), radial-gradient(#2e251e 0.5px, #141210 0.5px)`
-          : `radial-gradient(#e6dccb 0.5px, transparent 0.5px), radial-gradient(#e6dccb 0.5px, #e9dbdb 0.5px)`,
+          : `radial-gradient(#e6dccb 0.5px, transparent 0.5px), radial-gradient(#e6dccb 0.5px, var(--bg-cream) 0.5px)`,
         backgroundSize: '20px 20px',
         backgroundPosition: '0 0, 10px 10px'
       }}

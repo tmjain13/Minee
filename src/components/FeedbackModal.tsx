@@ -35,7 +35,7 @@ export default function FeedbackModal({ isOpen, onClose, onSubmit }: FeedbackMod
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-stone-150/70 dark:bg-[#120601]/85 backdrop-blur-md"
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}

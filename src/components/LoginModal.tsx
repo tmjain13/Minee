@@ -13,7 +13,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[12000] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+      <div className="fixed inset-0 z-[12000] flex items-center justify-center p-4 bg-stone-150/70 dark:bg-[#120601]/85 backdrop-blur-md">
         {/* Backdrop overlay trigger */}
         <motion.div
           initial={{ opacity: 0 }}

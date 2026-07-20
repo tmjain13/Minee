@@ -131,9 +131,9 @@ export default function QuickActions({ isOpen, onClose, setActiveTab }: QuickAct
 
   return (
     <>
-      {/* Invisible backdrop to close menu when clicking outside */}
+      {/* Elegant bright backdrop to close menu when clicking outside */}
       <div 
-        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] transition-all" 
+        className="fixed inset-0 z-40 bg-stone-150/70 dark:bg-[#120601]/85 backdrop-blur-md transition-all" 
         onClick={onClose} 
       />
       

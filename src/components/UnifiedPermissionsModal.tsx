@@ -206,8 +206,17 @@ export default function UnifiedPermissionsModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleSkipOrDismiss}
-            className="absolute inset-0 bg-black/70 backdrop-blur-md"
-          />
+            className="absolute inset-0 bg-[#FAF9F6]/90 dark:bg-[#1c0b02]/95 backdrop-blur-md"
+          >
+            {/* Ambient glows and concentric decorative circles matching Terapanth Loading Screen / Emblem style */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none flex items-center justify-center">
+              <div className="absolute w-[650px] h-[650px] rounded-full border border-orange-500/10 dark:border-orange-500/10" />
+              <div className="absolute w-[500px] h-[500px] rounded-full border border-dashed border-orange-500/15 dark:border-orange-500/15" />
+              <div className="absolute w-[350px] h-[350px] rounded-full border border-orange-500/15 dark:border-orange-500/20" />
+              <div className="absolute w-[200px] h-[200px] rounded-full border border-dashed border-orange-500/20 dark:border-orange-500/25" />
+              <div className="absolute w-96 h-96 bg-gradient-to-br from-orange-500/10 to-amber-500/10 dark:from-orange-500/15 dark:to-amber-500/15 rounded-full blur-3xl animate-pulse" />
+            </div>
+          </motion.div>
 
           {/* Dialog Body */}
           <motion.div

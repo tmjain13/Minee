@@ -1088,28 +1088,28 @@ export default function SunriseSunset() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-stone-150/70 dark:bg-[#120601]/85 backdrop-blur-md"
           >
             <motion.div 
               initial={{ scale: 0.95, y: 15 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 15 }}
-              className="bg-[#2c2a26] border border-[#48453f] w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[70vh]"
+              className="bg-white dark:bg-stone-900 border border-orange-200/50 dark:border-stone-800 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[70vh]"
             >
               {/* Header Input */}
-              <div className="flex items-center gap-3 p-4 border-b border-[#48453f] bg-[#22201d]">
-                <Search size={18} className="text-orange-400" />
+              <div className="flex items-center gap-3 p-4 border-b border-orange-100 dark:border-stone-800 bg-[#faf8f5] dark:bg-[#1a1816]">
+                <Search size={18} className="text-orange-500" />
                 <input 
                   type="text"
                   autoFocus
                   placeholder="Search city for Panchang..."
-                  className="flex-1 bg-transparent text-xs outline-none text-white placeholder-stone-500 font-medium"
+                  className="flex-1 bg-transparent text-xs outline-none text-stone-800 dark:text-white placeholder-stone-400 dark:placeholder-stone-500 font-medium"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
                 <button 
                   onClick={() => setIsModalOpen(false)} 
-                  className="p-1.5 rounded-full bg-[#3b3833] text-stone-300 hover:text-white"
+                  className="p-1.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-300 hover:text-stone-800"
                 >
                   <X size={16} />
                 </button>
@@ -1118,8 +1118,8 @@ export default function SunriseSunset() {
               {/* Scrollable list of results */}
               <div className="flex-1 overflow-y-auto p-3 space-y-1">
                 {isSearching && searchQuery.length > 2 && (
-                  <div className="p-8 text-center text-orange-400 text-xs flex flex-col items-center gap-2">
-                    <Loader2 size={18} className="animate-spin text-orange-400" />
+                  <div className="p-8 text-center text-orange-500 text-xs flex flex-col items-center gap-2">
+                    <Loader2 size={18} className="animate-spin text-orange-500" />
                     <span>Searching global database...</span>
                   </div>
                 )}
@@ -1134,22 +1134,22 @@ export default function SunriseSunset() {
                       <li key={`${place.lat}-${place.lon}-${idx}`}>
                         <button 
                           onClick={() => handleCitySelect(place)}
-                          className="w-full text-left flex items-center justify-between p-3 rounded-xl bg-[#34322e] hover:bg-[#3f3c37] border border-transparent hover:border-orange-500/20 transition-all group"
+                          className="w-full text-left flex items-center justify-between p-3 rounded-xl bg-stone-50/80 dark:bg-stone-850 hover:bg-orange-50/50 dark:hover:bg-stone-800 border border-stone-100 dark:border-stone-800/60 transition-all group"
                         >
                           <div className="flex flex-col min-w-0">
-                            <span className="text-xs font-bold text-white group-hover:text-orange-400 transition-colors">
+                            <span className="text-xs font-bold text-stone-800 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
                               {place.address?.city || place.display_name.split(',')[0]}
                             </span>
-                            <span className="text-[10px] text-stone-400 mt-0.5 truncate max-w-[260px]">
+                            <span className="text-[10px] text-stone-500 dark:text-stone-400 mt-0.5 truncate max-w-[260px]">
                               {place.address?.state || place.display_name.split(',')[1]?.trim()}, {place.address?.country || place.display_name.split(',')[2]?.trim()}
                             </span>
                           </div>
                           {place.isOffline ? (
-                            <span className="text-[8px] font-black uppercase tracking-widest bg-emerald-500/10 text-[#6bba96] border border-emerald-500/20 px-2 py-0.5 rounded">
+                            <span className="text-[8px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-600 dark:text-[#6bba96] border border-emerald-500/20 px-2 py-0.5 rounded">
                               Offline
                             </span>
                           ) : (
-                            <span className="text-[8px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded">
+                            <span className="text-[8px] font-black uppercase tracking-widest bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded">
                               Global
                             </span>
                           )}
