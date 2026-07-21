@@ -56,6 +56,9 @@ export function getDB(): Promise<IDBPDatabase> {
 
 // Helper to determine online state
 export function isOnline(): boolean {
+  if (typeof window !== 'undefined' && window.localStorage.getItem('terapanth_offline_simulation') === 'true') {
+    return false;
+  }
   return typeof navigator !== 'undefined' && navigator.onLine;
 }
 

@@ -46,7 +46,13 @@ export function TerapanthMasterHub2026({ onBack }: TerapanthMasterHub2026Props) 
   const [searchKey, setSearchKey] = useState('');
   const [selectedTab, setSelectedTab] = useState('VIHAR'); // VIHAR | FAQ | OFFLINE_VOW
   const [selectedRegion, setSelectedRegion] = useState('ALL');
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const checkOnlineStatus = () => {
+    if (typeof window !== "undefined" && window.localStorage.getItem("terapanth_offline_simulation") === "true") {
+      return false;
+    }
+    return navigator.onLine;
+  };
+  const [isOnline, setIsOnline] = useState(checkOnlineStatus);
   const [fastingVow, setFastingVow] = useState('एकासन (Ekasan)');
   
   // ☀️/🌙 LIGHT-DARK MODE SYSTEM INTEGRATION
@@ -55,13 +61,16 @@ export function TerapanthMasterHub2026({ onBack }: TerapanthMasterHub2026Props) 
 
   // NETWORK TRACKER FOR IOS & ANDROID
   useEffect(() => {
-    const online = () => setIsOnline(true);
-    const offline = () => setIsOnline(false);
-    window.addEventListener('online', online);
-    window.addEventListener('offline', offline);
+    const handleStatusChange = () => {
+      setIsOnline(checkOnlineStatus());
+    };
+    window.addEventListener('online', handleStatusChange);
+    window.addEventListener('offline', handleStatusChange);
+    window.addEventListener('offline-simulation-changed', handleStatusChange);
     return () => {
-      window.removeEventListener('online', online);
-      window.removeEventListener('offline', offline);
+      window.removeEventListener('online', handleStatusChange);
+      window.removeEventListener('offline', handleStatusChange);
+      window.removeEventListener('offline-simulation-changed', handleStatusChange);
     };
   }, []);
 

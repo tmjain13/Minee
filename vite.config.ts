@@ -33,7 +33,7 @@ export default defineConfig(({mode}) => {
         strategies: 'injectManifest',
         srcDir: 'src',
         filename: 'sw.ts',
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+        includeAssets: ['assets/logos/icon-192x192.png', 'assets/logos/icon-512x512.png', 'media/logos/tpf_logo.png'],
         manifest: {
           name: 'Terapanth AI Hub',
           short_name: 'TerapanthAI',
@@ -44,12 +44,12 @@ export default defineConfig(({mode}) => {
           orientation: 'portrait',
           icons: [
             {
-              src: '/pwa-192x192.png',
+              src: '/assets/logos/icon-192x192.png',
               sizes: '192x192',
               type: 'image/png'
             },
             {
-              src: '/pwa-512x512.png',
+              src: '/assets/logos/icon-512x512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any maskable'

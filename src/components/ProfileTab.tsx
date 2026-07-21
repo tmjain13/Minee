@@ -144,6 +144,23 @@ export default function ProfileTab({
   const [privacyLang, setPrivacyLang] = useState<"en" | "hi">("hi");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // --- Offline Simulation State ---
+  const [isOfflineSimulationActive, setIsOfflineSimulationActive] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("terapanth_offline_simulation") === "true";
+    }
+    return false;
+  });
+
+  const toggleOfflineSimulation = () => {
+    const newValue = !isOfflineSimulationActive;
+    setIsOfflineSimulationActive(newValue);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("terapanth_offline_simulation", newValue ? "true" : "false");
+      window.dispatchEvent(new Event("offline-simulation-changed"));
+    }
+  };
+
   // --- Festival Notification Preferences State ---
   const [festivalPrefs, setFestivalPrefs] = useState<{
     majorFestivals: boolean;
@@ -1111,6 +1128,60 @@ export default function ProfileTab({
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Offline Simulation Mode for Developers */}
+          <div
+            className="p-6 bg-white dark:bg-zinc-900 rounded-2xl border border-dashed border-orange-500/30 shadow-sm space-y-4 text-left"
+            id="developer-simulation-card"
+          >
+            <div className="flex items-center gap-2 pb-2.5 border-b border-black/[0.04] dark:border-zinc-800/60">
+              <div className="p-2 bg-orange-500/10 text-orange-500 rounded-xl">
+                <Ban size={16} />
+              </div>
+              <div>
+                <h4 className="font-bold text-xs text-zinc-950 dark:text-zinc-50 flex items-center gap-1.5">
+                  Offline Simulation Mode
+                  <span className="text-[7px] font-black uppercase text-orange-600 bg-orange-500/10 px-1.5 py-0.5 rounded tracking-widest">
+                    Dev Tool
+                  </span>
+                </h4>
+                <p className="text-[9px] text-zinc-400 mt-0.5">
+                  Sever connection to test IndexedDB & offline RAG fallback
+                </p>
+              </div>
+            </div>
+
+            <p className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              Toggle "offline-only" state to simulate an entirely offline environment. This forces components to utilize local IndexedDB storage and triggers the offline search engine.
+            </p>
+
+            <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-950 border border-black/[0.03] dark:border-zinc-800/50 rounded-xl">
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-bold text-zinc-900 dark:text-zinc-100 block">
+                  Simulate Offline-Only
+                </span>
+                <span
+                  className={`text-[8px] font-black uppercase tracking-wider ${isOfflineSimulationActive ? "text-orange-500 animate-pulse" : "text-zinc-400"}`}
+                >
+                  {isOfflineSimulationActive
+                    ? "● Simulation Active (Offline)"
+                    : "○ Simulation Inactive (Normal)"}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={toggleOfflineSimulation}
+                className={`relative w-12 h-6 rounded-full transition-colors flex items-center ${isOfflineSimulationActive ? "bg-orange-500" : "bg-zinc-300 dark:bg-zinc-700"}`}
+                title="Toggle Offline Simulation"
+                id="dev-offline-toggle"
+              >
+                <span
+                  className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200 block absolute ${isOfflineSimulationActive ? "translate-x-7" : "translate-x-1"}`}
+                />
+              </button>
             </div>
           </div>
 

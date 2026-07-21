@@ -96,7 +96,14 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
   const scrolled = scrollY > 20;
   const showScrollTop = scrollY > 300;
 
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const checkOnlineStatus = () => {
+    if (typeof window !== "undefined" && window.localStorage.getItem("terapanth_offline_simulation") === "true") {
+      return false;
+    }
+    return navigator.onLine;
+  };
+
+  const [isOnline, setIsOnline] = useState(checkOnlineStatus);
   const [greeting, setGreeting] = useState("");
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
@@ -109,13 +116,16 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
   };
 
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
+    const handleStatusChange = () => {
+      setIsOnline(checkOnlineStatus());
+    };
+    window.addEventListener("online", handleStatusChange);
+    window.addEventListener("offline", handleStatusChange);
+    window.addEventListener("offline-simulation-changed", handleStatusChange);
     return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("online", handleStatusChange);
+      window.removeEventListener("offline", handleStatusChange);
+      window.removeEventListener("offline-simulation-changed", handleStatusChange);
     };
   }, []);
 

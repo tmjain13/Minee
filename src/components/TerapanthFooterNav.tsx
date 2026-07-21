@@ -7,9 +7,10 @@ interface TerapanthFooterNavProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   language: string; // भाषा बदलने के लिए नया प्रॉप
+  isPaginationVisible?: boolean;
 }
 
-const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({ activeTab, setActiveTab, language }) => {
+const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({ activeTab, setActiveTab, language, isPaginationVisible = true }) => {
   const { user } = useAuth();
   const [pendingSyncs, setPendingSyncs] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -58,7 +59,9 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({ activeTab, setA
 
   return (
     <nav 
-      className="fixed bottom-0 left-0 right-0 z-50 border-t border-orange-600/20 bg-gradient-to-r from-orange-500 via-orange-400 to-amber-500 text-white shadow-[0_-4px_20px_rgba(0,0,0,0.12)] transition-all duration-300"
+      className={`fixed bottom-0 left-0 right-0 z-50 border-t border-orange-600/20 bg-gradient-to-r from-orange-500 via-orange-400 to-amber-500 text-white shadow-[0_-4px_20px_rgba(0,0,0,0.12)] transition-all duration-300 ${
+        isPaginationVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
+      }`}
     >
       <div className="max-w-md mx-auto px-2 pb-safe">
         <div className="h-[60px] flex items-center justify-around relative">

@@ -16,4 +16,3 @@ firebase-applet-config.json
 # Debug output files
 *.txt
 refactor.ts
-app/applet/

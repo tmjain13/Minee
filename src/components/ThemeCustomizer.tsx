@@ -149,6 +149,34 @@ export default function ThemeCustomizer({
     savePreferences({ [key]: value });
   };
 
+  const handleAutoArchiveToggle = () => {
+    const nextValue = !autoArchiveEnabled;
+    const message = nextValue
+      ? (language === 'hi'
+          ? "क्या आप ऑटो-आर्काइव को सक्षम करना चाहते हैं? इससे 90 दिनों से पुराने उपवास के लॉग्स अपने आप हट जाएंगे।"
+          : "Are you sure you want to enable Auto-Archive? This will automatically purge fasting logs older than 90 days to conserve device storage.")
+      : (language === 'hi'
+          ? "क्या आप ऑटो-आर्काइव को अक्षम करना चाहते हैं? 90 दिनों से पुराने उपवास के लॉग्स अब अपने आप नहीं हटाए जाएंगे।"
+          : "Are you sure you want to disable Auto-Archive? Fasting logs older than 90 days will no longer be automatically deleted.");
+
+    if (window.confirm(message)) {
+      handlePreferenceChange('autoArchive', nextValue);
+      if (nextValue) {
+        toast.success(
+          language === 'hi'
+            ? "ऑटो-आर्काइव सक्षम किया गया। 90 दिनों से पुराना डेटा अपने आप हटा दिया जाएगा।"
+            : "Auto-Archive enabled. Data older than 90 days will be automatically archived."
+        );
+      } else {
+        toast.success(
+          language === 'hi'
+            ? "ऑटो-आर्काइव अक्षम किया गया।"
+            : "Auto-Archive disabled."
+        );
+      }
+    }
+  };
+
 
   return (
     <AnimatePresence>
@@ -617,7 +645,7 @@ export default function ThemeCustomizer({
                       </div>
                     </div>
                     <button
-                      onClick={() => onAutoArchiveChange(!autoArchiveEnabled)}
+                      onClick={handleAutoArchiveToggle}
                       className={`relative w-12 h-6 rounded-full transition-colors ${autoArchiveEnabled ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'}`}
                     >
                       <motion.div

@@ -42,6 +42,7 @@ import ReactMarkdown from 'react-markdown';
 import { db, auth } from '../lib/firebase';
 import toast from 'react-hot-toast';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { OfflineStorage } from '../lib/offline-storage';
 
 // Helper function to escape special regex characters
 const escapeRegExp = (str: string) => {
@@ -244,21 +245,29 @@ export const TerapanthLightChatUI: React.FC<TerapanthLightChatUIProps> = ({
     return 800;
   });
 
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const checkOfflineStatus = () => {
+    if (typeof window !== "undefined" && window.localStorage.getItem("terapanth_offline_simulation") === "true") {
+      return true;
+    }
+    return !navigator.onLine;
+  };
+
+  const [isOffline, setIsOffline] = useState(checkOfflineStatus);
   const [offlineQueue, setOfflineQueue] = useState<string[]>([]);
 
   useEffect(() => {
-    const handleOnline = () => {
-      setIsOffline(false);
+    const handleStatusChange = () => {
+      setIsOffline(checkOfflineStatus());
     };
-    const handleOffline = () => setIsOffline(true);
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleStatusChange);
+    window.addEventListener('offline', handleStatusChange);
+    window.addEventListener('offline-simulation-changed', handleStatusChange);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', handleStatusChange);
+      window.removeEventListener('offline', handleStatusChange);
+      window.removeEventListener('offline-simulation-changed', handleStatusChange);
     };
   }, []);
 
@@ -492,33 +501,97 @@ export const TerapanthLightChatUI: React.FC<TerapanthLightChatUIProps> = ({
 
       // 📡 CHECK INTERNET CONNECTION
       if (!navigator.onLine) {
-        // 🛑 OFFLINE MODE: Use local RAG search
-        const keywords = rawQuery.toLowerCase().split(' ');
-        
-        const bestMatch = fullJainDatabase.find(qa => 
-          keywords.some(word => word.length > 3 && (
-            qa.question.toLowerCase().includes(word) || 
-            (qa.explanation && qa.explanation.toLowerCase().includes(word))
-          ))
-        );
+        // 🛑 HYBRID OFFLINE RAG ENGINE: Structured Scoring Search across Q&As and cached Knowledge items
+        const query = rawQuery.toLowerCase().trim();
+        const stopwords = new Set(['what', 'is', 'a', 'the', 'of', 'in', 'and', 'to', 'for', 'on', 'with', 'at', 'by', 'from', 'an', 'how', 'who', 'where', 'why', 'can', 'you', 'your', 'me', 'my', 'यह', 'क्या', 'है', 'की', 'का', 'को', 'में', 'और', 'से', 'पर', 'के', 'का', 'को']);
+        const queryWords = query.split(/[\s,.\-?।]+/).filter(w => w.length > 2 && !stopwords.has(w));
+        if (queryWords.length === 0 && query.length > 0) {
+          queryWords.push(query);
+        }
+
+        let bestItem: any = null;
+        let bestSource: 'qa' | 'knowledge' = 'qa';
+        let maxScore = 0;
+
+        // 1. Search fullJainDatabase (Q&A)
+        for (const qa of fullJainDatabase) {
+          let score = 0;
+          const questionLower = qa.question.toLowerCase();
+          const answerLower = (qa.answer || '').toLowerCase();
+          const explanationLower = (qa.explanation || '').toLowerCase();
+
+          if (questionLower.includes(query)) {
+            score += 50; // Huge weight for direct substring match
+          }
+
+          for (const word of queryWords) {
+            if (questionLower.includes(word)) score += 15;
+            if (answerLower.includes(word)) score += 8;
+            if (explanationLower.includes(word)) score += 8;
+          }
+
+          if (score > maxScore) {
+            maxScore = score;
+            bestItem = qa;
+            bestSource = 'qa';
+          }
+        }
+
+        // 2. Search OfflineStorage cached knowledge articles
+        try {
+          const cachedKnowledge = OfflineStorage.getOfflineCache();
+          if (cachedKnowledge && cachedKnowledge.length > 0) {
+            for (const doc of cachedKnowledge) {
+              let score = 0;
+              const titleLower = (doc.title || '').toLowerCase();
+              const descLower = (doc.description || '').toLowerCase();
+              const detailsLower = (doc.details || '').toLowerCase();
+
+              if (titleLower.includes(query)) {
+                score += 40;
+              }
+
+              for (const word of queryWords) {
+                if (titleLower.includes(word)) score += 18;
+                if (descLower.includes(word)) score += 10;
+                if (detailsLower.includes(word)) score += 6;
+              }
+
+              if (score > maxScore) {
+                maxScore = score;
+                bestItem = doc;
+                bestSource = 'knowledge';
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('[Offline Chat] Knowledge base search aborted:', err);
+        }
 
         setTimeout(() => {
-          if (bestMatch) {
+          if (bestItem && maxScore > 3) {
+            let replyText = '';
+            if (bestSource === 'qa') {
+              replyText = `*[Offline Mode — High Confidence Match]*\n\n**Q: ${bestItem.question}**\n\n${bestItem.explanation || bestItem.answer}`;
+            } else {
+              replyText = `*[Offline Mode — Knowledge Archive Match]*\n\n**Topic: ${bestItem.title}**\n\n${bestItem.details || bestItem.description}`;
+            }
+            
             setMessages(prev => prev.map(m => m.id === aiMsgId ? { 
               ...m, 
-              text: `*[Offline Mode]*\n\n${bestMatch.explanation}`,
+              text: replyText,
               isStreaming: false 
             } : m));
           } else {
             setMessages(prev => prev.map(m => m.id === aiMsgId ? { 
               ...m, 
-              text: "*[Offline Mode]* \n\nI am currently offline. However, my local Terapanth database is active! Please try asking your question using simpler keywords (e.g., 'Samayik', 'Maryada', 'Tattvas').",
+              text: "*[Offline Mode]* \n\nI am currently offline. However, my local Terapanth database is active! Please try asking your question using simpler keywords (e.g., 'Samayik', 'Maryada', 'Tattvas', 'Acharya').",
               isStreaming: false 
             } : m));
           }
           setIsAiLoading(false);
-        }, 500); // Simulate typing delay
-        
+        }, 600); // Realistic typing delay
+
         return; // Stop here, do not call Gemini API
       }
 

@@ -12,6 +12,7 @@ import {
   useMemo,
 } from "react";
 import {
+  ChevronDown,
   Sun,
   Moon,
   Monitor,
@@ -288,13 +289,19 @@ export default function App() {
     }
     return false;
   });
+  const [showScrollMore, setShowScrollMore] = useState(true);
   const lastScrollTopRef = useRef<number>(0);
+  const lastScrollTimeRef = useRef<number>(0);
+  const scrollThrottleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     return () => {
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
+      }
+      if (scrollThrottleTimeoutRef.current) {
+        clearTimeout(scrollThrottleTimeoutRef.current);
       }
     };
   }, []);
@@ -964,8 +971,7 @@ export default function App() {
     setTouchEndY(null);
   };
 
-  const handleMainScroll = (e: React.UIEvent<HTMLElement>) => {
-    const scrollTop = e.currentTarget.scrollTop;
+  const calculatePaginationVisibility = (scrollTop: number) => {
     const lastScrollTop = lastScrollTopRef.current;
     
     // Force show when at the absolute top of the scroll container
@@ -998,6 +1004,39 @@ export default function App() {
     scrollTimeoutRef.current = setTimeout(() => {
       setIsPaginationVisible(true);
     }, 850);
+  };
+
+  const handleMainScroll = (e: React.UIEvent<HTMLElement>) => {
+    const scrollTop = e.currentTarget.scrollTop;
+    
+    // Immediately and smoothly fade out "Scroll for more" indicator as scroll begins
+    if (scrollTop > 15) {
+      if (showScrollMore) {
+        setShowScrollMore(false);
+      }
+    } else {
+      if (!showScrollMore) {
+        setShowScrollMore(true);
+      }
+    }
+
+    // Debounce/Throttle calculating the pagination visibility state to 100ms
+    const now = Date.now();
+    const throttleLimit = 100;
+
+    if (scrollThrottleTimeoutRef.current) {
+      clearTimeout(scrollThrottleTimeoutRef.current);
+    }
+
+    if (now - lastScrollTimeRef.current >= throttleLimit) {
+      calculatePaginationVisibility(scrollTop);
+      lastScrollTimeRef.current = now;
+    } else {
+      scrollThrottleTimeoutRef.current = setTimeout(() => {
+        calculatePaginationVisibility(scrollTop);
+        lastScrollTimeRef.current = Date.now();
+      }, throttleLimit - (now - lastScrollTimeRef.current));
+    }
   };
 
   const markPaginationInteracted = () => {
@@ -1969,10 +2008,29 @@ export default function App() {
             )}
           </AnimatePresence>
 
+          {/* Subtle "Scroll for more" indicator */}
+          <AnimatePresence>
+            {showScrollMore && activeTab !== "chat" && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, x: "-50%" }}
+                animate={{ opacity: 1, y: 0, x: "-50%" }}
+                exit={{ opacity: 0, y: 10, x: "-50%" }}
+                transition={{ duration: 0.3 }}
+                className="fixed bottom-20 left-1/2 z-40 pointer-events-none flex flex-col items-center gap-1 bg-amber-500/90 text-white px-4 py-1.5 rounded-full shadow-lg border border-white/20 text-[9px] font-black tracking-widest uppercase"
+              >
+                <div className="flex items-center gap-1.5">
+                  <span>{language === 'hi' ? 'अधिक जानकारी के लिए नीचे स्क्रॉल करें' : 'Scroll for more'}</span>
+                  <ChevronDown size={10} className="animate-bounce stroke-[3]" />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <TerapanthFooterNav 
             activeTab={activeTab} 
             setActiveTab={setActiveTab}
             language={language}
+            isPaginationVisible={isPaginationVisible}
           />
         </>
       )}
