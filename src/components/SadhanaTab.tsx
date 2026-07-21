@@ -18,6 +18,7 @@ import {
 import { Registry } from '../integrations/ComponentRegistry';
 import { KNOWLEDGE_BASE } from '../data/knowledge';
 import ArticleReader from './ArticleReader';
+import { LeshyaDhyanVisualizer, ShvasPrekshaGuidedBreathing } from './PrekshaGuidedPractices';
 
 // Lazy-loaded components from the Component Registry
 const DhyanTimer = Registry.DhyanTimer;
@@ -1898,6 +1899,12 @@ const SadhanaTab = memo(({
                 {breathTechnique === 'dirgha' && '"Dirgha Shvas (Deep Breathwork) represents balanced self-control. Equalized pacing of Puraka, Rechaka, and Kumbhaka tranquilizes the kashayas."'}
                 {breathTechnique === 'samavritti' && '"Equal-ratio Samavritti breath pacing induces absolute equanimity (Samatva). Prepare for Samayik by centering your wandering mind."'}
               </p>
+            </div>
+
+            {/* Specialized Preksha Guided Practices */}
+            <div className="w-full max-w-md space-y-6">
+              <ShvasPrekshaGuidedBreathing />
+              <LeshyaDhyanVisualizer />
             </div>
           </motion.div>
         )}

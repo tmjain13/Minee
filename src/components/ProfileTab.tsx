@@ -64,6 +64,8 @@ interface ProfileTabProps {
   onNavigateToAdminDashboard?: () => void;
   onOpenLogin?: () => void;
   onStartTour?: () => void;
+  swipeSensitivity?: number;
+  onSwipeSensitivityChange?: (val: number) => void;
 }
 
 const maskEmail = (emailStr?: string | null) => {
@@ -92,6 +94,8 @@ export default function ProfileTab({
   onNavigateToAdminDashboard,
   onOpenLogin,
   onStartTour,
+  swipeSensitivity = 3,
+  onSwipeSensitivityChange,
 }: ProfileTabProps) {
   const { user, userData } = useAuth();
   const [userRole, setUserRole] = useState<string | undefined>(userData?.role);
@@ -1107,6 +1111,59 @@ export default function ProfileTab({
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Swipe Sensitivity Control */}
+          <div className="p-6 bg-white dark:bg-zinc-900 rounded-2xl border border-black/5 dark:border-zinc-800/80 shadow-sm space-y-4 text-left" id="swipe-sensitivity-card">
+            <div className="flex items-center gap-2 pb-2.5 border-b border-black/[0.04] dark:border-zinc-800/60">
+              <div className="p-2 bg-orange-500/10 text-orange-500 rounded-xl">
+                <span className="text-sm font-bold">↔️</span>
+              </div>
+              <div>
+                <h4 className="font-bold text-xs text-zinc-950 dark:text-zinc-50">
+                  Swipe Gesture Sensitivity
+                </h4>
+                <p className="text-[9px] text-zinc-400 mt-0.5">
+                  Prevent accidental tab switching during vertical scrolling
+                </p>
+              </div>
+            </div>
+
+            <p className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              Adjust how sensitive the left/right swipe gestures are. Lower sensitivity requires longer, more deliberate swipes, which prevents accidental page transitions while scrolling through lists.
+            </p>
+
+            <div className="space-y-2.5 p-3 bg-zinc-50 dark:bg-zinc-950 border border-black/[0.03] dark:border-zinc-800/50 rounded-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-zinc-900 dark:text-zinc-100">
+                  Sensitivity Level
+                </span>
+                <span className="text-[10px] font-mono text-orange-500 font-bold bg-orange-500/10 px-2 py-0.5 rounded">
+                  {swipeSensitivity === 1 && "1 (Lowest / Safest)"}
+                  {swipeSensitivity === 2 && "2 (Low)"}
+                  {swipeSensitivity === 3 && "3 (Balanced / Default)"}
+                  {swipeSensitivity === 4 && "4 (High)"}
+                  {swipeSensitivity === 5 && "5 (Highest)"}
+                </span>
+              </div>
+              <input
+                type="range"
+                min="1"
+                max="5"
+                step="1"
+                value={swipeSensitivity}
+                onChange={(e) =>
+                  onSwipeSensitivityChange?.(parseInt(e.target.value, 10))
+                }
+                className="w-full accent-orange-500 h-1 bg-gray-200 dark:bg-zinc-800 rounded-lg appearance-none cursor-pointer"
+                id="swipe-sensitivity-slider"
+              />
+              <div className="flex justify-between text-[8px] text-zinc-400 font-bold font-mono">
+                <span>1 (Safest)</span>
+                <span>3 (Default)</span>
+                <span>5 (Fastest)</span>
+              </div>
             </div>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Share2, Bookmark, ArrowRight, MapPin, Flame, Clock, Calendar, Sun, Moon, Sunrise, BarChart3, RefreshCw, Plus, Mic, Send, Copy, Star, Phone, Trash2, Sparkles, Sliders, Quote, BookOpen, Loader2, X, Search } from 'lucide-react';
 import DashboardCustomizerModal, { DashboardPreferences, DEFAULT_PREFERENCES } from './DashboardCustomizerModal';
@@ -315,8 +316,13 @@ export default function UnifiedHomeDashboard({
   const [searchQuery, setSearchQuery] = useState('');
 
   // --- Location & Active City States ---
-  const { activeCity, setActiveCity, isDefault, setDefaultCity } = useLocation();
+  const { activeCity, setActiveCity, isDefault, setDefaultCity, showLocationModal, setShowLocationModal } = useLocation();
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const isModalOpen = isLocationModalOpen || showLocationModal;
+  const setModalOpen = (open: boolean) => {
+    setIsLocationModalOpen(open);
+    setShowLocationModal(open);
+  };
   const [citySearchQuery, setCitySearchQuery] = useState('');
   const [citySearchResults, setCitySearchResults] = useState<any[]>([]);
   const [isCitySearching, setIsCitySearching] = useState(false);
@@ -681,29 +687,29 @@ export default function UnifiedHomeDashboard({
       </div>
 
       {/* LOCATION SELECTION BAR */}
-      <div className="flex items-center justify-between w-full shrink-0 gap-2">
+      <div className="flex items-center justify-between w-full shrink-0 gap-3 my-4 px-1">
         <button 
-          onClick={() => setIsLocationModalOpen(true)}
-          className={`group flex items-center gap-2 px-4 py-2 transition-all duration-300 rounded-full text-xs font-semibold shadow-xs border cursor-pointer ${
+          onClick={() => setModalOpen(true)}
+          className={`group flex items-center gap-2.5 px-6 py-3 transition-all duration-300 rounded-full text-xs font-black shadow-lg border cursor-pointer hover:scale-[1.03] active:scale-95 translate-y-1 ${
             isDarkMode 
-              ? 'bg-stone-900 hover:bg-orange-950/40 text-orange-400 hover:text-orange-300 border-stone-800 hover:border-orange-900/50' 
-              : 'bg-stone-100 hover:bg-orange-100/50 text-stone-700 hover:text-orange-700 border-stone-200 hover:border-orange-300/30'
+              ? 'bg-orange-600 hover:bg-orange-500 text-white border-orange-500/50 shadow-orange-950/40' 
+              : 'bg-orange-500 hover:bg-orange-600 text-white border-orange-400/40 shadow-orange-500/25'
           }`}
         >
-          <MapPin size={14} className="group-hover:animate-bounce text-orange-500" />
+          <MapPin size={16} className="group-hover:animate-bounce text-white stroke-[2.5]" />
           <span>{activeCity.name}, {activeCity.country}</span>
         </button>
 
         {!isDefault && (
           <button 
             onClick={() => setDefaultCity(activeCity)}
-            className={`flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold px-3 py-2 rounded-full transition-all duration-300 shadow-xs border cursor-pointer ${
+            className={`flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-extrabold px-4 py-2.5 rounded-full transition-all duration-300 shadow-md border cursor-pointer hover:scale-[1.02] active:scale-95 translate-y-1 ${
               isDarkMode 
-                ? 'bg-stone-900 hover:bg-orange-950/40 text-orange-400 hover:text-orange-300 border-orange-950/60 hover:border-orange-900/50' 
-                : 'bg-stone-100 hover:bg-orange-100/50 text-orange-600 hover:text-orange-700 border-stone-200 hover:border-orange-300/30'
+                ? 'bg-stone-800 hover:bg-stone-750 text-orange-400 border-stone-750 shadow-stone-950/30' 
+                : 'bg-orange-50 hover:bg-orange-100/70 text-orange-700 border-orange-200/50 shadow-orange-100/30'
             }`}
           >
-            <Star size={12} className="fill-current text-orange-500" />
+            <Star size={13} className="fill-current text-orange-500" />
             Set Default
           </button>
         )}
@@ -734,7 +740,7 @@ export default function UnifiedHomeDashboard({
       }`}>
         <div>
           <h2 className={`font-serif text-xl font-bold ${isDarkMode ? 'text-stone-50' : 'text-stone-950'}`}>
-            {language === 'hi' ? 'जय जिनेन्द्र, ज्योतिर्मय! 🙏' : 'Jai Jinendra, Jyotirmay! 🙏'}
+            {language === 'hi' ? 'जय जिनेन्द्र! 🙏' : 'Jai Jinendra! 🙏'}
           </h2>
           <p className={`text-xs mt-0.5 ${isDarkMode ? 'text-stone-400' : 'text-stone-500'}`}>
             {language === 'hi' ? 'आज का दिन मंगलमय हो' : 'Have a blessed day ahead'}
@@ -1647,11 +1653,11 @@ export default function UnifiedHomeDashboard({
       />
 
       {/* CITY SELECTION MODAL */}
-      {isLocationModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {isModalOpen && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           {/* Backdrop */}
           <div 
-            onClick={() => setIsLocationModalOpen(false)}
+            onClick={() => setModalOpen(false)}
             className="absolute inset-0 bg-stone-950/60 backdrop-blur-xs"
           />
           
@@ -1670,7 +1676,7 @@ export default function UnifiedHomeDashboard({
                 </p>
               </div>
               <button 
-                onClick={() => setIsLocationModalOpen(false)}
+                onClick={() => setModalOpen(false)}
                 className="p-1.5 rounded-full hover:bg-stone-500/10 cursor-pointer transition-colors text-stone-400 hover:text-stone-300"
               >
                 <X size={16} />
@@ -1722,7 +1728,7 @@ export default function UnifiedHomeDashboard({
                         key={`${city.name}-${city.region}`}
                         onClick={() => {
                           setActiveCity(city);
-                          setIsLocationModalOpen(false);
+                          setModalOpen(false);
                           setCitySearchQuery('');
                         }}
                         className={`w-full text-left px-3.5 py-2.5 rounded-xl flex items-center justify-between text-xs transition-all cursor-pointer border ${
@@ -1775,7 +1781,7 @@ export default function UnifiedHomeDashboard({
                             key={city.name}
                             onClick={() => {
                               setActiveCity(city);
-                              setIsLocationModalOpen(false);
+                              setModalOpen(false);
                             }}
                             className={`px-3 py-2 rounded-xl text-left transition-all border text-xs cursor-pointer ${
                               isDarkMode 
@@ -1794,7 +1800,8 @@ export default function UnifiedHomeDashboard({
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* SWIPE NAVIGATION TUTORIAL TIP TOAST */}

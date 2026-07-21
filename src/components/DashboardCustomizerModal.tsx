@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Sliders, Eye, EyeOff, RefreshCw, Save, Sparkles, UserCheck } from 'lucide-react';
 import { db } from '../lib/firebase';
@@ -173,8 +174,8 @@ export default function DashboardCustomizerModal({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       {/* Overlay */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -325,6 +326,7 @@ export default function DashboardCustomizerModal({
           </button>
         </div>
       </motion.div>
-    </div>
+    </div>,
+    document.body
   );
 }

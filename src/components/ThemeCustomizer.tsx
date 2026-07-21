@@ -34,6 +34,14 @@ interface ThemeCustomizerProps {
   onFontStyleSetChange?: (style: 'standard' | 'high-readability') => void;
   zenMode?: boolean;
   onZenModeChange?: (enabled: boolean) => void;
+  zenScheduleEnabled?: boolean;
+  onZenScheduleEnabledChange?: (enabled: boolean) => void;
+  zenScheduleStart?: string;
+  onZenScheduleStartChange?: (start: string) => void;
+  zenScheduleEnd?: string;
+  onZenScheduleEndChange?: (end: string) => void;
+  zenMuteAll?: boolean;
+  onZenMuteAllChange?: (enabled: boolean) => void;
 }
 
 const PALETTES = [
@@ -76,7 +84,15 @@ export default function ThemeCustomizer({
   fontStyleSet = 'standard',
   onFontStyleSetChange,
   zenMode = false,
-  onZenModeChange
+  onZenModeChange,
+  zenScheduleEnabled = false,
+  onZenScheduleEnabledChange,
+  zenScheduleStart = '21:00',
+  onZenScheduleStartChange,
+  zenScheduleEnd = '06:00',
+  onZenScheduleEndChange,
+  zenMuteAll = false,
+  onZenMuteAllChange
 }: ThemeCustomizerProps) {
   const { language } = useLanguage();
   const { user } = useAuth();
@@ -123,6 +139,10 @@ export default function ThemeCustomizer({
       case 'kfontType': onKfontTypeChange?.(value); break;
       case 'fontStyleSet': onFontStyleSetChange?.(value); break;
       case 'zenMode': onZenModeChange?.(value); break;
+      case 'zenScheduleEnabled': onZenScheduleEnabledChange?.(value); break;
+      case 'zenScheduleStart': onZenScheduleStartChange?.(value); break;
+      case 'zenScheduleEnd': onZenScheduleEndChange?.(value); break;
+      case 'zenMuteAll': onZenMuteAllChange?.(value); break;
     }
 
     // Save to Firestore
@@ -257,30 +277,119 @@ export default function ThemeCustomizer({
                     </button>
                   </div>
 
-                  {/* Zen Focus Mode Toggle */}
-                  <div className="flex items-center justify-between pb-4 border-b border-black/5 dark:border-white/5">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-orange-500/10 rounded-2xl text-orange-500">
-                        <Flower size={20} className={zenMode ? "animate-pulse" : ""} />
+                  {/* Preksha Meditation Focus Mode Toggle */}
+                  <div className="space-y-4 pb-4 border-b border-black/5 dark:border-white/5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-orange-500/10 rounded-2xl text-orange-500">
+                          <Flower size={20} className={zenMode ? "animate-pulse" : ""} />
+                        </div>
+                        <div>
+                          <span className="block font-bold text-sm text-[var(--text-spiritual)]">
+                            {language === 'hi' ? 'प्रेक्षा ध्यान मोड (Preksha Focus)' : 'Preksha Focus Mode'}
+                          </span>
+                          <span className="block text-[10px] text-gray-400 font-medium uppercase tracking-wider mt-0.5">
+                            {language === 'hi' ? 'गहरे ध्यान के लिए सेकेंडरी टैब छुपाएं' : 'Hide secondary tabs for deep focus'}
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        <span className="block font-bold text-sm text-[var(--text-spiritual)]">
-                          {language === 'hi' ? 'ध्यान केंद्रित मोड (Zen Mode)' : 'Zen Focus Mode'}
-                        </span>
-                        <span className="block text-[10px] text-gray-400 font-medium uppercase tracking-wider mt-0.5">
-                          {language === 'hi' ? 'गहरे ध्यान के लिए सेकेंडरी टैब छुपाएं' : 'Hide secondary tabs for deep focus'}
-                        </span>
+                      <button
+                        onClick={() => onZenModeChange?.(!zenMode)}
+                        className={`relative w-12 h-6 rounded-full transition-colors ${zenMode ? 'bg-orange-500' : 'bg-gray-300 dark:bg-gray-700'}`}
+                      >
+                        <motion.div
+                          animate={{ x: zenMode ? 26 : 4 }}
+                          className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
+                        />
+                      </button>
+                    </div>
+
+                    {/* DND Schedule Section */}
+                    <div className="pl-2 pt-2 pb-2 space-y-3 bg-black/[0.02] dark:bg-white/[0.01] p-3.5 rounded-2xl border border-black/[0.03] dark:border-white/[0.03]">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-black text-[var(--text-spiritual)]">
+                            {language === 'hi' ? 'ऑटो प्रेक्षा ध्यान शेड्यूल' : 'Schedule Preksha Hours'}
+                          </span>
+                          <span className="text-[9px] text-gray-400 font-medium tracking-wide">
+                            {language === 'hi' ? 'दैनिक दिनचर्या के अनुसार ऑटो-एंटर प्रेक्षा ध्यान मोड' : 'Auto-enter Preksha Focus Mode based on daily routine'}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => onZenScheduleEnabledChange?.(!zenScheduleEnabled)}
+                          className={`relative w-10 h-5.5 rounded-full transition-colors ${zenScheduleEnabled ? 'bg-orange-500' : 'bg-gray-300 dark:bg-gray-700'}`}
+                        >
+                          <motion.div
+                            animate={{ x: zenScheduleEnabled ? 20 : 3 }}
+                            className="absolute top-0.5 w-4.5 h-4.5 bg-white rounded-full shadow-xs"
+                          />
+                        </button>
+                      </div>
+
+                      <AnimatePresence>
+                        {zenScheduleEnabled && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden space-y-3 pt-1.5"
+                          >
+                            <div className="grid grid-cols-2 gap-3.5">
+                              <div className="space-y-1">
+                                <label className="block text-[9px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                                  {language === 'hi' ? 'प्रारंभ समय (Start)' : 'Start Time'}
+                                </label>
+                                <input
+                                  type="time"
+                                  value={zenScheduleStart}
+                                  onChange={(e) => onZenScheduleStartChange?.(e.target.value)}
+                                  className="w-full px-3 py-1.5 bg-white dark:bg-zinc-950 border border-black/10 dark:border-zinc-850 rounded-xl text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-orange-500"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="block text-[9px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                                  {language === 'hi' ? 'समाप्ति समय (End)' : 'End Time'}
+                                </label>
+                                <input
+                                  type="time"
+                                  value={zenScheduleEnd}
+                                  onChange={(e) => onZenScheduleEndChange?.(e.target.value)}
+                                  className="w-full px-3 py-1.5 bg-white dark:bg-zinc-950 border border-black/10 dark:border-zinc-850 rounded-xl text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-orange-500"
+                                />
+                              </div>
+                            </div>
+                            <p className="text-[8.5px] font-bold text-orange-600/80 dark:text-orange-400/80 leading-relaxed font-mono bg-orange-500/5 dark:bg-orange-500/10 px-2.5 py-1.5 rounded-lg border border-orange-500/10">
+                              {language === 'hi' 
+                                ? `⏱️ प्रतिदिन ${zenScheduleStart} से ${zenScheduleEnd} तक प्रेक्षा ध्यान स्वतः सक्रिय रहेगा` 
+                                : `⏱️ Automatically active daily from ${zenScheduleStart} to ${zenScheduleEnd}`}
+                            </p>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Sadhana Silence (Mute All) Toggle */}
+                    <div className="pl-2 pt-2 pb-2 space-y-3 bg-black/[0.02] dark:bg-white/[0.01] p-3.5 rounded-2xl border border-black/[0.03] dark:border-white/[0.03]">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-black text-[var(--text-spiritual)]">
+                            {language === 'hi' ? 'साधना मौन मोड (DND Mute)' : 'Sadhana Silence (Mute All)'}
+                          </span>
+                          <span className="text-[9px] text-gray-400 font-medium tracking-wide">
+                            {language === 'hi' ? 'ध्यान के दौरान सभी गैर-महत्वपूर्ण ध्वनियों और सूचनाओं को म्यूट करें' : 'Mute all non-critical app audio & notifications during meditation'}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => onZenMuteAllChange?.(!zenMuteAll)}
+                          className={`relative w-10 h-5.5 rounded-full transition-colors ${zenMuteAll ? 'bg-orange-500' : 'bg-gray-300 dark:bg-gray-700'}`}
+                        >
+                          <motion.div
+                            animate={{ x: zenMuteAll ? 20 : 3 }}
+                            className="absolute top-0.5 w-4.5 h-4.5 bg-white rounded-full shadow-xs"
+                          />
+                        </button>
                       </div>
                     </div>
-                    <button
-                      onClick={() => onZenModeChange?.(!zenMode)}
-                      className={`relative w-12 h-6 rounded-full transition-colors ${zenMode ? 'bg-orange-500' : 'bg-gray-300 dark:bg-gray-700'}`}
-                    >
-                      <motion.div
-                        animate={{ x: zenMode ? 26 : 4 }}
-                        className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
-                      />
-                    </button>
                   </div>
 
                   <div>

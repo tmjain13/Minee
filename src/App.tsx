@@ -24,10 +24,20 @@ import {
   Sparkles,
   Link,
   ChevronRight,
+  ChevronLeft,
+  ArrowLeftRight,
   ShieldCheck,
   Award,
   BookOpen,
   Plus,
+  ArrowUp,
+  ArrowDown,
+  GripVertical,
+  Home,
+  Calendar,
+  MessageSquare,
+  Heart,
+  User,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { doc, onSnapshot } from "firebase/firestore";
@@ -163,7 +173,29 @@ interface Todo {
   completed: boolean;
 }
 
-const tabOrder = ['home', 'chat', 'sadhana', 'panchang', 'profile'];
+const DEFAULT_TAB_ORDER = ['home', 'chat', 'sadhana', 'panchang', 'profile'];
+
+const getTabLabel = (tabId: string, lang: string) => {
+  const labels: Record<string, { en: string; hi: string }> = {
+    home: { en: "Home", hi: "होम" },
+    panchang: { en: "Calendar", hi: "पंचांग" },
+    chat: { en: "Chat", hi: "चैट" },
+    sadhana: { en: "Sadhana", hi: "साधना" },
+    profile: { en: "Profile", hi: "प्रोफ़ाइल" },
+  };
+  return labels[tabId] ? (lang === "hi" ? labels[tabId].hi : labels[tabId].en) : tabId;
+};
+
+const getTabIcon = (tabId: string, size = 12, className = "") => {
+  switch (tabId) {
+    case 'home': return <Home size={size} className={className} />;
+    case 'panchang': return <Calendar size={size} className={className} />;
+    case 'chat': return <MessageSquare size={size} className={className} />;
+    case 'sadhana': return <Heart size={size} className={className} />;
+    case 'profile': return <User size={size} className={className} />;
+    default: return <Sparkles size={size} className={className} />;
+  }
+};
 
 // --- NATIVE MOTION REDUCTION HOOK ---
 function useSystemReducedMotion() {
@@ -193,6 +225,32 @@ const LoadingSpinner = () => (
   </div>
 );
 
+// --- DYNAMIC BENEFITS FOR PREKSHA PRACTICES ---
+function getSadhanaBenefits(duration: number, lang: string) {
+  if (duration < 60) {
+    return {
+      title: lang === 'hi' ? 'प्राण-प्रेक्षा (लघु सत्र)' : 'Prana Preksha (Brief Session)',
+      desc: lang === 'hi' 
+        ? 'तीव्र मानसिक स्पष्टता प्रदान करता है, तत्काल उत्तेजना को शांत करता है और मन को स्थिर करता है।' 
+        : 'Restores momentary emotional equilibrium, clears brain fog, and reduces immediate stress.'
+    };
+  } else if (duration < 300) {
+    return {
+      title: lang === 'hi' ? 'दीर्घ श्वास-प्रेक्षा (मध्यम सत्र)' : 'Dirgha Shvas-Preksha (Medium Session)',
+      desc: lang === 'hi' 
+        ? 'फेफड़ों की वायु क्षमता को बढ़ाता है, ऑक्सीजन प्रवाह में सुधार करता है और रक्तचाप को संतुलित करने में सहायक है।' 
+        : 'Enhances pulmonary efficiency, optimizes oxygen circulation, and calms the autonomic nervous system.'
+    };
+  } else {
+    return {
+      title: lang === 'hi' ? 'कायोत्सर्ग ध्यान (गहन सत्र)' : 'Kayotsarga / Deep Preksha (Deep Session)',
+      desc: lang === 'hi' 
+        ? 'गहरे मानसिक व शारीरिक तनाव को दूर करता है, तंत्रिका तंत्र को गहन विश्राम देता है और आंतरिक ऊर्जा को सक्रिय करता है।' 
+        : 'Triggers deep parasympathetic activation, releases long-held neuro-muscular tension, and enhances overall spiritual awareness.'
+    };
+  }
+}
+
 export default function App() {
   const knowledgeItems = useSyncKnowledgeBase();
   const { user, userData, loading, logout } = useAuth();
@@ -212,6 +270,65 @@ export default function App() {
 
   // Initialize and persist dynamic document localization attributes
   useLanguageInit();
+
+  // --- SWIPE GESTURE SETTINGS & PERSISTENCE ---
+  const [tabOrder, setTabOrder] = useState<string[]>(() => {
+    const saved = localStorage.getItem('terapanth_tab_order');
+    return saved ? JSON.parse(saved) : DEFAULT_TAB_ORDER;
+  });
+
+  const [isReorderOpen, setIsReorderOpen] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [showTabTooltip, setShowTabTooltip] = useState(false);
+  const [isPaginationVisible, setIsPaginationVisible] = useState(true);
+  const [isPaginationDismissed, setIsPaginationDismissed] = useState(false);
+  const [hasInteractedWithPagination, setHasInteractedWithPagination] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('terapanth_has_interacted_pagination') === 'true';
+    }
+    return false;
+  });
+  const lastScrollTopRef = useRef<number>(0);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const [swipeSensitivity, setSwipeSensitivity] = useState<number>(() => {
+    const saved = localStorage.getItem('terapanth_swipe_sensitivity');
+    return saved ? parseInt(saved, 10) : 3;
+  });
+
+  const [showSwipeTutorial, setShowSwipeTutorial] = useState<boolean>(() => {
+    return localStorage.getItem('terapanth_swipe_tutorial_shown') !== 'true';
+  });
+
+  const handleSwipeSensitivityChange = (val: number) => {
+    setSwipeSensitivity(val);
+    localStorage.setItem('terapanth_swipe_sensitivity', val.toString());
+  };
+
+  const swipeConfig = useMemo(() => {
+    switch (swipeSensitivity) {
+      case 1: // Lowest sensitivity
+        return { minDistance: 120, ratio: 3.0 };
+      case 2:
+        return { minDistance: 90, ratio: 2.5 };
+      case 3: // Balanced default
+        return { minDistance: 60, ratio: 2.0 };
+      case 4:
+        return { minDistance: 45, ratio: 1.5 };
+      case 5: // Highest sensitivity
+        return { minDistance: 30, ratio: 1.0 };
+      default:
+        return { minDistance: 60, ratio: 2.0 };
+    }
+  }, [swipeSensitivity]);
 
   // --- CORE UI & ROUTING STATES ---
   // Check if user has already onboarded via local storage state
@@ -428,10 +545,104 @@ export default function App() {
     return localStorage.getItem('terapanth_zen_mode') === 'true';
   });
 
+  const [zenStartTime, setZenStartTime] = useState<number | null>(() => {
+    const saved = localStorage.getItem('terapanth_zen_start_time');
+    return saved ? parseInt(saved, 10) : null;
+  });
+
+  const [showZenReminder, setShowZenReminder] = useState<boolean>(false);
+  const [zenElapsed, setZenElapsed] = useState<number>(0);
+
+  const [zenScheduleEnabled, setZenScheduleEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('terapanth_zen_schedule_enabled') === 'true';
+  });
+
+  const [zenScheduleStart, setZenScheduleStart] = useState<string>(() => {
+    return localStorage.getItem('terapanth_zen_schedule_start') || '21:00';
+  });
+
+  const [zenScheduleEnd, setZenScheduleEnd] = useState<string>(() => {
+    return localStorage.getItem('terapanth_zen_schedule_end') || '06:00';
+  });
+
+  const [lastAutoTriggeredBlock, setLastAutoTriggeredBlock] = useState<string | null>(() => {
+    return localStorage.getItem('terapanth_zen_last_auto_triggered_block');
+  });
+
+  const [zenMuteAll, setZenMuteAll] = useState<boolean>(() => {
+    return localStorage.getItem('terapanth_zen_mute_all') === 'true';
+  });
+
+  const [zenStartCompletedTaskIds, setZenStartCompletedTaskIds] = useState<string[]>([]);
+  const [showSadhanaSummary, setShowSadhanaSummary] = useState(false);
+  const [summaryDuration, setSummaryDuration] = useState(0);
+  const [summaryCompletedTasks, setSummaryCompletedTasks] = useState<Todo[]>([]);
+  const [sadhanaObservation, setSadhanaObservation] = useState('');
+  const [savedObservations, setSavedObservations] = useState<{date: string, observation: string, duration: number}[]>(() => {
+    try {
+      const saved = localStorage.getItem('preksha_meditation_observations');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const handleSaveSadhanaObservation = () => {
+    if (!sadhanaObservation.trim()) {
+      setShowSadhanaSummary(false);
+      return;
+    }
+    const newRecord = {
+      date: new Date().toLocaleDateString(),
+      observation: sadhanaObservation.trim(),
+      duration: summaryDuration
+    };
+    const updated = [newRecord, ...savedObservations];
+    setSavedObservations(updated);
+    localStorage.setItem('preksha_meditation_observations', JSON.stringify(updated));
+    setSadhanaObservation('');
+    setShowSadhanaSummary(false);
+  };
+
+  const handleZenMuteAllChange = (enabled: boolean) => {
+    setZenMuteAll(enabled);
+    localStorage.setItem('terapanth_zen_mute_all', String(enabled));
+  };
+
+  // --- CORE AUDIO MUTING MECHANISM ---
+  useEffect(() => {
+    if (zenMode && zenMuteAll) {
+      // Monkeypatch HTMLAudioElement.prototype.play to prevent sound during meditation
+      const originalPlay = HTMLAudioElement.prototype.play;
+      HTMLAudioElement.prototype.play = function() {
+        console.log("Audio play blocked during Preksha Meditation Focus (Muted Mode)");
+        return Promise.resolve(); // Resolves immediately without playing sound
+      };
+      
+      // Mark global muted state
+      (window as any).__preksha_muted = true;
+
+      return () => {
+        HTMLAudioElement.prototype.play = originalPlay;
+        (window as any).__preksha_muted = false;
+      };
+    }
+  }, [zenMode, zenMuteAll]);
+
   const handleZenModeChange = (enabled: boolean) => {
     setZenMode(enabled);
     localStorage.setItem('terapanth_zen_mode', String(enabled));
     if (enabled) {
+      const now = Date.now();
+      setZenStartTime(now);
+      localStorage.setItem('terapanth_zen_start_time', String(now));
+      setShowZenReminder(false);
+      setZenElapsed(0);
+
+      // Snapshot initially completed tasks
+      const initiallyCompleted = todos.filter(t => t.completed).map(t => t.id);
+      setZenStartCompletedTaskIds(initiallyCompleted);
+
       // If entering Zen Mode and on a non-meditation tab, switch to sadhana for active focus
       if (activeTab !== 'sadhana' && activeTab !== 'vachan') {
         setActiveTab('sadhana');
@@ -439,7 +650,161 @@ export default function App() {
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         navigator.vibrate([80, 50, 80]);
       }
+
+      // Proactively request browser Notification permissions
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        if (Notification.permission === 'default') {
+          Notification.requestPermission();
+        }
+      }
+    } else {
+      // Exiting Preksha Meditation Mode -> Capture details for Sadhana Summary
+      const finalDuration = zenElapsed;
+      const newlyCompleted = todos.filter(t => t.completed && !zenStartCompletedTaskIds.includes(t.id));
+      
+      setSummaryDuration(finalDuration);
+      setSummaryCompletedTasks(newlyCompleted);
+      setShowSadhanaSummary(true);
+
+      setZenStartTime(null);
+      localStorage.removeItem('terapanth_zen_start_time');
+      localStorage.removeItem('terapanth_zen_auto_entered_by_schedule');
+      setShowZenReminder(false);
+      setZenElapsed(0);
     }
+  };
+
+  // --- ZEN MODE TIMER & DND REMINDER ---
+  const triggerZenNotification = () => {
+    // 1. Browser push notification
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted') {
+        try {
+          const notificationTitle = language === 'hi' ? '🧘 ध्यान केंद्रित संदेश (DND)' : '🧘 Preksha Focus Reminder (DND)';
+          const notificationOptions = {
+            body: language === 'hi'
+              ? 'आप पिछले ३० मिनट से अधिक समय से ध्यान मोड में हैं। अपनी साधना जारी रखें!'
+              : 'You have been in Preksha Focus Mode for over 30 minutes. Take a deep breath and continue your practice!',
+            silent: false,
+          };
+          new Notification(notificationTitle, notificationOptions);
+        } catch (err) {
+          console.warn("Could not fire standard browser Notification:", err);
+        }
+      }
+    }
+
+    // 2. Browser vibrate
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate([100, 100, 100]);
+    }
+  };
+
+  useEffect(() => {
+    if (!zenMode || !zenStartTime) {
+      setZenElapsed(0);
+      return;
+    }
+
+    // Initial run
+    const elapsedMs = Date.now() - zenStartTime;
+    setZenElapsed(Math.floor(elapsedMs / 1000));
+
+    const interval = setInterval(() => {
+      const currElapsedMs = Date.now() - zenStartTime;
+      const elapsedSec = Math.floor(currElapsedMs / 1000);
+      setZenElapsed(elapsedSec);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [zenMode, zenStartTime]);
+
+  useEffect(() => {
+    // 30 minutes is 1800 seconds
+    const thresholdSec = 30 * 60;
+    if (zenMode && zenElapsed >= thresholdSec && !showZenReminder) {
+      setShowZenReminder(true);
+      triggerZenNotification();
+    }
+  }, [zenMode, zenElapsed, showZenReminder]);
+
+  // --- ZEN MODE AUTO-SCHEDULING LOGIC ---
+  const getScheduledBlockId = (now: Date, startStr: string, endStr: string): { isInSchedule: boolean; blockId: string | null } => {
+    if (!startStr || !endStr || startStr === endStr) return { isInSchedule: false, blockId: null };
+    const [startH, startM] = startStr.split(':').map(Number);
+    const [endH, endM] = endStr.split(':').map(Number);
+    
+    const todayStart = new Date(now);
+    todayStart.setHours(startH, startM, 0, 0);
+    
+    const todayEnd = new Date(now);
+    todayEnd.setHours(endH, endM, 0, 0);
+    
+    if (startStr < endStr) {
+      const isIn = now >= todayStart && now <= todayEnd;
+      if (isIn) {
+        const yyyymmdd = now.toISOString().split('T')[0];
+        return { isInSchedule: true, blockId: `${yyyymmdd}_${startStr}` };
+      }
+    } else {
+      if (now >= todayStart) {
+        const yyyymmdd = now.toISOString().split('T')[0];
+        return { isInSchedule: true, blockId: `${yyyymmdd}_${startStr}` };
+      }
+      if (now <= todayEnd) {
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yyyymmdd = yesterday.toISOString().split('T')[0];
+        return { isInSchedule: true, blockId: `${yyyymmdd}_${startStr}` };
+      }
+    }
+    return { isInSchedule: false, blockId: null };
+  };
+
+  useEffect(() => {
+    if (!zenScheduleEnabled) return;
+
+    const checkSchedule = () => {
+      const now = new Date();
+      const { isInSchedule, blockId } = getScheduledBlockId(now, zenScheduleStart, zenScheduleEnd);
+
+      if (isInSchedule && blockId) {
+        if (!zenMode && lastAutoTriggeredBlock !== blockId) {
+          handleZenModeChange(true);
+          setLastAutoTriggeredBlock(blockId);
+          localStorage.setItem('terapanth_zen_last_auto_triggered_block', blockId);
+          localStorage.setItem('terapanth_zen_auto_entered_by_schedule', 'true');
+        }
+      } else {
+        const wasAutoEntered = localStorage.getItem('terapanth_zen_auto_entered_by_schedule') === 'true';
+        if (zenMode && wasAutoEntered) {
+          handleZenModeChange(false);
+        }
+        localStorage.removeItem('terapanth_zen_auto_entered_by_schedule');
+      }
+    };
+
+    checkSchedule();
+    const interval = setInterval(checkSchedule, 15000); // Highly responsive 15-second check
+    return () => clearInterval(interval);
+  }, [zenScheduleEnabled, zenScheduleStart, zenScheduleEnd, zenMode, lastAutoTriggeredBlock]);
+
+  const handleZenScheduleEnabledChange = (enabled: boolean) => {
+    setZenScheduleEnabled(enabled);
+    localStorage.setItem('terapanth_zen_schedule_enabled', String(enabled));
+    if (!enabled) {
+      localStorage.removeItem('terapanth_zen_auto_entered_by_schedule');
+    }
+  };
+
+  const handleZenScheduleStartChange = (start: string) => {
+    setZenScheduleStart(start);
+    localStorage.setItem('terapanth_zen_schedule_start', start);
+  };
+
+  const handleZenScheduleEndChange = (end: string) => {
+    setZenScheduleEnd(end);
+    localStorage.setItem('terapanth_zen_schedule_end', end);
   };
 
   // --- BACKEND METADATA ---
@@ -567,11 +932,11 @@ export default function App() {
 
     const diffX = touchStartX - touchEndX;
     const diffY = touchStartY - touchEndY;
-    const minSwipeDistance = 45; // threshold distance in px for a horizontal swipe
+    const minSwipeDistance = swipeConfig.minDistance; // dynamic threshold distance in px for a horizontal swipe
+    const filterRatio = swipeConfig.ratio; // dynamic displacement ratio to distinguish horizontal swipe from vertical scrolling
 
-    // Ensure horizontal displacement is significantly greater than vertical displacement (e.g., ratio of 1.5)
-    // to distinguish horizontal swipe from vertical scrolling.
-    if (Math.abs(diffX) > minSwipeDistance && Math.abs(diffX) > Math.abs(diffY) * 1.5) {
+    // Ensure horizontal displacement is significantly greater than vertical displacement
+    if (Math.abs(diffX) > minSwipeDistance && Math.abs(diffX) > Math.abs(diffY) * filterRatio) {
       const isLeftSwipe = diffX > 0;   // Swiped Left -> Next Tab
       const isRightSwipe = diffX < 0; // Swiped Right -> Previous Tab
 
@@ -579,8 +944,16 @@ export default function App() {
 
       if (isLeftSwipe && currentIndex < tabOrder.length - 1) {
         setActiveTab(tabOrder[currentIndex + 1]);
+        if (showSwipeTutorial) {
+          localStorage.setItem('terapanth_swipe_tutorial_shown', 'true');
+          setShowSwipeTutorial(false);
+        }
       } else if (isRightSwipe && currentIndex > 0) {
         setActiveTab(tabOrder[currentIndex - 1]);
+        if (showSwipeTutorial) {
+          localStorage.setItem('terapanth_swipe_tutorial_shown', 'true');
+          setShowSwipeTutorial(false);
+        }
       }
     }
 
@@ -589,6 +962,73 @@ export default function App() {
     setTouchStartY(null);
     setTouchEndX(null);
     setTouchEndY(null);
+  };
+
+  const handleMainScroll = (e: React.UIEvent<HTMLElement>) => {
+    const scrollTop = e.currentTarget.scrollTop;
+    const lastScrollTop = lastScrollTopRef.current;
+    
+    // Force show when at the absolute top of the scroll container
+    if (scrollTop <= 10) {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      setIsPaginationVisible(true);
+      lastScrollTopRef.current = scrollTop;
+      return;
+    }
+    
+    // Briefly fade or hide when scrolling down, show when scrolling up
+    if (scrollTop > lastScrollTop && scrollTop > 15) {
+      if (isPaginationVisible) {
+        setIsPaginationVisible(false);
+      }
+    } else {
+      if (!isPaginationVisible) {
+        setIsPaginationVisible(true);
+      }
+    }
+    
+    lastScrollTopRef.current = scrollTop;
+
+    // Reset visibility (show again) when scrolling stops
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+    scrollTimeoutRef.current = setTimeout(() => {
+      setIsPaginationVisible(true);
+    }, 850);
+  };
+
+  const markPaginationInteracted = () => {
+    if (!hasInteractedWithPagination) {
+      setHasInteractedWithPagination(true);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('terapanth_has_interacted_pagination', 'true');
+      }
+    }
+  };
+
+  const handlePrevTab = () => {
+    markPaginationInteracted();
+    const currentIndex = tabOrder.indexOf(activeTab);
+    if (currentIndex > 0) {
+      setActiveTab(tabOrder[currentIndex - 1]);
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(20);
+      }
+    }
+  };
+
+  const handleNextTab = () => {
+    markPaginationInteracted();
+    const currentIndex = tabOrder.indexOf(activeTab);
+    if (currentIndex < tabOrder.length - 1) {
+      setActiveTab(tabOrder[currentIndex + 1]);
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(20);
+      }
+    }
   };
 
   // --- NETWORK STATUS MONITOR ---
@@ -722,6 +1162,59 @@ export default function App() {
   };
 
   // --- ACTIONS ---
+  const dismissSwipeTutorial = () => {
+    localStorage.setItem('terapanth_swipe_tutorial_shown', 'true');
+    setShowSwipeTutorial(false);
+  };
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === targetIndex) return;
+
+    const updated = [...tabOrder];
+    const [draggedItem] = updated.splice(draggedIndex, 1);
+    updated.splice(targetIndex, 0, draggedItem);
+    
+    setTabOrder(updated);
+    localStorage.setItem('terapanth_tab_order', JSON.stringify(updated));
+    setDraggedIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
+  const moveTab = (index: number, direction: 'up' | 'down') => {
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= tabOrder.length) return;
+
+    const updated = [...tabOrder];
+    const temp = updated[index];
+    updated[index] = updated[newIndex];
+    updated[newIndex] = temp;
+    
+    setTabOrder(updated);
+    localStorage.setItem('terapanth_tab_order', JSON.stringify(updated));
+    
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(15);
+    }
+  };
+
+  const resetTabOrder = () => {
+    setTabOrder(DEFAULT_TAB_ORDER);
+    localStorage.setItem('terapanth_tab_order', JSON.stringify(DEFAULT_TAB_ORDER));
+  };
+
   const handleSync = async () => {
     setIsSyncing(true);
     setTimeout(() => {
@@ -807,6 +1300,7 @@ export default function App() {
           onProfileClick={() => setActiveTab('profile')}
           onLoginClick={() => setIsLoginModalOpen(true)}
           zenMode={zenMode}
+          zenElapsed={zenElapsed}
           activeTab={activeTab}
           onSearchClick={() => setIsSearchModalOpen(true)}
         />
@@ -814,6 +1308,7 @@ export default function App() {
 
       {/* CORE ROUTING SECTION */}
       <main 
+        onScroll={handleMainScroll}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -917,6 +1412,8 @@ export default function App() {
                   onNavigateToAdminDashboard={() => setActiveTab("admin_dashboard")}
                   onOpenLogin={() => setIsLoginModalOpen(true)}
                   onStartTour={() => setShowTour(true)}
+                  swipeSensitivity={swipeSensitivity}
+                  onSwipeSensitivityChange={handleSwipeSensitivityChange}
                 />
               </motion.div>
             )}
@@ -1170,6 +1667,69 @@ export default function App() {
                   knowledgeItems={knowledgeItems} 
                   setIsLoginModalOpen={setIsLoginModalOpen} 
                 />
+
+                {/* Swipe Gesture Tutorial Overlay */}
+                <AnimatePresence>
+                  {showSwipeTutorial && (
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/40 dark:bg-black/60 backdrop-blur-xs"
+                    >
+                      <motion.div 
+                        initial={{ scale: 0.9, y: 20 }}
+                        animate={{ scale: 1, y: 0 }}
+                        exit={{ scale: 0.9, y: 20 }}
+                        className="w-full max-w-xs bg-white dark:bg-zinc-900 border border-orange-500/20 rounded-2xl p-5 shadow-2xl space-y-4 text-center"
+                      >
+                        <div className="flex justify-center">
+                          <div className="p-3 bg-orange-500/10 text-orange-500 rounded-full flex items-center justify-center animate-pulse">
+                            <ArrowLeftRight size={28} className="animate-bounce" />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <h4 className="font-bold text-sm text-zinc-950 dark:text-zinc-50 font-sans">
+                            {language === 'hi' ? 'नेविगेशन गाइड (स्वाइप करें)' : 'Swipe to Navigate'}
+                          </h4>
+                          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                            {language === 'hi' 
+                              ? 'अब आप स्क्रीन पर बाएं या दाएं स्वाइप करके आसानी से होम, चैट, साधना, पंचांग और प्रोफाइल के बीच स्विच कर सकते हैं।'
+                              : 'You can now swipe left or right anywhere on the screen to switch between Home, Chat, Sadhana, Calendar, and Profile.'}
+                          </p>
+                        </div>
+
+                        {/* Visual Animation of the swiping gesture */}
+                        <div className="relative h-10 w-full bg-zinc-100 dark:bg-zinc-950/50 rounded-xl overflow-hidden flex items-center justify-center">
+                          <div className="absolute inset-x-4 h-[2px] bg-zinc-300 dark:bg-zinc-800" />
+                          <motion.div 
+                            animate={{ 
+                              x: [-40, 40, -40],
+                            }}
+                            transition={{ 
+                              repeat: Infinity, 
+                              duration: 2.5,
+                              ease: "easeInOut"
+                            }}
+                            className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white text-[10px] shadow-md z-10"
+                          >
+                            👆
+                          </motion.div>
+                          <ChevronLeft className="absolute left-1.5 text-orange-500/40 animate-pulse" size={14} />
+                          <ChevronRight className="absolute right-1.5 text-orange-500/40 animate-pulse" size={14} />
+                        </div>
+
+                        <button
+                          onClick={dismissSwipeTutorial}
+                          className="w-full py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-xs font-bold text-white rounded-xl transition-all duration-300 shadow-md shadow-orange-500/10 active:scale-95 cursor-pointer"
+                        >
+                          {language === 'hi' ? 'समझ गया (Got It!)' : 'Start Exploring'}
+                        </button>
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             )}
 
@@ -1315,6 +1875,100 @@ export default function App() {
             setSpiritualSoundscape={setSpiritualSoundscape}
             language={language}
           />
+
+
+          {/* Reorder Modal Overlay */}
+          <AnimatePresence>
+            {isReorderOpen && (
+              <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                  className="w-full max-w-sm bg-white dark:bg-zinc-900 rounded-3xl border border-black/5 dark:border-zinc-800 shadow-2xl p-6 space-y-5 text-left"
+                >
+                  <div>
+                    <h3 className="text-sm font-black text-zinc-950 dark:text-zinc-50 flex items-center gap-2">
+                      <span className="p-1.5 bg-orange-500/10 text-orange-500 rounded-lg text-xs">↕️</span>
+                      {language === 'hi' ? 'नेविगेशन टैब क्रम बदलें' : 'Customize Tab Order'}
+                    </h3>
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
+                      {language === 'hi' 
+                        ? 'खींचकर (Drag) या ऊपर/नीचे तीरों का उपयोग करके टैब का क्रम अपनी सुविधानुसार बदलें।'
+                        : 'Reorder the swipe sequence. Drag and drop the items or use the action arrows.'}
+                    </p>
+                  </div>
+
+                  {/* Drag and Drop list */}
+                  <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
+                    {tabOrder.map((tabId, idx) => (
+                      <div
+                        key={tabId}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, idx)}
+                        onDragOver={(e) => handleDragOver(e, idx)}
+                        onDrop={(e) => handleDrop(e, idx)}
+                        onDragEnd={handleDragEnd}
+                        className={`flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-950 border rounded-2xl transition-all cursor-grab active:cursor-grabbing ${
+                          draggedIndex === idx 
+                            ? "border-orange-500 bg-orange-500/5 opacity-50 shadow-md" 
+                            : "border-black/[0.04] dark:border-zinc-800 hover:border-orange-500/30"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <GripVertical size={14} className="text-zinc-400 dark:text-zinc-600" />
+                          <div>
+                            <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                              {getTabLabel(tabId, language)}
+                            </span>
+                            <span className="text-[8px] font-mono font-bold text-zinc-400 uppercase tracking-wider block">
+                              ID: {tabId}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Control Buttons */}
+                        <div className="flex items-center gap-1">
+                          <button
+                            disabled={idx === 0}
+                            onClick={() => moveTab(idx, 'up')}
+                            className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent text-zinc-600 dark:text-zinc-400 cursor-pointer"
+                            title="Move Up"
+                          >
+                            <ArrowUp size={12} className="stroke-[2.5]" />
+                          </button>
+                          <button
+                            disabled={idx === tabOrder.length - 1}
+                            onClick={() => moveTab(idx, 'down')}
+                            className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent text-zinc-600 dark:text-zinc-400 cursor-pointer"
+                            title="Move Down"
+                          >
+                            <ArrowDown size={12} className="stroke-[2.5]" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-2.5 pt-2">
+                    <button
+                      onClick={resetTabOrder}
+                      className="flex-1 py-2.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                    >
+                      {language === 'hi' ? 'मूल क्रम (Reset)' : 'Reset Default'}
+                    </button>
+                    <button
+                      onClick={() => setIsReorderOpen(false)}
+                      className="flex-1 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-bold rounded-xl shadow-md shadow-orange-500/10 transition-all cursor-pointer"
+                    >
+                      {language === 'hi' ? 'सहेजें (Done)' : 'Done'}
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+
           <TerapanthFooterNav 
             activeTab={activeTab} 
             setActiveTab={setActiveTab}
@@ -1326,25 +1980,209 @@ export default function App() {
       {/* ZEN MODE FLOATING DISMISSAL PILL */}
       <AnimatePresence>
         {zenMode && (
-          <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[100] w-full max-w-[280px] px-2">
+          <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[100] w-full max-w-[320px] px-2">
             <motion.div 
-              initial={{ y: 60, x: "-50%", opacity: 0 }}
-              animate={{ y: 0, x: "-50%", opacity: 1 }}
-              exit={{ y: 40, x: "-50%", opacity: 0 }}
+              initial={{ y: 60, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 40, opacity: 0 }}
               transition={{ type: 'spring', damping: 20, stiffness: 180 }}
-              className="fixed bottom-5 left-1/2 bg-zinc-900/95 dark:bg-black/95 backdrop-blur-md text-stone-150 px-4 py-2 rounded-full border border-orange-500/30 flex items-center justify-between gap-4 shadow-2xl shadow-orange-500/10 w-[260px]"
+              className="bg-zinc-900/95 dark:bg-black/95 backdrop-blur-md text-stone-150 px-4 py-2.5 rounded-full border border-orange-500/30 flex items-center justify-between gap-3 shadow-2xl shadow-orange-500/10 w-full"
             >
               <div className="flex items-center gap-2">
                 <span className="text-orange-500 animate-pulse text-sm">🧘</span>
-                <span className="text-[10px] font-black uppercase tracking-widest font-sans text-stone-100">
-                  {language === 'hi' ? 'ध्यान मोड' : 'Zen Focus'}
-                </span>
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black uppercase tracking-widest font-sans text-stone-100">
+                    {language === 'hi' ? 'ध्यान मोड' : 'Preksha Focus'}
+                  </span>
+                  <span className="text-[10px] font-mono text-zinc-400 font-bold">
+                    {Math.floor(zenElapsed / 60)}:{String(zenElapsed % 60).padStart(2, '0')}
+                  </span>
+                </div>
               </div>
+
+              <div className="flex items-center gap-1.5">
+                {/* Simulation Button for Testing */}
+                <button
+                  onClick={() => {
+                    const thirtyMinMs = 30 * 60 * 1000;
+                    const newStartTime = Date.now() - (thirtyMinMs + 2000);
+                    setZenStartTime(newStartTime);
+                    localStorage.setItem('terapanth_zen_start_time', String(newStartTime));
+                    setZenElapsed(30 * 60 + 2);
+                  }}
+                  className="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-[8px] font-bold uppercase tracking-wider text-orange-400 rounded-lg transition-all border border-orange-500/10 cursor-pointer"
+                  title="Simulate 30 Minutes"
+                >
+                  ⏱️ {language === 'hi' ? 'परीक्षण' : 'Test 30m'}
+                </button>
+
+                <button
+                  onClick={() => handleZenModeChange(false)}
+                  className="px-3 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-[9px] font-extrabold uppercase tracking-wider text-white rounded-full transition-all duration-300 shadow-md shadow-orange-500/20 active:scale-95 cursor-pointer"
+                >
+                  {language === 'hi' ? 'बाहर निकलें' : 'Exit'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ZEN MODE 30-MIN REMINDER TOAST / OVERLAY */}
+      <AnimatePresence>
+        {zenMode && showZenReminder && (
+          <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="w-full max-w-sm bg-zinc-950/98 text-stone-150 border border-orange-500/40 p-6 rounded-3xl shadow-2xl text-center space-y-4 backdrop-blur-md"
+            >
+              <div className="flex justify-center">
+                <div className="w-12 h-12 bg-orange-500/15 text-orange-500 rounded-full flex items-center justify-center border border-orange-500/30 animate-pulse">
+                  <span className="text-xl">🧘</span>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <h4 className="text-sm font-black uppercase tracking-widest text-orange-500">
+                  {language === 'hi' ? 'साधना अनुस्मारक (DND)' : 'Preksha Focus Reminder (DND)'}
+                </h4>
+                <p className="text-xs text-zinc-300 leading-relaxed font-semibold">
+                  {language === 'hi'
+                    ? 'आप पिछले ३० मिनट से अधिक समय से ध्यान मोड में हैं। अपनी पवित्र साधना जारी रखें!'
+                    : 'You have been in Preksha Focus Mode for over 30 minutes. Take a deep, peaceful breath and continue your practice!'}
+                </p>
+              </div>
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  onClick={() => setShowZenReminder(false)}
+                  className="flex-1 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-bold rounded-xl shadow-md shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
+                >
+                  {language === 'hi' ? 'साधना जारी रखें' : 'Continue Sadhana'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowZenReminder(false);
+                    handleZenModeChange(false);
+                  }}
+                  className="flex-1 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold rounded-xl transition-all cursor-pointer active:scale-95"
+                >
+                  {language === 'hi' ? 'समाप्त करें' : 'Exit Mode'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* PREKSHA MEDITATION SADHANA SUMMARY SCREEN */}
+      <AnimatePresence>
+        {showSadhanaSummary && (
+          <div className="fixed inset-0 z-[102] flex items-center justify-center p-4 bg-stone-950/85 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="w-full max-w-md bg-stone-900 border border-orange-500/30 p-6 rounded-3xl shadow-2xl text-center space-y-5 max-h-[90vh] overflow-y-auto"
+            >
+              {/* Spiritual Icon Badge */}
+              <div className="flex justify-center">
+                <div className="w-16 h-16 bg-gradient-to-tr from-orange-600/20 to-amber-500/20 text-orange-500 rounded-full flex items-center justify-center border border-orange-500/30 shadow-lg shadow-orange-500/5">
+                  <Award size={28} className="text-orange-500 animate-pulse" />
+                </div>
+              </div>
+
+              {/* Title & Theme */}
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 font-mono">
+                  {language === 'hi' ? 'साधना संपन्न' : 'Sadhana Completed'}
+                </span>
+                <h3 className="text-lg font-black text-white tracking-wide">
+                  {language === 'hi' ? 'प्रेक्षा ध्यान सारांश' : 'Preksha Sadhana Summary'}
+                </h3>
+              </div>
+
+              {/* Duration Card */}
+              <div className="bg-stone-950/50 p-4 rounded-2xl border border-white/[0.03] space-y-1">
+                <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-black">
+                  {language === 'hi' ? 'कुल ध्यान समय' : 'Total Duration'}
+                </span>
+                <div className="text-2xl font-black text-orange-400 font-mono">
+                  {Math.floor(summaryDuration / 60)}m {summaryDuration % 60}s
+                </div>
+              </div>
+
+              {/* Dynamic Preksha Benefits Section */}
+              {(() => {
+                const benefits = getSadhanaBenefits(summaryDuration, language);
+                return (
+                  <div className="bg-emerald-500/5 border border-emerald-500/15 p-3 rounded-2xl text-left space-y-1">
+                    <span className="block text-[8px] font-black uppercase tracking-widest text-emerald-400 font-mono">
+                      ✨ {language === 'hi' ? 'अभ्यास के वैज्ञानिक लाभ' : 'Practice Health Benefits'}
+                    </span>
+                    <h4 className="text-xs font-black text-white">{benefits.title}</h4>
+                    <p className="text-[10px] text-stone-300 font-medium leading-relaxed">{benefits.desc}</p>
+                  </div>
+                );
+              })()}
+
+              {/* Completed Tasks section */}
+              <div className="space-y-2.5 text-left">
+                <span className="block text-[10px] text-zinc-400 uppercase tracking-widest font-black text-center">
+                  {language === 'hi' ? 'सत्र के दौरान पूरे किए गए कार्य' : 'Tasks Completed During Session'}
+                </span>
+
+                {summaryCompletedTasks.length > 0 ? (
+                  <div className="max-h-[140px] overflow-y-auto space-y-2 pr-1">
+                    {summaryCompletedTasks.map((task) => (
+                      <div 
+                        key={task.id} 
+                        className="flex items-start gap-3 p-2.5 bg-orange-500/5 border border-orange-500/10 rounded-xl"
+                      >
+                        <div className="mt-0.5 w-4 h-4 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0">
+                          <Check size={10} className="stroke-[3]" />
+                        </div>
+                        <span className="text-xs text-stone-200 font-semibold leading-normal">
+                          {task.text}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-zinc-400 text-center italic bg-white/[0.01] border border-white/[0.02] p-4 rounded-xl leading-relaxed">
+                    {language === 'hi'
+                      ? '"ध्यान आत्मा को शुद्ध करने और गहरी आत्म-जागरूकता प्राप्त करने की प्रक्रिया है।"- आचार्य श्री महाप्रज्ञ'
+                      : '"Meditation is the purification of emotions and the path to ultimate self-realization." - Acharya Shri Mahapragya'}
+                  </p>
+                )}
+              </div>
+
+              {/* State of Mind Observation Field */}
+              <div className="space-y-1.5 text-left">
+                <label className="block text-[10px] text-zinc-400 uppercase tracking-widest font-black">
+                  📝 {language === 'hi' ? 'ध्यान के अनुभव / अंतर्दृष्टि' : 'Log State of Mind / Insights'}
+                </label>
+                <textarea
+                  value={sadhanaObservation}
+                  onChange={(e) => setSadhanaObservation(e.target.value)}
+                  placeholder={language === 'hi' ? 'अपनी मानसिक स्थिति या अनुभव दर्ज करें...' : 'How do you feel? Capture your post-meditation state...'}
+                  rows={2}
+                  className="w-full text-xs bg-stone-950/50 border border-white/5 rounded-xl p-2.5 text-white placeholder-stone-500 focus:outline-none focus:border-orange-500/50 resize-none font-medium leading-normal"
+                />
+              </div>
+
+              {/* Close Button */}
               <button
-                onClick={() => handleZenModeChange(false)}
-                className="px-3 py-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-[9px] font-extrabold uppercase tracking-wider text-white rounded-full transition-all duration-300 shadow-md shadow-orange-500/20 active:scale-95 cursor-pointer"
+                onClick={() => {
+                  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                    navigator.vibrate(20);
+                  }
+                  handleSaveSadhanaObservation();
+                }}
+                className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-black rounded-xl shadow-lg shadow-orange-500/20 transition-all cursor-pointer active:scale-95 uppercase tracking-widest"
               >
-                {language === 'hi' ? 'बाहर निकलें' : 'Exit'}
+                {language === 'hi' ? 'शुभकामनाएं' : 'Jai Jinendra • Close'}
               </button>
             </motion.div>
           </div>
@@ -1545,6 +2383,14 @@ export default function App() {
           onFontStyleSetChange={setFontStyleSet}
           zenMode={zenMode}
           onZenModeChange={handleZenModeChange}
+          zenScheduleEnabled={zenScheduleEnabled}
+          onZenScheduleEnabledChange={handleZenScheduleEnabledChange}
+          zenScheduleStart={zenScheduleStart}
+          onZenScheduleStartChange={handleZenScheduleStartChange}
+          zenScheduleEnd={zenScheduleEnd}
+          onZenScheduleEndChange={handleZenScheduleEndChange}
+          zenMuteAll={zenMuteAll}
+          onZenMuteAllChange={handleZenMuteAllChange}
         />
 
 

@@ -26,6 +26,7 @@ export interface TerapanthHeaderProps {
   onProfileClick?: () => void;
   onLoginClick?: () => void;
   zenMode?: boolean;
+  zenElapsed?: number;
   activeTab?: string;
   onSearchClick?: () => void;
 
@@ -49,6 +50,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
   onProfileClick,
   onLoginClick,
   zenMode = false,
+  zenElapsed = 0,
   activeTab,
   onSearchClick,
 
@@ -72,7 +74,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
   const activeLanguage = customLanguage || contextLang.language;
   const triggerToggleLanguage = onToggleLanguage || contextLang.toggleLanguage;
 
-  const { activeCity } = useLocation();
+  const { activeCity, setShowLocationModal } = useLocation();
 
   const [scrollY, setScrollY] = useState(0);
 
@@ -175,12 +177,13 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
                   title={isOnline ? "Online" : "Offline"}
                 />
               </div>
-              <div 
-                className="text-[9px] font-extrabold text-amber-200 tracking-wider mt-0.5 leading-none max-w-[60px] truncate text-center uppercase"
-                title={activeCity?.name || "Delhi"}
+              <button 
+                onClick={() => setShowLocationModal(true)}
+                className="text-[9px] font-black text-amber-200 hover:text-white bg-black/15 hover:bg-black/30 border border-white/20 hover:border-amber-300/30 rounded px-1.5 py-0.5 tracking-wider mt-1.5 leading-none max-w-[65px] truncate text-center uppercase cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-2xs"
+                title={activeCity?.name ? `Change Location (Current: ${activeCity.name})` : "Change Location"}
               >
                 {activeCity?.name || "Delhi"}
-              </div>
+              </button>
             </div>
             <div>
               <h1 className="font-bold text-sm leading-tight text-white">
@@ -191,6 +194,58 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
               </p>
             </div>
           </div>
+
+          {/* Group 1.5: Preksha Countdown Badge (displays only during meditation) */}
+          {zenMode && (() => {
+            const checkInInterval = 30 * 60; // 30 minutes in seconds
+            const currentElapsed = zenElapsed || 0;
+            const secondsRemaining = checkInInterval - (currentElapsed % checkInInterval);
+            const displayMinutes = Math.floor(secondsRemaining / 60);
+            const displaySeconds = secondsRemaining % 60;
+            const progressPercent = (currentElapsed % checkInInterval) / checkInInterval;
+            const circumference = 62.83; // 2 * pi * 10
+            const strokeDashoffset = circumference * (1 - progressPercent);
+            return (
+              <div 
+                className="flex items-center gap-2 bg-black/25 dark:bg-white/10 px-2.5 py-1 rounded-full border border-white/20 shadow-xs animate-pulse max-w-[130px]"
+                title={activeLanguage === "hi" ? "अगला अभ्यास चेक-इन" : "Time until next Preksha check-in"}
+              >
+                <div className="relative w-6 h-6 shrink-0">
+                  <svg className="w-full h-full transform -rotate-90">
+                    <circle 
+                      cx="12" cy="12" r="10" 
+                      stroke="rgba(255, 255, 255, 0.2)" 
+                      strokeWidth="2" 
+                      fill="transparent" 
+                    />
+                    <motion.circle
+                      cx="12" cy="12" r="10" 
+                      stroke="#ffedd5" 
+                      strokeWidth="2.5" 
+                      fill="transparent"
+                      strokeDasharray={circumference}
+                      animate={{ strokeDashoffset }}
+                      transition={{ duration: 0.5, ease: "linear" }}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-[7.5px] font-black text-amber-100 font-mono">
+                      {displayMinutes}m
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col leading-none text-left">
+                  <span className="text-[8px] font-extrabold uppercase tracking-widest text-amber-100 truncate max-w-[75px]">
+                    {activeLanguage === "hi" ? "प्रेक्षा ध्यान" : "Preksha Focus"}
+                  </span>
+                  <span className="text-[9px] font-bold font-mono text-white/95">
+                    {String(displayMinutes).padStart(2, '0')}:{String(displaySeconds).padStart(2, '0')}
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Group 2: Action Icons */}
           <div className="flex items-center gap-1">
