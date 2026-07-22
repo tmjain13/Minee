@@ -4,10 +4,11 @@ const DB_NAME = 'terapanth_knowledge_db';
 const INVERTED_INDEX_STORE = 'inverted_index';
 const DOCS_STORE = 'knowledge_docs';
 const DYNAMIC_QAS_STORE = 'dynamic_qas_docs';
+const SEARCH_RESULTS_CACHE_STORE = 'search_results_cache';
 
 // Initialize the database
 export const initSearchDB = async () => {
-  return openDB(DB_NAME, 3, {
+  return openDB(DB_NAME, 4, {
     upgrade(db, oldVersion) {
       if (oldVersion < 2) {
         if (db.objectStoreNames.contains('knowledge_index')) {
@@ -22,6 +23,9 @@ export const initSearchDB = async () => {
       }
       if (!db.objectStoreNames.contains(DYNAMIC_QAS_STORE)) {
         db.createObjectStore(DYNAMIC_QAS_STORE, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(SEARCH_RESULTS_CACHE_STORE)) {
+        db.createObjectStore(SEARCH_RESULTS_CACHE_STORE, { keyPath: 'query' });
       }
     },
   });
@@ -167,6 +171,62 @@ export const saveDynamicQAsToIndexedDB = async (qas: any[]) => {
     return true;
   } catch (error) {
     console.error('Failed to save dynamic QAs to IndexedDB:', error);
+    return false;
+  }
+};
+
+// Cache full-text search result in IndexedDB
+export const cacheSearchResult = async (queryStr: string, results: any[]) => {
+  try {
+    const db = await initSearchDB();
+    await db.put(SEARCH_RESULTS_CACHE_STORE, {
+      query: queryStr.toLowerCase().trim(),
+      results,
+      timestamp: Date.now()
+    });
+    return true;
+  } catch (error) {
+    console.error('Failed to cache search result:', error);
+    return false;
+  }
+};
+
+// Retrieve cached full-text search result from IndexedDB
+export const getCachedSearchResult = async (queryStr: string) => {
+  try {
+    const db = await initSearchDB();
+    const cached = await db.get(SEARCH_RESULTS_CACHE_STORE, queryStr.toLowerCase().trim());
+    if (cached) {
+      return cached.results;
+    }
+    return null;
+  } catch (error) {
+    console.error('Failed to get cached search result:', error);
+    return null;
+  }
+};
+
+// Purge expired search cache results (default: 24 hours old)
+export const purgeExpiredSearchCache = async (maxAgeMs: number = 24 * 60 * 60 * 1000) => {
+  try {
+    const db = await initSearchDB();
+    const tx = db.transaction(SEARCH_RESULTS_CACHE_STORE, 'readwrite');
+    const store = tx.objectStore(SEARCH_RESULTS_CACHE_STORE);
+    const keys = await store.getAllKeys();
+    const now = Date.now();
+    let count = 0;
+    for (const key of keys) {
+      const entry = await store.get(key);
+      if (entry && now - entry.timestamp > maxAgeMs) {
+        await store.delete(key);
+        count++;
+      }
+    }
+    await tx.done;
+    console.log(`Successfully purged ${count} expired cached search results.`);
+    return true;
+  } catch (error) {
+    console.error('Failed to purge expired search cache:', error);
     return false;
   }
 };

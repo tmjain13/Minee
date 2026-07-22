@@ -1030,6 +1030,157 @@ const SadhanaTab = memo(({
     }
   };
 
+  const handleSaveQuickNote = async () => {
+    if (!user) return;
+    setIsSavingJournal(true);
+    try {
+      // 1. Log meditation duration offline-first
+      await createSadhanaRecord(user.uid, 'meditationLogs', {
+        minutes: Number(sessionDuration) || 1,
+        date: new Date().toISOString().split('T')[0]
+      });
+
+      // 2. Prepend the date prefix automatically
+      const dateId = new Date().toISOString().split('T')[0];
+      const formattedDate = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+      const datePrefix = `[${formattedDate}] `;
+      const thoughts = sessionJournalText ? sessionJournalText : "मौन और आत्म-निरीक्षण (Silent reflection).";
+      const fullNoteText = `${datePrefix}🧘 साधना सत्र: ${sessionDuration} मिनट | मूड: ${sessionMood} | विचार: ${thoughts}`;
+
+      // 3. Save to the main spiritual journal collection in firestore directly
+      const recordRef = doc(db, `users/${user.uid}/spiritualJournal`, dateId);
+      await setDoc(recordRef, {
+        text: fullNoteText,
+        mood: sessionMood,
+        emotionalState: sessionEmotionalState || "एकाग्र",
+        createdAt: new Date().toISOString()
+      }, { merge: true });
+
+      // 4. Save to the local offline-first diary as well
+      const journalEntry = {
+        id: dateId,
+        text: fullNoteText,
+        date: formattedDate
+      };
+      await createSadhanaRecord(user.uid, 'diary', journalEntry);
+
+      // Trigger tactile vibration
+      if ('vibrate' in navigator) {
+        navigator.vibrate([100, 50, 150]);
+      }
+
+      // Success feedback
+      if (setShareToast) {
+        setShareToast({ 
+          show: true, 
+          message: `क्विक नोट सफलतापूर्वक साधना जर्नल में सहेजा गया! 🕊️` 
+        });
+      }
+
+      // Reset states
+      setShowJournalModal(false);
+      setSessionJournalText("");
+      setSessionEmotionalState("");
+      // Reset timer
+      setTimeLeft(48 * 60);
+      setIsActive(false);
+
+    } catch (err) {
+      console.error('[SadhanaTab] Error saving quick note:', err);
+    } finally {
+      setIsSavingJournal(false);
+    }
+  };
+
+  const handleShareSadhana = async () => {
+    const shareText = `🕊️ मैंने अभी ${sessionDuration} मिनट की समता साधना (Samayik Sadhana) पूर्ण की है! मेरी मनःस्थिति: ${sessionMood}.\n\nतेरापंथ AI हब के साथ अपनी आध्यात्मिक यात्रा शुरू करें।`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Sadhana Completed 🧘‍♂️',
+          text: shareText,
+          url: window.location.origin
+        });
+      } catch (err) {
+        console.error("Error sharing:", err);
+      }
+    } else {
+      // Fallback: Copy to clipboard and show toast
+      try {
+        await navigator.clipboard.writeText(shareText);
+        if (setShareToast) {
+          setShareToast({ show: true, message: "Sadhana status copied to clipboard! Share with friends. 🕊️" });
+        }
+      } catch (err) {
+        console.error("Clipboard copy failed:", err);
+      }
+    }
+  };
+
+  const handleDownloadSessionPDF = async () => {
+    try {
+      const { jsPDF } = await import('jspdf');
+      const pdf = new jsPDF();
+      
+      // Add titles
+      pdf.setFont("Helvetica", "bold");
+      pdf.setFontSize(22);
+      pdf.setTextColor(239, 68, 68); // Rose-500
+      pdf.text("Minee - Jain Terapanth Hub", 105, 30, { align: 'center' });
+      
+      pdf.setFontSize(16);
+      pdf.setTextColor(31, 41, 55); // Gray-800
+      pdf.text("Sadhana Session Summary Report", 105, 45, { align: 'center' });
+      
+      pdf.setDrawColor(229, 231, 235);
+      pdf.line(20, 55, 190, 55);
+      
+      pdf.setFontSize(12);
+      pdf.setFont("Helvetica", "normal");
+      pdf.setTextColor(75, 85, 99); // Gray-600
+      
+      pdf.text(`User: ${user?.displayName || 'Spiritual Seeker'}`, 20, 70);
+      pdf.text(`Date: ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`, 20, 80);
+      pdf.text(`Session Duration: ${sessionDuration} Minutes`, 20, 90);
+      pdf.text(`Post-Session Mood: ${sessionMood}`, 20, 100);
+      if (sessionEmotionalState) {
+        pdf.text(`Emotional State: ${sessionEmotionalState}`, 20, 110);
+      }
+      
+      const thoughtsText = sessionJournalText ? sessionJournalText : "Moun & Atma-Nirikshan (Silent Contemplation)";
+      pdf.text("Session Journal & Reflections:", 20, 125);
+      
+      pdf.setFont("Helvetica", "italic");
+      const splitThoughts = pdf.splitTextToSize(thoughtsText, 170);
+      pdf.text(splitThoughts, 20, 135);
+      
+      pdf.setFont("Helvetica", "bold");
+      pdf.setFontSize(11);
+      pdf.setTextColor(220, 104, 3); // Orange
+      pdf.text("Sadhana Benefits & Spiritual Merits:", 20, 175);
+      
+      pdf.setFont("Helvetica", "normal");
+      pdf.setTextColor(75, 85, 99);
+      pdf.text("1. Samvara and Nirjara - Calming past karmic vibrations and checking influx.", 25, 185);
+      pdf.text("2. Samata - Calming anger, pride, deceit, and greed (Kashaya).", 25, 193);
+      pdf.text("3. Swadhyay - Inner awareness and purification of the soul.", 25, 201);
+      
+      pdf.line(20, 220, 190, 220);
+      
+      pdf.setFontSize(10);
+      pdf.setFont("Helvetica", "italic");
+      pdf.text("🕊️ ' nirantara abhyaasa se aatmasuddhi hotee hai aur kashaayon ka shaman hota hai. '", 105, 235, { align: 'center' });
+      
+      pdf.save(`Sadhana_Session_${new Date().toISOString().split('T')[0]}.pdf`);
+      
+      if (setShareToast) {
+        setShareToast({ show: true, message: "Sadhana Session Summary PDF downloaded successfully! 📄" });
+      }
+    } catch (err) {
+      console.error("PDF export failed:", err);
+    }
+  };
+
   const incrementMantra = async (id: string, isFullMala: boolean = false) => {
     // Capture click timings for live chanting speed calculations
     const nowTiming = Date.now();
@@ -2901,6 +3052,24 @@ const SadhanaTab = memo(({
                   />
                 </div>
 
+                {/* Premium Sadhana Benefits Section with soft entrance animation */}
+                <motion.div
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, ease: "easeOut", delay: 0.15 }}
+                  className="p-4 rounded-2xl bg-gradient-to-br from-orange-500/5 to-rose-500/5 border border-orange-500/10 dark:border-rose-500/10 space-y-2 text-left"
+                >
+                  <span className="text-[10px] font-black uppercase text-orange-600 dark:text-orange-400 tracking-wider flex items-center gap-1.5">
+                    <Sparkles size={12} className="text-orange-500 animate-pulse" />
+                    साधना के आध्यात्मिक लाभ (Spiritual Benefits)
+                  </span>
+                  <ul className="text-[10.5px] text-gray-650 dark:text-gray-300 space-y-1 font-semibold list-disc pl-3.5 leading-relaxed">
+                    <li>सामायिक साधना से संवर और निर्जरा (Karmic shedding) होती है।</li>
+                    <li>कषाय की शांति और मानसिक समता की प्राप्ति होती है।</li>
+                    <li>आत्म-साक्षात्कार और परम शांति का मार्ग प्रशस्त होता है।</li>
+                  </ul>
+                </motion.div>
+
                 {/* Journal Experience Textarea */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black uppercase tracking-wider text-gray-400 block">
@@ -2914,6 +3083,39 @@ const SadhanaTab = memo(({
                     className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl px-4 py-3 text-xs text-gray-750 dark:text-gray-200 focus:outline-none focus:border-orange-500/50 resize-none leading-relaxed"
                   />
                 </div>
+              </div>
+
+              {/* Share & Report Quick Actions */}
+              <div className="grid grid-cols-2 gap-2.5 px-1 pb-1">
+                <button
+                  type="button"
+                  onClick={handleDownloadSessionPDF}
+                  className="py-2.5 px-3 bg-stone-55 dark:bg-stone-800/40 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 font-black text-[10px] uppercase tracking-wider rounded-xl transition-all border border-stone-200/50 dark:border-stone-800 flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Download size={11} className="text-stone-500 shrink-0" />
+                  <span>Report (PDF)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleShareSadhana}
+                  className="py-2.5 px-3 bg-stone-55 dark:bg-stone-800/40 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 font-black text-[10px] uppercase tracking-wider rounded-xl transition-all border border-stone-200/50 dark:border-stone-800 flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Send size={11} className="text-stone-500 shrink-0" />
+                  <span>Share Status</span>
+                </button>
+              </div>
+
+              {/* Save as Quick Note Button */}
+              <div className="px-1 pb-1.5">
+                <button
+                  type="button"
+                  onClick={handleSaveQuickNote}
+                  disabled={isSavingJournal}
+                  className="w-full py-3 bg-rose-500/10 hover:bg-rose-500/15 text-rose-650 dark:text-rose-400 font-black text-[10.5px] uppercase tracking-widest rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer border border-rose-500/15"
+                >
+                  <BookOpen size={12} className="shrink-0" />
+                  <span>Save as Quick Note (क्विक नोट सहेजें)</span>
+                </button>
               </div>
 
               {/* Action Buttons */}
@@ -2981,6 +3183,16 @@ const SadhanaGoalsSection = ({
 }) => {
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [activeConfettiId, setActiveConfettiId] = useState<string | null>(null);
+
+  const onToggle = (id: string) => {
+    const todo = todos.find(t => t.id === id);
+    if (todo && !todo.completed) {
+      setActiveConfettiId(id);
+      setTimeout(() => setActiveConfettiId(null), 1500);
+    }
+    handleToggleTodo(id);
+  };
 
   const completedCount = todos.filter(t => t.completed).length;
   const totalCount = todos.length;
@@ -3117,20 +3329,60 @@ const SadhanaGoalsSection = ({
                 <motion.div
                   key={todo.id}
                   initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2 }}
+                  animate={{ 
+                    opacity: 1, 
+                    y: 0,
+                    scale: todo.completed ? [1, 1.05, 1] : 1
+                  }}
+                  transition={{ 
+                    duration: 0.3,
+                    scale: { type: "spring", stiffness: 300, damping: 15 }
+                  }}
+                  className="relative overflow-visible"
                 >
                   <div
                     draggable
                     onDragStart={(e) => handleDragStart(e, index)}
                     onDragOver={(e) => handleDragOver(e, index)}
                     onDragEnd={handleDragEnd}
-                    className={`flex items-center justify-between p-4 bg-white dark:bg-zinc-900 hover:bg-orange-500/5 dark:hover:bg-orange-500/5 rounded-2xl border border-black/5 dark:border-zinc-800 shadow-sm transition-all duration-200 cursor-grab active:cursor-grabbing ${
+                    className={`relative flex items-center justify-between p-4 bg-white dark:bg-zinc-900 hover:bg-orange-500/5 dark:hover:bg-orange-500/5 rounded-2xl border border-black/5 dark:border-zinc-800 shadow-sm transition-all duration-200 cursor-grab active:cursor-grabbing ${
                       isDragging ? 'opacity-40 border-orange-500 border-dashed scale-[0.98]' : ''
                     } ${
                       isDragOver ? 'border-orange-500 border-dashed translate-y-1' : ''
                     }`}
                   >
+                    {activeConfettiId === todo.id && (
+                      <div className="absolute inset-0 pointer-events-none overflow-visible z-50">
+                        {Array.from({ length: 15 }).map((_, i) => {
+                          const angle = (i / 15) * 360 + Math.random() * 20;
+                           const distance = 40 + Math.random() * 60;
+                           const x = Math.cos((angle * Math.PI) / 180) * distance;
+                           const y = Math.sin((angle * Math.PI) / 180) * distance;
+                           const colors = ['#f97316', '#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6'];
+                           const randomColor = colors[i % colors.length];
+                           return (
+                             <motion.div
+                               key={i}
+                               className="absolute w-2.5 h-2.5 rounded-full left-1/2 top-1/2"
+                               style={{ backgroundColor: randomColor }}
+                               initial={{ x: 0, y: 0, scale: 1, opacity: 1 }}
+                               animate={{
+                                 x: x,
+                                 y: y,
+                                 scale: [1, 1.3, 0],
+                                 opacity: [1, 1, 0],
+                                 rotate: Math.random() * 360
+                               }}
+                               transition={{
+                                 duration: 0.8,
+                                 ease: "easeOut"
+                               }}
+                             />
+                           );
+                         })}
+                      </div>
+                    )}
+
                     <div className="flex items-center gap-3.5 flex-1 min-w-0">
                       {/* Drag Handle */}
                       <div className="text-gray-400 hover:text-gray-650 cursor-grab shrink-0 p-1">
@@ -3139,7 +3391,7 @@ const SadhanaGoalsSection = ({
 
                       {/* Completion Toggle */}
                       <button
-                        onClick={() => handleToggleTodo(todo.id)}
+                        onClick={() => onToggle(todo.id)}
                         className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
                           todo.completed 
                             ? 'bg-green-500 border-green-500 text-white' 

@@ -883,3 +883,13 @@ body,
     display: none !important;
   }
 }
+
+/* Power Saver Mode Global Override */
+body.power-saver-active *,
+body.power-saver-active *::before,
+body.power-saver-active *::after {
+  animation-duration: 0.001s !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001s !important;
+  scroll-behavior: auto !important;
+}

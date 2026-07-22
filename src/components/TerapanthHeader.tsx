@@ -196,9 +196,16 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
               </button>
             </div>
             <div>
-              <h1 className="font-bold text-sm leading-tight text-white">
-                Terapanth AI
-              </h1>
+              <div className="flex items-center gap-1.5">
+                <h1 className="font-bold text-sm leading-tight text-white">
+                  Terapanth AI
+                </h1>
+                {!isOnline && (
+                  <span className="bg-red-600/90 text-[7px] font-black uppercase tracking-wider text-white px-1 py-0.2 rounded-full animate-pulse border border-red-500/50" title="Device is currently offline">
+                    Offline
+                  </span>
+                )}
+              </div>
               <p className="text-[9px] uppercase tracking-widest font-semibold text-white/80">
                 Unified Knowledge
               </p>
@@ -373,13 +380,18 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
         {/* Sub-header Greeting Banner */}
         {!zenMode && (
           <div
-            className={`px-4 py-1 text-center text-[11px] font-medium transition-all duration-300 ${
+            className={`px-4 py-1 text-center text-[11px] font-medium transition-all duration-300 flex items-center justify-center gap-1.5 flex-wrap ${
               isDarkActive ? "bg-black/50 text-orange-300" : "bg-orange-50 text-orange-700"
             }`}
           >
             <span>{greeting} • जय जिनेन्द्र!</span>
             {activeStreak > 0 && (
-              <span className="ml-2 text-amber-500 font-bold animate-pulse">🔥 {activeStreak} Days Streak</span>
+              <span className="text-amber-500 font-bold animate-pulse flex items-center gap-0.5">🔥 {activeStreak} Days Streak</span>
+            )}
+            {!isOnline && (
+              <span className="text-red-500 dark:text-red-400 font-black animate-pulse bg-red-500/10 dark:bg-red-500/20 px-1.5 py-0.2 rounded border border-red-500/30 text-[10px]">
+                [Offline / ऑफलाइन]
+              </span>
             )}
           </div>
         )}

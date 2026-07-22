@@ -19,6 +19,8 @@ import {
   PenTool,
   Check,
   X,
+  Wifi,
+  WifiOff,
   Loader2,
   RefreshCw,
   CloudDownload,
@@ -818,7 +820,9 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSynced, setIsSynced] = useState(true);
-  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(() => {
+    return typeof window !== 'undefined' ? localStorage.getItem('last_sync_time') : null;
+  });
   const [activeUserCount] = useState<number>(1);
   const [isFullyOnline, setIsFullyOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [isFirestoreOffline, setIsFirestoreOffline] = useState<boolean>(!isFullyOnline);
@@ -834,6 +838,21 @@ export default function App() {
   // --- PWA INSTALL BANNER STATES ---
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
+
+  // --- POWER SAVER MODE EVENT LISTENER ---
+  useEffect(() => {
+    const applyPowerSaver = () => {
+      const active = localStorage.getItem("terapanth_power_saver") === "true";
+      if (active) {
+        document.body.classList.add("power-saver-active");
+      } else {
+        document.body.classList.remove("power-saver-active");
+      }
+    };
+    applyPowerSaver();
+    window.addEventListener("power-saver-changed", applyPowerSaver);
+    return () => window.removeEventListener("power-saver-changed", applyPowerSaver);
+  }, []);
 
   // --- PWA INSTALL PROMPT EVENT LISTENER ---
   useEffect(() => {
@@ -1259,12 +1278,74 @@ export default function App() {
     setTimeout(() => {
       setIsSyncing(false);
       setIsSynced(true);
-      setLastSyncTime(new Date().toISOString());
+      const now = new Date().toISOString();
+      setLastSyncTime(now);
+      localStorage.setItem('last_sync_time', now);
     }, 1500);
   };
 
   const handleFullAccountBackup = async () => {
-    alert("History backup requested successfully.");
+    try {
+      // Collect all local Sadhana progress, todos, and journal data
+      const todosData = localStorage.getItem("sadhana_todos") || "[]";
+      const journalDraft = localStorage.getItem("spiritual_journal_draft") || "";
+      const journalMood = localStorage.getItem("spiritual_journal_mood") || "";
+      const journalEmotionalState = localStorage.getItem("spiritual_journal_emotional_state") || "";
+      const quickNote = localStorage.getItem("sadhana_quick_note") || "";
+      const dailyTasks = localStorage.getItem("terapanth_sadhana_daily_tasks") || "{}";
+      const streakCount = localStorage.getItem("terapanth_sadhana_streak_count") || "0";
+      const points = localStorage.getItem("terapanth_sadhana_points") || "0";
+      const swadhyaHistory = localStorage.getItem("sadhana_swadhya_read_history") || "[]";
+      const prekshaObservations = localStorage.getItem("preksha_meditation_observations") || "[]";
+
+      let parsedTodos = [];
+      try { parsedTodos = JSON.parse(todosData); } catch (e) { console.error(e); }
+
+      let parsedDailyTasks = {};
+      try { parsedDailyTasks = JSON.parse(dailyTasks); } catch (e) { console.error(e); }
+
+      let parsedSwadhyaHistory = [];
+      try { parsedSwadhyaHistory = JSON.parse(swadhyaHistory); } catch (e) { console.error(e); }
+
+      let parsedPreksha = [];
+      try { parsedPreksha = JSON.parse(prekshaObservations); } catch (e) { console.error(e); }
+
+      const backupData = {
+        app: "Terapanth AI Hub",
+        backupVersion: "1.0.0",
+        exportedAt: new Date().toISOString(),
+        userEmail: user?.email || "Guest User",
+        spiritualProgress: {
+          sadhanaPoints: parseInt(points, 10) || 0,
+          streakCount: parseInt(streakCount, 10) || 0,
+          dailyTasksCompleted: parsedDailyTasks,
+        },
+        journalObservations: {
+          currentDraft: journalDraft,
+          mood: journalMood,
+          emotionalState: journalEmotionalState,
+          quickNote: quickNote,
+          prekshaMeditationObservations: parsedPreksha,
+        },
+        todoList: parsedTodos,
+        learningHistory: {
+          swadhyaHistory: parsedSwadhyaHistory,
+        }
+      };
+
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `terapanth_spiritual_backup_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Backup export failed:", error);
+      alert("Backup export failed. Please try again.");
+    }
   };
 
   // --- TODO ENGINE ---
@@ -2255,26 +2336,38 @@ export default function App() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.3 }}
-            className="fixed bottom-[84px] left-4 right-4 md:left-auto md:right-4 md:w-96 z-40"
+            className="fixed bottom-[84px] left-4 right-4 md:left-auto md:right-4 md:w-80 z-40"
           >
-            <div className={`p-4 rounded-xl shadow-xl flex items-center justify-between border ${
+            <div className={`px-3 py-2 rounded-xl shadow-xl flex items-center justify-between border backdrop-blur-md ${
               networkToastType === "offline"
-                ? "bg-stone-900 border-red-500/30 text-white"
-                : "bg-emerald-950 border-emerald-500/30 text-white"
+                ? "bg-stone-900/95 border-red-500/30 text-white"
+                : "bg-emerald-950/95 border-emerald-500/30 text-white"
             }`}>
-              <div className="flex items-center gap-3">
-                <div className={`w-2.5 h-2.5 rounded-full ${
-                  networkToastType === "offline" ? "bg-red-500 animate-pulse" : "bg-emerald-500"
-                }`} />
-                <p className="text-xs font-medium tracking-wide">
-                  {networkToastMessage}
-                </p>
+              <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                <div className={`p-1.5 rounded-lg shrink-0 ${
+                  networkToastType === "offline" ? "bg-red-500/20 text-red-400" : "bg-emerald-500/20 text-emerald-400"
+                }`}>
+                  {networkToastType === "offline" ? <WifiOff size={14} className="animate-pulse" /> : <Wifi size={14} />}
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <p className="text-[11px] font-semibold tracking-wide truncate">
+                    {networkToastMessage}
+                  </p>
+                  {lastSyncTime && (
+                    <p className="text-[9px] text-zinc-400 font-medium truncate">
+                      {language === 'hi'
+                        ? `अंतिम सिंक्रोनाइज़ेशन: ${new Date(lastSyncTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                        : `Last synced: ${new Date(lastSyncTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                    </p>
+                  )}
+                </div>
               </div>
               <button 
                 onClick={() => setShowNetworkToast(false)}
-                className="p-1 hover:bg-white/10 rounded-full transition-colors text-zinc-400 hover:text-white"
+                className="p-1 hover:bg-white/10 rounded-full transition-colors text-zinc-400 hover:text-white shrink-0"
+                title="Dismiss"
               >
-                <X size={14} />
+                <X size={12} />
               </button>
             </div>
           </motion.div>

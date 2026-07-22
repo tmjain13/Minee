@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth, db } from '../lib/firebase';
 import {
@@ -21,7 +21,9 @@ import {
   Send,
   Loader2,
   Quote,
-  ChevronLeft
+  ChevronLeft,
+  Mic,
+  MicOff
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -115,6 +117,62 @@ export default function SpiritualJournal({ onBack }: SpiritualJournalProps) {
   const [aiReflection, setAiReflection] = useState("");
   const [loadingAI, setLoadingAI] = useState(false);
   const [pastEntries, setPastEntries] = useState<JournalEntry[]>([]);
+
+  // Web Speech API Speech Recognition Integration
+  const [isListening, setIsListening] = useState(false);
+  const [dictationLang, setDictationLang] = useState<'hi-IN' | 'en-US'>('hi-IN');
+  const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const rec = new SpeechRecognition();
+      rec.continuous = true;
+      rec.interimResults = false;
+      
+      rec.onresult = (event: any) => {
+        const transcript = event.results[event.results.length - 1][0].transcript;
+        setText((prev) => prev ? `${prev} ${transcript}` : transcript);
+      };
+
+      rec.onerror = (e: any) => {
+        console.error("Speech recognition error:", e);
+        setIsListening(false);
+      };
+
+      rec.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = rec;
+    }
+  }, []);
+
+  // Update recognition language dynamically
+  useEffect(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.lang = dictationLang;
+    }
+  }, [dictationLang]);
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) {
+      alert("Speech recognition is not supported in this browser. / आपके ब्राउज़र में वाक् पहचान समर्थित नहीं है।");
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch (err) {
+        console.error("Speech recognition start failed:", err);
+      }
+    }
+  };
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedQuote, setSelectedQuote] = useState(QUOTES[0]);
 
@@ -127,12 +185,18 @@ export default function SpiritualJournal({ onBack }: SpiritualJournalProps) {
     { text: "Reflect on how you practiced tolerance (Sahan-sheelta) in a difficult situation today.", hin: "आज किसी कठिन परिस्थिति में आपने सहनशीलता का परिचय कैसे दिया, चिंतन करें।" },
     { text: "What is one thing you are grateful to Acharya Mahashraman Ji for today?", hin: "पूज्य आचार्य श्री महाश्रमण जी के प्रति आज आपके मन में कौन सा कृतज्ञता भाव उमड़ा?" },
     { text: "Identify one moment today when you successfully controlled your impulses or anger.", hin: "आज का वह एक पल पहचानें जब आपने अपने आवेश या क्रोध पर सफलतापूर्वक विजय पाई।" },
-    { text: "What spiritual self-study (Swadhyay) or chanting (Japa) did you perform to clear your thoughts?", hin: "आज अपने विचारों को निर्मल करने के लिए आपने कौन सा स्वाध्याय या मंत्र जाप किया?" }
+    { text: "What spiritual self-study (Swadhyay) or chanting (Japa) did you perform to clear your thoughts?", hin: "आज अपने विचारों को निर्मल करने के लिए आपने कौन सा स्वाध्याय या मंत्र जाप किया?" },
+    { text: "How did you practice viewing a situation from multiple perspectives (Anekantavada) today?", hin: "आज आपने किस परिस्थिति में दूसरे व्यक्ति के दृष्टिकोण (अनेकांतवाद) को समझने का प्रयास किया?" },
+    { text: "In what way did you practice limiting desires or non-attachment (Aparigraha) today?", hin: "आज आपने अपनी भौतिक इच्छाओं या संग्रह प्रवृत्ति को सीमित करने (अपरिग्रह) का अभ्यास कैसे किया?" },
+    { text: "How did you maintain equanimity (Samata) when faced with praise or criticism today?", hin: "आज प्रशंसा या आलोचना मिलने पर आपने समता भाव (Equanimity) कैसे बनाए रखा?" },
+    { text: "Which of the four Kashayas (anger, pride, deceit, greed) did you successfully calm today?", hin: "आज आपने क्रोध, मान, माया या लोभ (चार कषाय) में से किसे शांत करने में सबसे बड़ी सफलता पाई?" }
   ];
 
   const [reflectionIndex, setReflectionIndex] = useState(0);
   const [customAiPrompt, setCustomAiPrompt] = useState("");
   const [loadingPrompt, setLoadingPrompt] = useState(false);
+  const [currentSuggestedPrompt, setCurrentSuggestedPrompt] = useState<{ hin: string; text: string } | null>(null);
+  const [loadingSuggest, setLoadingSuggest] = useState(false);
   const [quickNote, setQuickNote] = useState(() => localStorage.getItem('sadhana_quick_note') || "");
 
   useEffect(() => {
@@ -263,6 +327,85 @@ export default function SpiritualJournal({ onBack }: SpiritualJournalProps) {
     }
   };
 
+  // Generate a customized Jain philosophy reflection question
+  const handleSuggestPrompt = async () => {
+    setLoadingSuggest(true);
+    try {
+      const token = await auth.currentUser?.getIdToken(true);
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const systemPrompt = "You are a wise Jain Terapanth spiritual guide. Generate one short, deep daily reflection question (1-2 sentences) in simple Hindi and English based on Jain philosophy (Ahimsa, Sanyam, Anekantavada, Aparigraha, Samata, Swadhyay, or Pratikraman). Keep the format exactly as: 'Hindi text | English text'. Do not provide any other text.";
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          message: `Please trigger a new spiritual daily reflection prompt based on Jain philosophy. (Instructions: ${systemPrompt})`
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch AI prompt');
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No stream');
+
+      const decoder = new TextDecoder();
+      let fullText = '';
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6).trim();
+            if (dataStr === '[DONE]') break;
+            try {
+              const parsed = JSON.parse(dataStr);
+              if (parsed.chunk) {
+                if (!parsed.chunk.includes("<style>")) {
+                  fullText += parsed.chunk;
+                }
+              }
+            } catch (e) {
+              // Ignore
+            }
+          }
+        }
+      }
+
+      if (fullText.includes('|')) {
+        const parts = fullText.split('|');
+        setCurrentSuggestedPrompt({
+          hin: parts[0].trim(),
+          text: parts[1].trim()
+        });
+      } else if (fullText.trim()) {
+        setCurrentSuggestedPrompt({
+          hin: fullText.trim(),
+          text: ""
+        });
+      } else {
+        throw new Error("Invalid format received");
+      }
+    } catch (err) {
+      console.error("AI Prompt suggestion error:", err);
+      // Pick a random one from our local hand-picked Jain-inspired prompts list
+      const randomIdx = Math.floor(Math.random() * DAILY_REFLECTION_PROMPTS.length);
+      const p = DAILY_REFLECTION_PROMPTS[randomIdx];
+      setCurrentSuggestedPrompt({ hin: p.hin, text: p.text });
+    } finally {
+      setLoadingSuggest(false);
+    }
+  };
+
   // Generate today's Hindi date
   const todayHindiDate = new Date().toLocaleDateString('hi-IN', {
     weekday: 'long',
@@ -302,7 +445,9 @@ export default function SpiritualJournal({ onBack }: SpiritualJournalProps) {
           createdAt: data.createdAt
         });
       });
-      setPastEntries(entries);
+      // Sort entries explicitly in reverse-chronological order (by ID which is the date YYYY-MM-DD)
+      const sorted = entries.sort((a, b) => b.id.localeCompare(a.id));
+      setPastEntries(sorted);
     }, (error) => {
       console.error("Error loading journal entries:", error);
     });
@@ -361,8 +506,12 @@ export default function SpiritualJournal({ onBack }: SpiritualJournalProps) {
         const dateId = new Date().toISOString().split('T')[0];
         const recordRef = doc(db, `users/${user.uid}/spiritualJournal`, dateId);
         
+        const formattedDate = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+        const datePrefix = `[${formattedDate}] `;
+        const textWithDate = text.startsWith(datePrefix) ? text : datePrefix + text;
+
         await setDoc(recordRef, {
-          text,
+          text: textWithDate,
           mood: selectedMood,
           emotionalState: emotionalState,
           createdAt: new Date().toISOString()
@@ -392,8 +541,12 @@ export default function SpiritualJournal({ onBack }: SpiritualJournalProps) {
           const dateId = new Date().toISOString().split('T')[0];
           const recordRef = doc(db, `users/${user.uid}/spiritualJournal`, dateId);
           
+          const formattedDate = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+          const datePrefix = `[${formattedDate}] `;
+          const textWithDate = draft.startsWith(datePrefix) ? draft : datePrefix + draft;
+
           await setDoc(recordRef, {
-            text: draft,
+            text: textWithDate,
             mood: selectedMood,
             emotionalState: emotionalState,
             createdAt: new Date().toISOString()
@@ -487,8 +640,13 @@ export default function SpiritualJournal({ onBack }: SpiritualJournalProps) {
       if (user) {
         const dateId = new Date().toISOString().split('T')[0];
         const recordRef = doc(db, `users/${user.uid}/spiritualJournal`, dateId);
+        
+        const formattedDate = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+        const datePrefix = `[${formattedDate}] `;
+        const textWithDate = text.startsWith(datePrefix) ? text : datePrefix + text;
+
         await setDoc(recordRef, {
-          text,
+          text: textWithDate,
           mood: selectedMood,
           emotionalState: emotionalState,
           aiReflection: fullText || "चिंतन उपलब्ध नहीं है",
@@ -899,10 +1057,123 @@ export default function SpiritualJournal({ onBack }: SpiritualJournalProps) {
           </div>
         </div>
 
+        {/* 🌟 Jain Philosophy Reflection Prompt Suggester */}
+        <div className="bg-gradient-to-br from-amber-500/5 to-rose-500/5 border border-amber-500/15 dark:border-rose-500/15 rounded-3xl p-5 space-y-3.5 text-left relative overflow-hidden">
+          {/* Subtle light effect decoration */}
+          <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+          
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[10px] sm:text-[10.5px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest flex items-center gap-1.5 select-none">
+              <Sparkles size={12} className="text-amber-500 animate-pulse" />
+              जैन दर्शन चिंतन सूत्र (Jain Philosophy Reflection Prompt)
+            </span>
+            <button
+              type="button"
+              onClick={handleSuggestPrompt}
+              disabled={loadingSuggest}
+              className="px-3.5 py-2 bg-amber-600/15 text-amber-700 dark:text-amber-300 hover:bg-amber-600/25 disabled:opacity-50 transition-all text-[10px] font-black tracking-wider uppercase rounded-xl border border-amber-500/20 active:scale-95 flex items-center gap-1.5 cursor-pointer shrink-0"
+            >
+              {loadingSuggest ? (
+                <>
+                  <Loader2 size={11} className="animate-spin text-amber-500" />
+                  <span>सुझाया जा रहा है...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles size={11} />
+                  <span>चिंतन सूत्र सुझाएं (Suggest Prompt)</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {currentSuggestedPrompt ? (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="bg-white/80 dark:bg-black/40 border border-amber-500/10 p-4 rounded-2xl space-y-3 relative shadow-sm"
+            >
+              <div className="space-y-1.5">
+                <p className="text-xs font-black text-amber-800 dark:text-amber-300 leading-relaxed">
+                  {currentSuggestedPrompt.hin}
+                </p>
+                {currentSuggestedPrompt.text && (
+                  <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 italic leading-snug">
+                    {currentSuggestedPrompt.text}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 sm:items-center justify-between border-t border-amber-500/5 pt-2.5">
+                <span className="text-[8.5px] font-black text-amber-600 dark:text-amber-500 uppercase tracking-widest">
+                  ★ स्वाध्याय, अपरिग्रह, समता व संवर साधना प्रेरणा
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const hinPart = currentSuggestedPrompt.hin;
+                    const engPart = currentSuggestedPrompt.text ? ` / ${currentSuggestedPrompt.text}` : '';
+                    setText(`[विषय: ${hinPart}${engPart}]\n\nआज का मेरा चिंतन: `);
+                    
+                    // Trigger tactile vibration
+                    if ('vibrate' in navigator) {
+                      navigator.vibrate(60);
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-black text-[9.5px] uppercase tracking-widest rounded-xl transition-all active:scale-95 cursor-pointer shadow-sm flex items-center gap-1 justify-center"
+                >
+                  <BookOpen size={10} />
+                  <span>लेखन में प्रयोग करें (Apply to Entry)</span>
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-black/[0.01] dark:bg-white/[0.01] border border-dashed border-amber-500/10 rounded-2xl p-4">
+              <p className="text-[10.5px] text-gray-500 dark:text-gray-400 font-semibold italic text-left leading-normal max-w-md">
+                "अपनी प्रविष्टि को अधिक गहरा बनाने के लिए जैन दर्शन (अहिंसा, अनेकांत, अपरिग्रह व समभाव) पर आधारित दिव्य चिंतन सूत्र प्राप्त करें।"
+              </p>
+              <button
+                type="button"
+                onClick={handleSuggestPrompt}
+                className="text-[10px] font-black text-amber-600 dark:text-amber-400 hover:underline uppercase tracking-widest cursor-pointer whitespace-nowrap"
+              >
+                👉 सूत्र प्राप्त करें
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* Text Area */}
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest block">मन के विचार एवं स्वाध्याय अवलोकन</label>
+            <div className="flex items-center gap-2">
+              <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest block">मन के विचार एवं स्वाध्याय अवलोकन</label>
+              
+              {/* Web Speech Dictation Controls */}
+              <div className="flex items-center gap-1 bg-black/[0.03] dark:bg-white/[0.03] p-0.5 rounded-full border border-black/5 dark:border-white/5">
+                <button
+                  type="button"
+                  onClick={toggleListening}
+                  className={`p-1.5 rounded-full transition-all flex items-center justify-center cursor-pointer ${
+                    isListening 
+                      ? 'bg-rose-500 text-white animate-pulse shadow-md shadow-rose-500/20' 
+                      : 'text-gray-400 hover:text-gray-650 hover:bg-black/5 dark:hover:bg-white/5'
+                  }`}
+                  title={isListening ? "Stop Dictation (डिक्टेशन बंद करें)" : "Start Voice Dictation (बोलकर लिखें)"}
+                >
+                  {isListening ? <Mic size={11} className="animate-bounce" /> : <Mic size={11} />}
+                </button>
+                <select
+                  value={dictationLang}
+                  onChange={(e) => setDictationLang(e.target.value as 'hi-IN' | 'en-US')}
+                  className="text-[9px] font-black text-gray-500 bg-transparent border-none focus:outline-none focus:ring-0 cursor-pointer pr-1 py-0"
+                  title="Select Dictation Language"
+                >
+                  <option value="hi-IN" className="bg-white dark:bg-zinc-900 text-gray-800 dark:text-gray-200">हिन्दी</option>
+                  <option value="en-US" className="bg-white dark:bg-zinc-900 text-gray-800 dark:text-gray-200">EN</option>
+                </select>
+              </div>
+            </div>
             {syncStatus !== 'idle' && (
               <span className={`text-[9px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-1 transition-all ${
                 syncStatus === 'synced' 

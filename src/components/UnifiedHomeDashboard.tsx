@@ -687,10 +687,10 @@ export default function UnifiedHomeDashboard({
       </div>
 
       {/* LOCATION SELECTION BAR */}
-      <div className="flex items-center justify-between w-full shrink-0 gap-3 my-4 px-1">
+      <div className="flex items-center justify-between w-full shrink-0 gap-3 mt-5 mb-3 px-1">
         <button 
           onClick={() => setModalOpen(true)}
-          className={`group flex items-center gap-2.5 px-6 py-3 transition-all duration-300 rounded-full text-xs font-black shadow-lg border cursor-pointer hover:scale-[1.03] active:scale-95 translate-y-1 ${
+          className={`group flex items-center gap-2.5 px-6 py-3 transition-all duration-300 rounded-full text-xs font-black shadow-lg border cursor-pointer hover:scale-[1.03] active:scale-95 translate-y-3.5 ${
             isDarkMode 
               ? 'bg-orange-600 hover:bg-orange-500 text-white border-orange-500/50 shadow-orange-950/40' 
               : 'bg-orange-500 hover:bg-orange-600 text-white border-orange-400/40 shadow-orange-500/25'
@@ -703,7 +703,7 @@ export default function UnifiedHomeDashboard({
         {!isDefault && (
           <button 
             onClick={() => setDefaultCity(activeCity)}
-            className={`flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-extrabold px-4 py-2.5 rounded-full transition-all duration-300 shadow-md border cursor-pointer hover:scale-[1.02] active:scale-95 translate-y-1 ${
+            className={`flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-extrabold px-4 py-2.5 rounded-full transition-all duration-300 shadow-md border cursor-pointer hover:scale-[1.02] active:scale-95 translate-y-3.5 ${
               isDarkMode 
                 ? 'bg-stone-800 hover:bg-stone-750 text-orange-400 border-stone-750 shadow-stone-950/30' 
                 : 'bg-orange-50 hover:bg-orange-100/70 text-orange-700 border-orange-200/50 shadow-orange-100/30'

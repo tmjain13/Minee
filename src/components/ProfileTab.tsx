@@ -161,6 +161,21 @@ export default function ProfileTab({
     }
   };
 
+  // --- Power Saver Mode State ---
+  const [powerSaverMode, setPowerSaverMode] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("terapanth_power_saver") === "true";
+    }
+    return false;
+  });
+
+  const togglePowerSaverMode = () => {
+    const newValue = !powerSaverMode;
+    setPowerSaverMode(newValue);
+    localStorage.setItem("terapanth_power_saver", newValue ? "true" : "false");
+    window.dispatchEvent(new Event("power-saver-changed"));
+  };
+
   // --- Festival Notification Preferences State ---
   const [festivalPrefs, setFestivalPrefs] = useState<{
     majorFestivals: boolean;
@@ -1841,13 +1856,11 @@ export default function ProfileTab({
               <div className="flex items-center justify-end pt-1">
                 <button
                   onClick={() => setShowExportConfirmation(true)}
-                  disabled={isExportingData || !user}
+                  disabled={isExportingData}
                   className={`py-1.5 px-3 rounded-lg text-[9px] font-extrabold uppercase tracking-widest flex items-center gap-1.5 transition-all shadow-sm ${
-                    !user
-                      ? "bg-zinc-50 dark:bg-zinc-950 text-zinc-300 dark:text-zinc-650 cursor-not-allowed shadow-none border border-black/[0.02] dark:border-zinc-800/20"
-                      : isExportingData
-                        ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 cursor-wait"
-                        : "bg-orange-500 hover:bg-orange-600 text-white active:scale-95 cursor-pointer"
+                    isExportingData
+                      ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 cursor-wait"
+                      : "bg-orange-500 hover:bg-orange-600 text-white active:scale-95 cursor-pointer"
                   }`}
                   title="Export complete spiritual profile and history records safely"
                 >
@@ -2019,6 +2032,36 @@ export default function ProfileTab({
                     />
                   </button>
                 </div>
+              </div>
+            </div>
+
+            {/* Power Saver Mode Block */}
+            <div className="pt-4 border-t border-black/[0.04] dark:border-zinc-800/20 space-y-3 text-left">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <Zap className={powerSaverMode ? "text-amber-500 animate-pulse" : "text-zinc-400"} size={16} />
+                    <span className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-zinc-100">
+                      Power Saver Mode (ऊर्जा बचत मोड)
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-normal max-w-xs">
+                    Limits background sync frequency and disables complex non-essential animations to preserve battery life and performance.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={togglePowerSaverMode}
+                  className={`w-10 h-6 rounded-full p-1 transition-all focus:outline-none cursor-pointer flex items-center shrink-0 ${
+                    powerSaverMode ? 'bg-amber-500' : 'bg-zinc-300 dark:bg-zinc-700'
+                  }`}
+                >
+                  <div
+                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-all ${
+                      powerSaverMode ? 'translate-x-4' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
               </div>
             </div>
 

@@ -69,6 +69,35 @@ export const useSyncKnowledgeBase = () => {
       // Defer execution entirely to a background timeout to ensure instant UI rendering
       setTimeout(async () => {
         try {
+          const isPowerSaverActive = localStorage.getItem("terapanth_power_saver") === "true";
+          if (isPowerSaverActive) {
+            devLog("[Power Saver] Bypassing background dynamic QAs network fetches to save CPU & battery.");
+            localStorage.setItem('knowledge_base_sync_status', 'power_saving');
+            localStorage.setItem('knowledge_base_sync_progress', '100');
+            try {
+              const cached = await getCachedDynamicQAs();
+              let cachedDynamic = cached || [];
+              if (cachedDynamic.length === 0) {
+                const localQAs = localStorage.getItem('terapanth_dynamic_qas');
+                if (localQAs) {
+                  cachedDynamic = JSON.parse(localQAs);
+                }
+              }
+              const quizItems = (quizMaster.jainQuizDatabase || []).map((q: any) => ({
+                id: `quiz-${q.id}`,
+                title: q.question,
+                category: 'Philosophy',
+                description: q.explanation || '',
+                details: q.options?.join(', ') || '',
+                tags: ['Quiz', 'FAQ']
+              }));
+              setKnowledgeItems([...KNOWLEDGE_BASE, ...cachedDynamic, ...quizItems]);
+            } catch (err) {
+              console.error("Failed to load local cache under power saver:", err);
+            }
+            return;
+          }
+
           localStorage.setItem('knowledge_base_sync_progress', '0');
           localStorage.setItem('knowledge_base_sync_status', 'indexing');
 
@@ -161,4 +190,35 @@ export const useSyncKnowledgeBase = () => {
   }, []);
 
   return knowledgeItems;
+};
+
+/**
+ * Fully offline search with custom parameters that queries the inverted index and caches results.
+ */
+export const searchKnowledgeOffline = async (queryStr: string) => {
+  if (!queryStr || queryStr.trim() === '') return [];
+  const normalizedQuery = queryStr.toLowerCase().trim();
+
+  try {
+    // 1. Try to read from the IndexedDB Search Cache first
+    const { getCachedSearchResult, cacheSearchResult, searchOfflineKnowledge } = await import('../lib/offlineSearch');
+    const cachedResults = await getCachedSearchResult(normalizedQuery);
+    if (cachedResults) {
+      console.log(`[Offline Cache] Returned cached search results for: "${normalizedQuery}"`);
+      return cachedResults;
+    }
+
+    // 2. Query the full inverted index offline
+    const results = await searchOfflineKnowledge(normalizedQuery);
+
+    // 3. Cache the results for future offline queries
+    if (results && results.length > 0) {
+      await cacheSearchResult(normalizedQuery, results);
+    }
+
+    return results;
+  } catch (error) {
+    console.error("Error performing offline search:", error);
+    return [];
+  }
 };

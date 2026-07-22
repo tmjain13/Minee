@@ -33,9 +33,35 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
     }
   }, [isOpen]);
 
+  const [offlineResults, setOfflineResults] = useState<KnowledgeItem[]>([]);
+
+  useEffect(() => {
+    const fetchOfflineResults = async () => {
+      if (!searchQuery.trim()) {
+        setOfflineResults([]);
+        return;
+      }
+      try {
+        const { searchKnowledgeOffline } = await import("../hooks/useSyncKnowledgeBase");
+        const results = await searchKnowledgeOffline(searchQuery);
+        setOfflineResults(results);
+      } catch (err) {
+        console.error("Offline search failed:", err);
+      }
+    };
+    
+    const debounceTimer = setTimeout(fetchOfflineResults, 150);
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery]);
+
   // Simple and highly effective scoring fuzzy-search logic
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
+
+    // If we have offline IndexedDB cached results, prefer them!
+    if (offlineResults && offlineResults.length > 0) {
+      return offlineResults;
+    }
 
     const queryTerms = searchQuery
       .toLowerCase()
