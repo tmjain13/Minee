@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { IllustratedEmptyState } from './IllustratedEmptyState';
 import { auth, db } from '../lib/firebase';
 import {
   collection,
@@ -1277,9 +1278,15 @@ export default function SpiritualJournal({ onBack }: SpiritualJournalProps) {
         </h4>
 
         {pastEntries.length === 0 ? (
-          <p className="text-xs text-gray-400 leading-relaxed italic">
-            अभी तक कोई चिंतन सहेजा नहीं गया है। आज का चिंतन लिखकर AI प्रतिबिंब पाएं। वो इतिहास यहाँ सुरक्षित रहेगा।
-          </p>
+          <IllustratedEmptyState
+            type="journal"
+            title="कोई चिंतन प्रविष्टि नहीं (No Entries Recorded)"
+            description="अभी तक कोई चिंतन सहेजा नहीं गया है। आज का चिंतन लिखकर AI प्रतिबिंब एवं पावन मार्गदर्शन प्राप्त करें।"
+            actionLabel="आज का चिंतन लिखें"
+            onAction={() => {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
         ) : (
           <div className="space-y-2.5">
             {pastEntries.slice(0, 7).map((entry) => {

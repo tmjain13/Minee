@@ -1,5 +1,6 @@
 import { useState, useEffect, memo, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { IllustratedEmptyState } from './IllustratedEmptyState';
 import { Pen, Plus, Trash2, Calendar, Sparkles, X, Bookmark, Download, TrendingDown, Info, Flame, Bell, BellRing, Clock, CheckCircle2, FileText } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { jsPDF } from 'jspdf';
@@ -1453,13 +1454,13 @@ const SadhanaDiary = memo(() => {
 
       <div className="space-y-4">
         {entries.length === 0 ? (
-          <div className="p-10 border-2 border-dashed border-orange-500/15 dark:border-zinc-800 rounded-[2.5rem] bg-gradient-to-b from-amber-500/[0.02] to-transparent text-center max-w-lg mx-auto">
-            <SadhanaIllustration />
-            <h4 className="serif-text text-sm font-bold text-amber-700 dark:text-amber-400 mb-1.5">अपनी पहली साधना प्रविष्टि दर्ज करें</h4>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto leading-relaxed">
-              यहाँ आपकी दैनिक स्वाध्याय, समता भाव और तप की अनुभूतियाँ सुरक्षित रहेंगी। अपनी पहली आध्यात्मिक प्रविष्टि लिखने के लिए ऊपर दिए गए "+" बटन पर क्लिक करें।
-            </p>
-          </div>
+          <IllustratedEmptyState
+            type="journal"
+            title="साधना डायरी प्रविष्टि दर्ज करें (No Sadhana Entries Yet)"
+            description="यहाँ आपकी दैनिक स्वाध्याय, समता भाव और तप की अनुभूतियाँ सुरक्षित रहेंगी। अपनी पहली प्रविष्टि लिखने के लिए नीचे बटन पर क्लिक करें।"
+            actionLabel="नई साधना प्रविष्टि लिखें"
+            onAction={() => setIsAdding(true)}
+          />
         ) : (
           entries.map((entry) => (
             <motion.div

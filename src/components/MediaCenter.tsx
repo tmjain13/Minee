@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { IllustratedEmptyState } from './IllustratedEmptyState';
 import { 
   Play, 
   Pause,
@@ -1653,21 +1654,13 @@ export default function MediaCenter() {
             </section>
           );
         }) : (
-          <div className="py-20 flex flex-col items-center justify-center text-center space-y-4 bg-gray-50 dark:bg-gray-800/20 rounded-[3rem] border border-dashed border-black/5 dark:border-white/5">
-             <div className="p-6 bg-white dark:bg-gray-800 rounded-full shadow-sm text-gray-300">
-                <Youtube size={40} />
-             </div>
-             <div>
-                <h3 className="font-bold text-gray-400">No videos found</h3>
-                <p className="text-xs text-gray-400/60 uppercase tracking-widest font-black font-sans">Try adjusting your filters</p>
-             </div>
-             <button 
-              onClick={() => { setActiveType('All'); setActiveCategory('All'); setSelectedMood('All Moods'); setSearchQuery(''); }}
-              className="px-6 py-3 bg-spiritual text-white rounded-2xl text-[10px] font-black uppercase tracking-widest"
-             >
-               Clear All Filters
-             </button>
-          </div>
+          <IllustratedEmptyState
+            type="media"
+            title="कोई मीडिया सामग्री नहीं मिली (No Media Found)"
+            description="चयनित श्रेणी, फ़िल्टर या खोज शब्द में कोई मीडिया उपलब्ध नहीं है। कृपया फ़िल्टर बदलें या सभी वीडियो देखें।"
+            actionLabel="फ़िल्टर साफ़ करें (Clear All Filters)"
+            onAction={() => { setActiveType('All'); setActiveCategory('All'); setSelectedMood('All Moods'); setSearchQuery(''); }}
+          />
         )}
           </>
         )}

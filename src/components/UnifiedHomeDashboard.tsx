@@ -716,7 +716,11 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
       </div>
       
       {/* 1. PATH OF NON-VIOLENCE MOUNTAIN BANNER */}
-      <div className={`relative w-full h-36 rounded-2xl overflow-hidden shadow-xs border shrink-0 transition-all ${isDarkMode ? 'border-stone-800' : 'border-stone-200'}`}>
+      <motion.div 
+        whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
+        whileTap={{ scale: 0.98 }} 
+        className={`relative w-full h-36 rounded-2xl overflow-hidden shadow-xs border shrink-0 transition-all ${isDarkMode ? 'border-stone-800' : 'border-stone-200'}`}
+      >
         <img 
           src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=80" 
           alt="Path of Non-Violence" 
@@ -730,10 +734,13 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
             {language === 'hi' ? 'अहिंसा परमो धर्मः' : 'Ahimsa Paramo Dharma'}
           </p>
         </div>
-      </div>
+      </motion.div>
 
       {/* 2. PERSONALIZED GREETING LAYER */}
-      <div className={`w-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 shrink-0 flex justify-between items-center ${
+      <motion.div 
+        whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
+        whileTap={{ scale: 0.98 }} 
+        className={`w-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 shrink-0 flex justify-between items-center ${
         isDarkMode 
           ? 'bg-stone-900/80 border-stone-800/80 text-stone-100 shadow-none' 
           : 'bg-white/80 border-stone-200/50 text-stone-800 shadow-xs'
@@ -769,17 +776,21 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* DYNAMIC CARD GRID (1 col mobile, 2 cols tablet, 3 cols desktop) with consistent card heights */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full items-stretch">
 
         {/* SOLAR LIFECYCLE CARD */}
-        <div className={`w-full p-4 rounded-2xl border transition-all duration-200 flex flex-col justify-between gap-4 ${
-          isDarkMode 
-            ? 'bg-[#292724]/90 border-stone-800 text-stone-100 shadow-none' 
-            : 'bg-[#faf7f2] border-stone-200/65 text-stone-800 shadow-xs'
-        }`}>
+        <motion.div 
+          whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
+          whileTap={{ scale: 0.98 }} 
+          className={`w-full p-4 rounded-2xl border transition-all duration-200 flex flex-col justify-between gap-4 ${
+            isDarkMode 
+              ? 'bg-[#292724]/90 border-stone-800 text-stone-100 shadow-none' 
+              : 'bg-[#faf7f2] border-stone-200/65 text-stone-800 shadow-xs'
+          }`}
+        >
           {/* Header */}
           <div className="flex justify-between items-center">
             <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold border ${
@@ -838,14 +849,18 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
               <div className="text-stone-800 dark:text-purple-400 font-mono text-xs font-bold">{sunsetString}</div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* LOCAL VIHAR UPDATES CARD */}
-        <div className={`w-full p-4 rounded-2xl border transition-all duration-200 flex flex-col justify-between gap-3 ${
-          isDarkMode 
-            ? 'bg-gradient-to-b from-stone-900/90 to-stone-950/90 border-stone-800 text-stone-100 shadow-none' 
-            : 'bg-gradient-to-b from-orange-50/20 to-amber-50/30 border-stone-200/65 text-stone-800 shadow-xs'
-        }`}>
+        <motion.div 
+          whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
+          whileTap={{ scale: 0.98 }} 
+          className={`w-full p-4 rounded-2xl border transition-all duration-200 flex flex-col justify-between gap-3 ${
+            isDarkMode 
+              ? 'bg-gradient-to-b from-stone-900/90 to-stone-950/90 border-stone-800 text-stone-100 shadow-none' 
+              : 'bg-gradient-to-b from-orange-50/20 to-amber-50/30 border-stone-200/65 text-stone-800 shadow-xs'
+          }`}
+        >
           {/* Header */}
           <div className="flex justify-between items-center shrink-0">
             <div className="flex items-center gap-2">
@@ -915,14 +930,18 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
             <span>विहार ट्रैकर खोलें</span>
             <ArrowRight size={10} />
           </button>
-        </div>
+        </motion.div>
 
         {/* PARYUSHANA MAHAPARVA COUNTDOWN TIMER CARD */}
-        <div className={`w-full h-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-4 ${
-          isDarkMode 
-            ? 'bg-gradient-to-b from-stone-900/90 to-stone-950/90 border-stone-800 text-stone-100 shadow-none' 
-            : 'bg-gradient-to-b from-orange-50/20 to-amber-50/30 border-stone-200/65 text-stone-800 shadow-xs'
-        }`}>
+        <motion.div 
+          whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
+          whileTap={{ scale: 0.98 }} 
+          className={`w-full h-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-4 ${
+            isDarkMode 
+              ? 'bg-gradient-to-b from-stone-900/90 to-stone-950/90 border-stone-800 text-stone-100 shadow-none' 
+              : 'bg-gradient-to-b from-orange-50/20 to-amber-50/30 border-stone-200/65 text-stone-800 shadow-xs'
+          }`}
+        >
           {/* Header */}
           <div className="flex justify-between items-start">
             <div className="flex items-start gap-2.5">
@@ -1052,14 +1071,18 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
             <Sparkles className="w-3.5 h-3.5" />
             <span>साधना की तैयारी करें (Prepare Sadhana)</span>
           </button>
-        </div>
+        </motion.div>
 
         {/* RECOMMENDED DAILY VACHAN */}
-        <div className={`w-full h-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-4 ${
-          isDarkMode 
-            ? 'bg-stone-900/80 border-stone-800/80 text-stone-100 shadow-none' 
-            : 'bg-white/80 border-stone-200/50 text-stone-800 shadow-xs'
-        }`}>
+        <motion.div 
+          whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
+          whileTap={{ scale: 0.98 }} 
+          className={`w-full h-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-4 ${
+            isDarkMode 
+              ? 'bg-stone-900/80 border-stone-800/80 text-stone-100 shadow-none' 
+              : 'bg-white/80 border-stone-200/50 text-stone-800 shadow-xs'
+          }`}
+        >
           <div className="flex justify-between items-start">
             <div className="flex items-start gap-2.5">
               <div className={`p-2 rounded-xl shrink-0 ${isDarkMode ? 'bg-orange-950/40 text-orange-400' : 'bg-orange-100/60 text-orange-600'}`}>
@@ -1129,15 +1152,19 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
               <span>{language === 'hi' ? 'पुस्तकालय देखें' : 'Browse Library'}</span>
             </button>
           </div>
-        </div>
+        </motion.div>
 
         {/* 4. VIHAR STATUS CARD */}
         {preferences.quick_actions && (
-          <div className={`w-full h-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-4 ${
-            isDarkMode 
-              ? 'bg-stone-900/80 border-stone-800/80 text-stone-100 shadow-none' 
-              : 'bg-white/80 border-stone-200/50 text-stone-800 shadow-xs'
-          }`}>
+          <motion.div 
+            whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
+            whileTap={{ scale: 0.98 }} 
+            className={`w-full h-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-4 ${
+              isDarkMode 
+                ? 'bg-stone-900/80 border-stone-800/80 text-stone-100 shadow-none' 
+                : 'bg-white/80 border-stone-200/50 text-stone-800 shadow-xs'
+            }`}
+          >
             <div className="flex items-start gap-3">
               <div className={`p-2.5 rounded-xl shrink-0 ${isDarkMode ? 'bg-stone-800 text-orange-400' : 'bg-orange-50 text-orange-600'}`}>📍</div>
               <div className="flex-1 min-w-0">
@@ -1158,16 +1185,20 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
             >
               Track
             </button>
-          </div>
+          </motion.div>
         )}
 
         {/* MY SAVED SAINTS QUICK-ACCESS DECK */}
         {preferences.quick_links && (
-          <div className={`w-full h-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-3 ${
-            isDarkMode 
-              ? 'bg-stone-900/80 border-stone-800/80 text-stone-100 shadow-none' 
-              : 'bg-white/80 border-stone-200/50 text-stone-800 shadow-xs'
-          }`}>
+          <motion.div 
+            whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
+            whileTap={{ scale: 0.98 }} 
+            className={`w-full h-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-3 ${
+              isDarkMode 
+                ? 'bg-stone-900/80 border-stone-800/80 text-stone-100 shadow-none' 
+                : 'bg-white/80 border-stone-200/50 text-stone-800 shadow-xs'
+            }`}
+          >
             <div className="flex justify-between items-center w-full">
               <div className="flex items-center gap-2">
                 <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
@@ -1229,16 +1260,21 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
                 ))}
               </div>
             )}
-          </div>
+          </motion.div>
         )}
 
         {/* 5. MONASTIC ITINERARY SYSTEM WITH SMOOTH REGIONAL FILTERING */}
         {preferences.quick_links && (
-          <div className={`w-full h-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-3 ${
-            isDarkMode 
-              ? 'bg-stone-900/80 border-stone-800/80 text-stone-100 shadow-none' 
-              : 'bg-white/80 border-stone-200/50 text-stone-800 shadow-xs'
-          }`} id="monastic-itinerary-deck">
+          <motion.div 
+            whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
+            whileTap={{ scale: 0.98 }} 
+            className={`w-full h-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-3 ${
+              isDarkMode 
+                ? 'bg-stone-900/80 border-stone-800/80 text-stone-100 shadow-none' 
+                : 'bg-white/80 border-stone-200/50 text-stone-800 shadow-xs'
+            }`} 
+            id="monastic-itinerary-deck"
+          >
             <div className="flex justify-between items-center w-full">
               <div>
                 <span className={`text-[9px] font-extrabold uppercase tracking-widest rounded-md w-fit px-2 py-0.5 ${isDarkMode ? 'bg-orange-500/15 text-orange-400' : 'text-orange-700 bg-orange-50'}`}>
@@ -1392,7 +1428,7 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
                 </>
               )}
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* COMMUNITY POLLS COMPONENT */}
@@ -1403,11 +1439,15 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
         )}
 
         {/* DAILY VACHAN CARD */}
-        <div className={`w-full h-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-3 ${
-          isDarkMode 
-            ? 'bg-amber-950/20 border-amber-900/30 text-stone-100' 
-            : 'bg-amber-50/60 border-amber-150 text-stone-800 shadow-xs'
-        }`}>
+        <motion.div 
+          whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
+          whileTap={{ scale: 0.98 }} 
+          className={`w-full h-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-3 ${
+            isDarkMode 
+              ? 'bg-amber-950/20 border-amber-900/30 text-stone-100' 
+              : 'bg-amber-50/60 border-amber-150 text-stone-800 shadow-xs'
+          }`}
+        >
           <div className="flex justify-between items-center text-xs">
             <div className="flex items-center gap-1.5">
               <span className="text-amber-500">📜</span>
@@ -1438,14 +1478,18 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
             <span>{language === 'hi' ? 'दर्शन एवं वाचन' : 'View Daily Vachan'}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
-        </div>
+        </motion.div>
 
         {/* 6. DAILY SUVICHAR ENGINE LAYER */}
-        <div className={`w-full h-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-3 ${
-          isDarkMode 
-            ? 'bg-emerald-950/20 border-emerald-900/30 text-stone-100' 
-            : 'bg-emerald-50/70 border-emerald-100/60 text-stone-800 shadow-xs'
-        }`}>
+        <motion.div 
+          whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
+          whileTap={{ scale: 0.98 }} 
+          className={`w-full h-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-3 ${
+            isDarkMode 
+              ? 'bg-emerald-950/20 border-emerald-900/30 text-stone-100' 
+              : 'bg-emerald-50/70 border-emerald-100/60 text-stone-800 shadow-xs'
+          }`}
+        >
           <div className="flex items-center gap-2">
             <Calendar className={`w-4 h-4 ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`} />
             <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${isDarkMode ? 'text-emerald-400 bg-emerald-500/10' : 'text-emerald-800 bg-emerald-100/60'}`}>आज का सुविचार — 05 JULY 2026</span>
@@ -1461,17 +1505,21 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
             <button className={`flex items-center justify-center gap-1 py-1.5 border rounded-xl text-xs font-semibold active:scale-95 transition-transform ${isDarkMode ? 'bg-stone-950 border-stone-800 text-stone-300' : 'bg-white border-stone-200 text-stone-600'}`}><Bookmark className="w-3.5 h-3.5" /> Save</button>
             <button onClick={() => setQuoteIndex((prev) => (prev + 1) % SUVICHAR_BANK.length)} className="flex items-center justify-center gap-1 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-semibold active:scale-95 transition-transform cursor-pointer">Next <ArrowRight className="w-3.5 h-3.5" /></button>
           </div>
-        </div>
+        </motion.div>
 
         {/* 7.1. DYNAMIC LUNAR MOON PHASE & TITHI WIDGET */}
         <MoonPhaseWidget isDarkMode={isDarkMode} setActiveTab={setActiveTab} />
 
         {/* DARSHAN GALLERY CARD (Migrated from Footer) */}
-        <div className={`w-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 ${
-          isDarkMode 
-            ? 'bg-stone-900/80 border-stone-800/80 text-stone-100 shadow-none' 
-            : 'bg-white/80 border-stone-200/50 text-stone-800 shadow-xs'
-        }`}>
+        <motion.div 
+          whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
+          whileTap={{ scale: 0.98 }} 
+          className={`w-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 ${
+            isDarkMode 
+              ? 'bg-stone-900/80 border-stone-800/80 text-stone-100 shadow-none' 
+              : 'bg-white/80 border-stone-200/50 text-stone-800 shadow-xs'
+          }`}
+        >
           {/* Header */}
           <div className="flex justify-between items-center mb-3">
             <div className="flex items-center gap-2">
@@ -1509,14 +1557,18 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* THE CANONICAL UNIFIED WINGS MATRIX - FULL GRAPHICAL BRANDING UPGRADE */}
-        <div className={`w-full h-full p-5 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-4 ${
-          isDarkMode 
-            ? 'bg-stone-900/80 border-stone-800/80 text-stone-100 shadow-none' 
-            : 'bg-white/80 border-stone-200/50 text-stone-800 shadow-xs'
-        }`}>
+        <motion.div 
+          whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
+          whileTap={{ scale: 0.98 }} 
+          className={`w-full h-full p-5 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-4 ${
+            isDarkMode 
+              ? 'bg-stone-900/80 border-stone-800/80 text-stone-100 shadow-none' 
+              : 'bg-white/80 border-stone-200/50 text-stone-800 shadow-xs'
+          }`}
+        >
           <div>
             <span className={`text-[9px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-md ${isDarkMode ? 'bg-emerald-500/10 text-emerald-400' : 'text-emerald-700 bg-emerald-50'}`}>
               धर्मसंघीय संस्थाएं
@@ -1551,14 +1603,18 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* 9. REFINEMENT TRACK FOR CHECKLIST AND QUIZ CORES */}
-        <div className={`w-full h-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-4 ${
-          isDarkMode 
-            ? 'bg-stone-900/80 border-stone-800/80 text-stone-100 shadow-none' 
-            : 'bg-white/80 border-stone-200/50 text-stone-800 shadow-xs'
-        }`}>
+        <motion.div 
+          whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
+          whileTap={{ scale: 0.98 }} 
+          className={`w-full h-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-4 ${
+            isDarkMode 
+              ? 'bg-stone-900/80 border-stone-800/80 text-stone-100 shadow-none' 
+              : 'bg-white/80 border-stone-200/50 text-stone-800 shadow-xs'
+          }`}
+        >
           <div>
             <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${isDarkMode ? 'text-purple-400 bg-purple-500/15' : 'text-purple-600 bg-purple-50'}`}>Knowledge Test (ज्ञान परीक्षा)</span>
             <h3 className={`font-serif text-base font-bold mt-1 leading-snug ${isDarkMode ? 'text-stone-50' : 'text-stone-950'}`}>अजीव तत्व के कुल कितने मुख्य भेद जैन आगमों में वर्णित हैं?</h3>
@@ -1582,17 +1638,21 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
               </button>
             ))}
           </div>
-        </div>
+        </motion.div>
 
       </div>
 
       {/* COMPLETELY REFACTORED PREMIUM LIGHT-THEME ABOUT US & FOOTER */}
       <div className="clear-both w-full block mt-4 mb-6 px-1">
-        <div className={`w-full p-5 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col gap-4 ${
-          isDarkMode 
-            ? 'bg-stone-900/80 border-stone-800/80 text-stone-100 shadow-none' 
-            : 'bg-white/80 border-stone-200/70 text-stone-800 shadow-2xs'
-        }`}>
+        <motion.div 
+          whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
+          whileTap={{ scale: 0.98 }} 
+          className={`w-full p-5 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col gap-4 ${
+            isDarkMode 
+              ? 'bg-stone-900/80 border-stone-800/80 text-stone-100 shadow-none' 
+              : 'bg-white/80 border-stone-200/70 text-stone-800 shadow-2xs'
+          }`}
+        >
           
           {/* Clean Monastic Header Section */}
           <div className={`flex items-center gap-3 border-b pb-3 ${isDarkMode ? 'border-stone-800' : 'border-stone-100'}`}>
@@ -1641,7 +1701,7 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
             </p>
           </div>
 
-        </div>
+        </motion.div>
       </div>
 
       {/* FIXED POSITIONED SYSTEM FLOATING NAVIGATION INTERACTION BAR BUTTONS */}

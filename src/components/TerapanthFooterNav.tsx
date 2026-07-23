@@ -1,16 +1,66 @@
 import React, { useState, useEffect } from 'react';
-import { Home, Calendar, MessageSquare, Heart, User, RefreshCw } from 'lucide-react';
+import { Home, Calendar, User, RefreshCw, SlidersHorizontal } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getSyncQueueSize, syncPendingRecords, isOnline } from '../services/sadhanaOfflineSync';
 
 interface TerapanthFooterNavProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  language: string; // भाषा बदलने के लिए नया प्रॉप
+  language: string;
   isPaginationVisible?: boolean;
 }
 
-const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({ activeTab, setActiveTab, language, isPaginationVisible = true }) => {
+// Custom Lotus Icon for Sadhana tab to replace standard Heart
+const LotusIcon: React.FC<{ size?: number; className?: string }> = ({ size = 20, className = "" }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M12 4C10 7.5 7 10 3 11C6.5 13.5 8.5 17.5 12 20C15.5 17.5 17.5 13.5 21 11C17 10 14 7.5 12 4Z" />
+    <path d="M12 9C10.5 11.5 8 13.5 5 14.2C7.5 16 9.2 18.2 12 20C14.8 18.2 16.5 16 19 14.2C16 13.5 13.5 11.5 12 9Z" opacity="0.6" />
+    <circle cx="12" cy="14" r="1.5" fill="currentColor" opacity="0.8" />
+  </svg>
+);
+
+// Branded AI Wisdom Emblem for Center Tab (Minee AI)
+const MineeAIEmblem: React.FC<{ isActive: boolean }> = ({ isActive }) => (
+  <div className="relative flex items-center justify-center">
+    <div
+      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${
+        isActive
+          ? "bg-[#6E1F2A] text-[#B68D40] ring-2 ring-[#B68D40]/60 shadow-[#6E1F2A]/30 scale-105"
+          : "bg-[#6E1F2A] text-amber-100 hover:bg-[#50161E] ring-1 ring-[#B68D40]/30"
+      }`}
+    >
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+        {/* Wisdom Ray / Triratna Agam Sparkle Emblem */}
+        <circle cx="12" cy="12" r="2" fill="currentColor" />
+        <circle cx="12" cy="6" r="1.2" fill="#B68D40" />
+        <circle cx="7" cy="15" r="1.2" fill="#B68D40" />
+        <circle cx="17" cy="15" r="1.2" fill="#B68D40" />
+        <path d="M12 3V8M12 16V21M3 12H8M16 12H21" strokeLinecap="round" opacity="0.8" />
+        <path d="M5.6 5.6L9.2 9.2M14.8 14.8L18.4 18.4M18.4 5.6L14.8 9.2M9.2 14.8L5.6 18.4" strokeLinecap="round" strokeDasharray="1 2.5" opacity="0.5" />
+      </svg>
+    </div>
+    {isActive && (
+      <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-[#B68D40] animate-pulse" />
+    )}
+  </div>
+);
+
+const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({
+  activeTab,
+  setActiveTab,
+  language,
+  isPaginationVisible = true
+}) => {
   const { user } = useAuth();
   const [pendingSyncs, setPendingSyncs] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -19,7 +69,6 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({ activeTab, setA
     const size = await getSyncQueueSize();
     setPendingSyncs(size);
     
-    // Auto-sync if online, there are pending items, and user is logged in
     if (size > 0 && isOnline() && user && !isSyncing) {
       setIsSyncing(true);
       try {
@@ -36,140 +85,126 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({ activeTab, setA
 
   useEffect(() => {
     checkSyncQueue();
-    // Poll the sync queue size periodically
     const interval = setInterval(checkSyncQueue, 4000);
-    
     window.addEventListener('online', checkSyncQueue);
     window.addEventListener('offline', checkSyncQueue);
-
-    const handleServiceWorkerMessage = (event: MessageEvent) => {
-      if (event.data && event.data.type === 'TRIGGER_BACKGROUND_SYNC') {
-        console.log('[Offline Sync] Service Worker triggered background sync.');
-        checkSyncQueue();
-      }
-    };
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
-    }
 
     return () => {
       clearInterval(interval);
       window.removeEventListener('online', checkSyncQueue);
       window.removeEventListener('offline', checkSyncQueue);
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage);
-      }
     };
   }, [user]);
 
   const navItems = [
-    { id: 'home', icon: Home, labelEn: 'Home', labelHi: 'होम' },
+    { id: 'home', icon: Home, labelEn: 'Home', labelHi: 'गृह' },
     { id: 'panchang', icon: Calendar, labelEn: 'Calendar', labelHi: 'पंचांग' },
-    { id: 'chat', icon: MessageSquare, labelEn: 'Chat', labelHi: 'चैट' },
-    { id: 'sadhana', icon: Heart, labelEn: 'Sadhana', labelHi: 'साधना' },
+    { id: 'chat', isAi: true, labelEn: 'Minee AI', labelHi: 'मिनी AI' },
+    { id: 'sadhana', isLotus: true, labelEn: 'Sadhana', labelHi: 'साधना' },
     { id: 'profile', icon: User, labelEn: 'Profile', labelHi: 'प्रोफ़ाइल' }
   ];
 
-  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
-    if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      const nextIndex = (index + 1) % navItems.length;
-      setActiveTab(navItems[nextIndex].id);
-      setTimeout(() => {
-        const nextEl = document.getElementById(`tp-nav-tab-${navItems[nextIndex].id}`);
-        nextEl?.focus();
-      }, 50);
-    } else if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      const prevIndex = (index - 1 + navItems.length) % navItems.length;
-      setActiveTab(navItems[prevIndex].id);
-      setTimeout(() => {
-        const prevEl = document.getElementById(`tp-nav-tab-${navItems[prevIndex].id}`);
-        prevEl?.focus();
-      }, 50);
-    }
-  };
-
   return (
-    <nav 
-      className={`fixed bottom-0 left-0 right-0 z-50 border-t border-orange-600/20 bg-gradient-to-r from-orange-500 via-orange-400 to-amber-500 text-white shadow-[0_-4px_20px_rgba(0,0,0,0.12)] transition-all duration-300 ${
-        isPaginationVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
+    <div
+      className={`fixed bottom-4 left-0 right-0 z-50 px-4 pointer-events-none transition-all duration-300 ${
+        isPaginationVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
       }`}
     >
-      <div className="max-w-md mx-auto px-2 pb-safe">
-        <div className="h-[60px] flex items-center justify-around relative">
-          
-          {/* Subtle Global Sync Status Strip at the very top edge if pending */}
-          {pendingSyncs > 0 && (
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full px-3 py-1 rounded-t-xl text-[9px] font-black tracking-widest uppercase flex items-center gap-1.5 transition-all duration-300 border border-b-0 shadow-xs bg-orange-600 text-white" style={{ borderColor: 'rgba(234, 88, 12, 0.3)' }}>
-              <RefreshCw size={10} className={isSyncing ? 'animate-spin' : 'animate-pulse'} />
-              <span>
-                {isSyncing 
-                  ? (language === 'hi' ? 'क्लाउड सिंक जारी...' : 'SYNCING TO CLOUD...') 
-                  : (language === 'hi' ? `${pendingSyncs} सिंक लंबित` : `${pendingSyncs} SYNC PENDING`)}
-              </span>
-            </div>
-          )}
+      <nav
+        className="max-w-md mx-auto pointer-events-auto bg-[#FFFDF8]/90 dark:bg-[#1C1014]/90 backdrop-blur-xl border border-[#ECE8E3] dark:border-[#2E1B22] rounded-full px-3 py-1.5 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.4)] relative"
+        aria-label="Primary Navigation"
+      >
+        {/* Subtle Sync Badge */}
+        {pendingSyncs > 0 && (
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase flex items-center gap-1 bg-[#6E1F2A] text-white border border-[#B68D40]/30 shadow-xs">
+            <RefreshCw size={10} className={isSyncing ? 'animate-spin' : ''} />
+            <span>{isSyncing ? 'Syncing...' : `${pendingSyncs} Offline`}</span>
+          </div>
+        )}
 
-          {navItems.map((item, idx) => {
+        <div className="flex items-center justify-between">
+          {navItems.map((item) => {
             const Active = activeTab === item.id;
-            const Icon = item.icon;
+
+            if (item.isAi) {
+              return (
+                <button
+                  key={item.id}
+                  id={`tp-nav-tab-${item.id}`}
+                  onClick={() => {
+                    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                      navigator.vibrate(25);
+                    }
+                    setActiveTab(item.id);
+                  }}
+                  className="relative -top-3 px-2 flex flex-col items-center justify-center cursor-pointer group focus:outline-none"
+                  aria-label={item.labelEn}
+                  aria-current={Active ? 'page' : undefined}
+                >
+                  <MineeAIEmblem isActive={Active} />
+                  <span
+                    className={`text-[9.5px] font-semibold mt-0.5 transition-colors ${
+                      Active ? 'text-[#6E1F2A] dark:text-[#D4AF64] font-bold' : 'text-stone-500 dark:text-stone-400'
+                    }`}
+                  >
+                    {language === 'hi' ? item.labelHi : item.labelEn}
+                  </span>
+                </button>
+              );
+            }
+
+            const IconComponent = item.icon;
 
             return (
               <button
                 key={item.id}
                 id={`tp-nav-tab-${item.id}`}
-                onKeyDown={(e) => handleKeyDown(e, idx)}
                 onClick={() => {
                   if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                    navigator.vibrate(30);
+                    navigator.vibrate(15);
                   }
                   setActiveTab(item.id);
                 }}
-                className="flex flex-col items-center justify-center flex-1 py-1 focus:outline-none focus:ring-2 focus:ring-white/50 rounded-2xl"
-                aria-label={language === 'en' ? item.labelEn : item.labelHi}
+                className="flex-1 flex flex-col items-center justify-center py-1 rounded-full cursor-pointer transition-all duration-200 focus:outline-none"
+                aria-label={language === 'hi' ? item.labelHi : item.labelEn}
                 aria-current={Active ? 'page' : undefined}
               >
                 <div
-                  className={`transition-all duration-300 flex items-center justify-center rounded-full relative
-                  ${
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 relative ${
                     Active
-                      ? "bg-white text-orange-600 w-9 h-9 shadow-md shadow-orange-600/20"
-                      : "w-9 h-9 text-orange-100 hover:text-white hover:bg-white/10"
+                      ? 'bg-[#6E1F2A]/10 dark:bg-[#B68D40]/15 text-[#6E1F2A] dark:text-[#D4AF64]'
+                      : 'text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200'
                   }`}
                 >
-                  <Icon
-                    size={18}
-                    strokeWidth={Active ? 2.5 : 2}
-                  />
+                  {item.isLotus ? (
+                    <LotusIcon size={19} className={Active ? 'stroke-[2]' : 'stroke-[1.6]'} />
+                  ) : IconComponent ? (
+                    <IconComponent size={19} strokeWidth={Active ? 2.2 : 1.7} />
+                  ) : null}
 
-                  {/* Red Badge Indicator on Sadhana Tab for Offline pending syncs */}
                   {item.id === 'sadhana' && pendingSyncs > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-red-500 text-[8px] font-black text-white animate-bounce border border-white dark:border-slate-900 shadow-sm">
-                      {pendingSyncs}
-                    </span>
+                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#6E1F2A] ring-2 ring-white dark:ring-stone-900" />
                   )}
                 </div>
 
                 <span
-                  className={`mt-0.5 text-[10px] font-semibold transition-colors
-                  ${
+                  className={`text-[10px] font-medium transition-colors ${
                     Active
-                      ? "text-white font-bold"
-                      : "text-orange-100/90"
+                      ? 'text-[#6E1F2A] dark:text-[#D4AF64] font-bold'
+                      : 'text-stone-500 dark:text-stone-400'
                   }`}
                 >
-                  {language === 'en' ? item.labelEn : item.labelHi}
+                  {language === 'hi' ? item.labelHi : item.labelEn}
                 </span>
               </button>
             );
           })}
         </div>
-      </div>
-    </nav>
+      </nav>
+    </div>
   );
 };
 
 export default TerapanthFooterNav;
+
 

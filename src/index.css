@@ -1,41 +1,43 @@
-@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&text=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789%20.,!?%27%22%E2%80%9C%E2%80%9D-%28%29%26%3A%5B%5D%7B%7D%2F*%25%23%40%2B%24%3D%3C%3E%E0%A5%90&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Mukta:wght@300;400;500;600;700&display=swap");
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-saffron: #7A1F2B;
-  --color-maroon: #7A1F2B;
-  --color-maroon-dark: #5A1620;
-  --color-maroon-secondary: #A33A4A;
-  --color-cream: #FAF8F4;
+  --color-saffron: #6E1F2A;
+  --color-maroon: #6E1F2A;
+  --color-maroon-dark: #50161E;
+  --color-maroon-secondary: #8C2A38;
+  --color-gold: #B68D40;
+  --color-cream: #FFFDF8;
   --color-spiritual: var(--text-spiritual);
   --font-serif: "Cormorant Garamond", serif;
+  --font-sans: "Inter", "Mukta", sans-serif;
 
-  --color-orange-50: #FAF4F5;
-  --color-orange-100: #F5E8EA;
-  --color-orange-200: #E8D0D4;
-  --color-orange-300: #D3A2A9;
-  --color-orange-400: #A33A4A;
-  --color-orange-500: #7A1F2B;
-  --color-orange-600: #7A1F2B;
-  --color-orange-700: #5A1620;
-  --color-orange-800: #420F16;
-  --color-orange-900: #2B0A0E;
-  --color-orange-950: #1B0609;
+  --color-orange-50: #FFFDF8;
+  --color-orange-100: #F7F3EC;
+  --color-orange-200: #ECE8E3;
+  --color-orange-300: #D8CEB8;
+  --color-orange-400: #B68D40;
+  --color-orange-500: #6E1F2A;
+  --color-orange-600: #6E1F2A;
+  --color-orange-700: #50161E;
+  --color-orange-800: #380F15;
+  --color-orange-900: #240A0E;
+  --color-orange-950: #140508;
 
-  --color-amber-50: #FAF4F5;
-  --color-amber-100: #F5E8EA;
-  --color-amber-200: #E8D0D4;
-  --color-amber-300: #D3A2A9;
-  --color-amber-400: #A33A4A;
-  --color-amber-500: #7A1F2B;
-  --color-amber-600: #7A1F2B;
-  --color-amber-700: #5A1620;
-  --color-amber-800: #420F16;
-  --color-amber-900: #2B0A0E;
-  --color-amber-950: #1B0609;
+  --color-amber-50: #FFFDF8;
+  --color-amber-100: #F7F3EC;
+  --color-amber-200: #ECE8E3;
+  --color-amber-300: #D8CEB8;
+  --color-amber-400: #B68D40;
+  --color-amber-500: #6E1F2A;
+  --color-amber-600: #6E1F2A;
+  --color-amber-700: #50161E;
+  --color-amber-800: #380F15;
+  --color-amber-900: #240A0E;
+  --color-amber-950: #140508;
 
   @keyframes spin-slow {
     from {
@@ -45,79 +47,31 @@
       transform: rotate(360deg);
     }
   }
-  --animate-spin-slow: spin-slow 8s linear infinite;
+  --animate-spin-slow: spin-slow 12s linear infinite;
 }
 
 :root {
-  --bg-cream: #FAF8F4;
-  --text-spiritual: #2B2B2B;
-  --text-secondary: #6B6B6B;
+  --bg-cream: #FFFDF8;
+  --text-spiritual: #1E1E1E;
+  --text-secondary: #6E6E6E;
   --card-bg: #FFFFFF;
-  --border-color: #E8E2DD;
-  --accent-soft: rgba(122, 31, 43, 0.08);
-  --radius-card: 22px;
-  --shadow-card: 0 4px 20px -2px rgba(90, 22, 32, 0.05);
-}
-
-/* Sunset Theme */
-.theme-sunset {
-  --bg-cream: #FAF4F2;
-  --text-spiritual: #4A1E24;
-  --card-bg: #FFFFFF;
-  --border-color: #E8D0D4;
-  --accent-soft: rgba(163, 58, 74, 0.12);
-  --radius-card: 22px;
-  --shadow-card: 0 4px 18px -4px rgba(74, 30, 36, 0.06);
-}
-
-/* Ocean Theme */
-.theme-ocean {
-  --bg-cream: #F2F6F8;
-  --text-spiritual: #1A2B38;
-  --card-bg: #FFFFFF;
-  --border-color: #D0E0E8;
-  --accent-soft: rgba(122, 31, 43, 0.12);
-  --radius-card: 22px;
-  --shadow-card: 0 4px 18px -4px rgba(26, 43, 56, 0.06);
-}
-
-/* Forest Theme */
-.theme-forest {
-  --bg-cream: #F4F8F5;
-  --text-spiritual: #1E3326;
-  --card-bg: #FFFFFF;
-  --border-color: #D0E0D6;
-  --accent-soft: rgba(122, 31, 43, 0.12);
-  --radius-card: 22px;
-  --shadow-card: 0 4px 18px -4px rgba(30, 51, 38, 0.06);
-}
-
-/* Saffron / Maroon Theme */
-.theme-saffron {
-  --bg-cream: #FAF8F4;
-  --text-spiritual: #2B2B2B;
-  --card-bg: #FFFFFF;
-  --border-color: #E8E2DD;
-  --accent-soft: rgba(122, 31, 43, 0.1);
-  --radius-card: 22px;
-  --shadow-card: 0 4px 20px -2px rgba(90, 22, 32, 0.05);
+  --border-color: #ECE8E3;
+  --accent-gold: #B68D40;
+  --accent-soft: rgba(110, 31, 42, 0.05);
+  --radius-card: 20px;
+  --shadow-card: 0 4px 20px -2px rgba(110, 31, 42, 0.04);
 }
 
 .dark {
-  --bg-cream: #140709;
-  --text-spiritual: #F5E8EA;
-  --card-bg: #220B0E;
-  --border-color: #3D1217;
-  --accent-soft: rgba(122, 31, 43, 0.2);
-  --radius-card: 22px;
-  --shadow-card: 0 4px 24px -4px rgba(0, 0, 0, 0.4);
-}
-
-.dark.theme-sunset {
-  --bg-cream: #1E0A0D;
-  --text-spiritual: #F5E8EA;
-  --card-bg: #2D0F14;
-  --border-color: #4A1920;
+  --bg-cream: #12090B;
+  --text-spiritual: #F7F3EC;
+  --text-secondary: #A09890;
+  --card-bg: #1C1014;
+  --border-color: #2E1B22;
+  --accent-gold: #D4AF64;
+  --accent-soft: rgba(182, 141, 64, 0.1);
+  --radius-card: 20px;
+  --shadow-card: 0 4px 24px -4px rgba(0, 0, 0, 0.5);
 }
 
 .dark.theme-ocean {

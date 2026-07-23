@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { IllustratedEmptyState } from './IllustratedEmptyState';
 import { HelpCircle, CheckCircle2, AlertCircle, RefreshCw, Trophy, ArrowRight, Award, ShieldAlert, Sparkles, HelpCircle as HelpIcon } from 'lucide-react';
 const confetti = (...args: any[]) => {};
 import { quizMaster } from '../data/quizMaster';
@@ -559,19 +560,13 @@ export default function MaryadaQuiz() {
 
       <AnimatePresence mode="wait">
         {filteredQuestions.length === 0 ? (
-          <motion.div
-            key="empty-state"
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            className="text-center py-12 space-y-4"
-          >
-            <ShieldAlert size={40} className="text-amber-550 mx-auto" />
-            <div className="space-y-1">
-              <h5 className="serif-text font-black text-lg text-gray-900 dark:text-white">कोई प्रश्न उपलब्ध नहीं है</h5>
-              <p className="text-xs text-gray-500">चयनित फ़िल्टर के लिए कोई प्रश्न नहीं मिला। कृपया अन्य फ़िल्टर चुनें।</p>
-            </div>
-          </motion.div>
+          <IllustratedEmptyState
+            type="quiz"
+            title="कोई प्रश्न उपलब्ध नहीं हैं (No Questions Found)"
+            description="चयनित फ़िल्टर या कठिनाई स्तर के लिए प्रश्न उपलब्ध नहीं हैं। कृपया अन्य फ़िल्टर चुनें।"
+            actionLabel="सभी फ़िल्टर साफ़ करें"
+            onAction={() => { setSelectedDifficulty('all'); setSelectedCategory('all'); }}
+          />
         ) : !quizFinished ? (
           <motion.div 
             key={`${selectedDifficulty}-${selectedCategory}-${currentQuestionIndex}`}

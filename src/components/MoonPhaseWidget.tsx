@@ -412,8 +412,10 @@ export default function MoonPhaseWidget({ isDarkMode = false, setActiveTab }: Mo
   }, [specialTithiInfo]);
 
   return (
-    <div 
+    <motion.div 
       id="moon-phase-home-widget"
+      whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }}
+      whileTap={{ scale: 0.98 }}
       className={`w-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-300 flex flex-col justify-between gap-3 relative ${
         isSpecialTithi 
           ? isDarkMode 
@@ -576,6 +578,6 @@ export default function MoonPhaseWidget({ isDarkMode = false, setActiveTab }: Mo
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 }
