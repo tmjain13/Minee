@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, MessageSquare, Send } from 'lucide-react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface FeedbackModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface FeedbackModalProps {
 export default function FeedbackModal({ isOpen, onClose, onSubmit }: FeedbackModalProps) {
   const [feedback, setFeedback] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const modalRef = useFocusTrap(isOpen, onClose);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +40,10 @@ export default function FeedbackModal({ isOpen, onClose, onSubmit }: FeedbackMod
             className="absolute inset-0 bg-stone-150/70 dark:bg-[#120601]/85 backdrop-blur-md"
           />
           <motion.div
+            ref={modalRef as React.RefObject<HTMLDivElement>}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="feedback-title"
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -49,10 +55,11 @@ export default function FeedbackModal({ isOpen, onClose, onSubmit }: FeedbackMod
                   <div className="w-10 h-10 rounded-xl bg-spiritual/10 flex items-center justify-center">
                     <MessageSquare size={20} />
                   </div>
-                  <h2 className="serif-text font-bold text-xl dark:text-white">App Feedback</h2>
+                  <h2 id="feedback-title" className="serif-text font-bold text-xl dark:text-white">App Feedback</h2>
                 </div>
                 <button
                   onClick={onClose}
+                  aria-label="Close Feedback Modal"
                   className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors"
                 >
                   <X size={20} />

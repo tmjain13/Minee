@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, AlertTriangle, LogOut, Trash2 } from "lucide-react";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export default function ConfirmationModal({
   iconType = "warning",
 }: ConfirmationModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const modalRef = useFocusTrap(isOpen, onClose);
 
   const handleConfirm = async () => {
     setIsSubmitting(true);
@@ -88,6 +90,11 @@ export default function ConfirmationModal({
 
           {/* Modal Container */}
           <motion.div
+            ref={modalRef as React.RefObject<HTMLDivElement>}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirmation-modal-title"
+            aria-describedby="confirmation-modal-message"
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -100,6 +107,7 @@ export default function ConfirmationModal({
               className="absolute top-4 right-4 p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
               id="confirmation-modal-close-icon-btn"
               title="Close modal"
+              aria-label="Close modal"
             >
               <X size={18} />
             </button>

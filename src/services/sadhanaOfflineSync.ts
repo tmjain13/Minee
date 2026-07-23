@@ -108,6 +108,19 @@ export async function enqueueSync(
     };
     await database.put('syncQueue', syncItem);
     console.warn(`[Offline Sync] Restored offline queue. Enqueued ${action} for ${storeName} (ID: ${id})`);
+
+    // Register background sync via Service Worker if supported
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'SyncManager' in window) {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        if ('sync' in registration) {
+          await (registration as any).sync.register('sadhana-sync');
+          console.log('[Offline Sync] Registered background sync event: sadhana-sync');
+        }
+      } catch (err) {
+        console.warn('[Offline Sync] Background sync registration failed, will fallback to client polling:', err);
+      }
+    }
   } catch (error) {
     console.error('[Offline Sync] Failed to enqueue item:', error);
   }

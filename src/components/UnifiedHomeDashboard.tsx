@@ -166,7 +166,7 @@ const PROVINCE_DATA = {
   ]
 };
 
-export default function UnifiedHomeDashboard({ 
+const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({ 
   setActiveTab, 
   isDarkMode = false, 
   knowledgeItems = [],
@@ -1866,4 +1866,7 @@ export default function UnifiedHomeDashboard({
     </div>
   );
 }
+
+const UnifiedHomeDashboard = React.memo(UnifiedHomeDashboardComponent);
+export default UnifiedHomeDashboard;
 

@@ -270,6 +270,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
               onClick={onSearchClick}
               className="p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer hover:bg-white/20 text-white animate-pulse"
               title="Global Search"
+              aria-label="Global Search"
             >
               <Search size={16} />
             </button>
@@ -278,6 +279,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
               onClick={handleRefresh}
               className="p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer hover:bg-white/20 text-white"
               title="Refresh App"
+              aria-label="Refresh App"
             >
               <RefreshCcw size={16} />
             </button>
@@ -286,6 +288,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
               onClick={onPenClick}
               className="p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer hover:bg-white/20 text-white"
               title="Quick Notes/Customizer"
+              aria-label="Quick Notes and Customizer"
             >
               <PenTool size={16} />
             </button>
@@ -294,6 +297,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
               onClick={triggerOpenCustomizer}
               className="p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer hover:bg-white/20 text-white"
               title="Dashboard Settings"
+              aria-label="Dashboard Settings"
             >
               <Grid3X3 size={16} />
             </button>
@@ -302,6 +306,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
               onClick={triggerToggleTheme}
               className="p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer hover:bg-white/20 text-white"
               title="Toggle Theme"
+              aria-label={isDarkActive ? "Switch to Light Theme" : "Switch to Dark Theme"}
             >
               {isDarkActive ? <Sun size={16} /> : <Moon size={16} />}
             </button>
@@ -310,6 +315,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
               onClick={triggerToggleLanguage}
               className="px-1.5 py-1 rounded-lg text-xs font-bold transition-all active:scale-95 cursor-pointer hover:bg-white/20 text-white"
               title="Toggle Language"
+              aria-label={activeLanguage === "hi" ? "Switch to English" : "Switch to Hindi"}
             >
               {activeLanguage === "hi" ? "EN" : "हि"}
             </button>
@@ -327,6 +333,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
                 }}
                 className="p-1.5 rounded-lg transition-all active:scale-95 cursor-pointer relative hover:bg-white/20 text-white"
                 title={currentUser ? "User Profile" : "Login"}
+                aria-label={currentUser ? "User Profile Menu" : "Login"}
               >
                 <User size={16} />
                 {currentUser && (

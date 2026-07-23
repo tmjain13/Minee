@@ -10,6 +10,7 @@ import {
   Suspense,
   useRef,
   useMemo,
+  useCallback,
 } from "react";
 import {
   ChevronDown,
@@ -317,10 +318,10 @@ export default function App() {
     return localStorage.getItem('terapanth_swipe_tutorial_shown') !== 'true';
   });
 
-  const handleSwipeSensitivityChange = (val: number) => {
+  const handleSwipeSensitivityChange = useCallback((val: number) => {
     setSwipeSensitivity(val);
     localStorage.setItem('terapanth_swipe_sensitivity', val.toString());
-  };
+  }, []);
 
   const swipeConfig = useMemo(() => {
     switch (swipeSensitivity) {
@@ -548,6 +549,16 @@ export default function App() {
   const [spiritualSoundscape, setSpiritualSoundscape] = useState<"om" | "temple_bells" | "nature">("om");
   const [autoArchiveEnabled, setAutoArchiveEnabled] = useState(false);
   const [vibrationIntensity, setVibrationIntensity] = useState<"none" | "gentle" | "pulsing" | "steady">("gentle");
+
+  // --- GLOBAL HAPTICS PREFERENCES ---
+  const [hapticButtonClicksEnabled, setHapticButtonClicksEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem("haptic_button_clicks");
+    return saved !== "false";
+  });
+  const [hapticTimerCompletionsEnabled, setHapticTimerCompletionsEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem("haptic_timer_completions");
+    return saved !== "false";
+  });
 
   // --- ZEN MODE FOR DEEP FOCUS ---
   const [zenMode, setZenMode] = useState<boolean>(() => {
@@ -1058,16 +1069,16 @@ export default function App() {
     }
   };
 
-  const markPaginationInteracted = () => {
+  const markPaginationInteracted = useCallback(() => {
     if (!hasInteractedWithPagination) {
       setHasInteractedWithPagination(true);
       if (typeof window !== 'undefined') {
         localStorage.setItem('terapanth_has_interacted_pagination', 'true');
       }
     }
-  };
+  }, [hasInteractedWithPagination]);
 
-  const handlePrevTab = () => {
+  const handlePrevTab = useCallback(() => {
     markPaginationInteracted();
     const currentIndex = tabOrder.indexOf(activeTab);
     if (currentIndex > 0) {
@@ -1076,9 +1087,9 @@ export default function App() {
         navigator.vibrate(20);
       }
     }
-  };
+  }, [activeTab, tabOrder, hasInteractedWithPagination]);
 
-  const handleNextTab = () => {
+  const handleNextTab = useCallback(() => {
     markPaginationInteracted();
     const currentIndex = tabOrder.indexOf(activeTab);
     if (currentIndex < tabOrder.length - 1) {
@@ -1087,7 +1098,7 @@ export default function App() {
         navigator.vibrate(20);
       }
     }
-  };
+  }, [activeTab, tabOrder, hasInteractedWithPagination]);
 
   // --- NETWORK STATUS MONITOR ---
   useEffect(() => {
@@ -1171,6 +1182,44 @@ export default function App() {
       root.classList.add(`theme-${palette}`);
     }
   }, [palette]);
+
+  // --- MANAGE GLOBAL HAPTICS ---
+  useEffect(() => {
+    localStorage.setItem("haptic_button_clicks", hapticButtonClicksEnabled.toString());
+    localStorage.setItem("haptic_timer_completions", hapticTimerCompletionsEnabled.toString());
+
+    if (typeof window !== "undefined" && typeof navigator !== "undefined") {
+      // Store original vibrate if not stored yet
+      if (!(window as any).__originalVibrate && navigator.vibrate) {
+        (window as any).__originalVibrate = navigator.vibrate.bind(navigator);
+      }
+      
+      navigator.vibrate = (pattern: any): boolean => {
+        if (!(window as any).__originalVibrate) return false;
+        
+        const isArrayPattern = Array.isArray(pattern);
+        
+        // Treat array vibrations or single vibrations longer than 50ms as timer/milestone events
+        let isTimerOrMilestone = isArrayPattern;
+        if (!isArrayPattern && typeof pattern === 'number') {
+          if (pattern > 50) {
+            isTimerOrMilestone = true;
+          }
+        }
+
+        if (isTimerOrMilestone) {
+          if (hapticTimerCompletionsEnabled) {
+            return (window as any).__originalVibrate(pattern);
+          }
+        } else {
+          if (hapticButtonClicksEnabled) {
+            return (window as any).__originalVibrate(pattern);
+          }
+        }
+        return false;
+      };
+    }
+  }, [hapticButtonClicksEnabled, hapticTimerCompletionsEnabled]);
 
   // --- FIREBASE ROLE SYNC ---
   useEffect(() => {
@@ -1349,7 +1398,7 @@ export default function App() {
   };
 
   // --- TODO ENGINE ---
-  const handleAddTodo = () => {
+  const handleAddTodo = useCallback(() => {
     if (!todoInput.trim()) return;
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate(30);
@@ -1357,23 +1406,23 @@ export default function App() {
     const newTodo: Todo = { id: Date.now().toString(), text: todoInput, completed: false };
     setTodos((prev) => [...prev, newTodo]);
     setTodoInput("");
-  };
+  }, [todoInput]);
 
-  const handleToggleTodo = (id: string) => {
+  const handleToggleTodo = useCallback((id: string) => {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate(25);
     }
     setTodos((prev) =>
       prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
     );
-  };
+  }, []);
 
-  const handleDeleteTodo = (id: string) => {
+  const handleDeleteTodo = useCallback((id: string) => {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate(35);
     }
     setTodos((prev) => prev.filter((t) => t.id !== id));
-  };
+  }, []);
 
   if (loading && !forceProceed) {
     devLog("[App] Auth loading is true. Rendering full-screen LoadingScreen as initial experience gate.");
@@ -1596,7 +1645,11 @@ export default function App() {
                 exit="exit"
                 className="w-full"
               >
-                <DigitalLibrary isAdmin={isAdmin} />
+                <DigitalLibrary 
+                  isAdmin={isAdmin} 
+                  user={user} 
+                  setIsLoginModalOpen={setIsLoginModalOpen} 
+                />
               </motion.div>
             )}
 
@@ -2435,7 +2488,7 @@ export default function App() {
             transition={{ duration: 0.3 }}
             className={`fixed ${showUpdateBanner ? "bottom-[230px]" : "bottom-[84px]"} left-4 right-4 md:left-auto md:right-4 md:w-96 z-50`}
           >
-            <div className="p-4 rounded-xl shadow-xl flex flex-col gap-3 bg-gradient-to-r from-orange-600 via-orange-50 to-amber-500 border border-orange-400/40 text-white shadow-xl shadow-orange-600/15" style={{ background: 'linear-gradient(135deg, #ea580c 0%, #f59e0b 100%)' }}>
+            <div className="p-4 rounded-2xl shadow-xl flex flex-col gap-3 bg-[#7A1F2B] border border-[#A33A4A]/40 text-white shadow-xl shadow-[#7A1F2B]/20" style={{ background: 'linear-gradient(135deg, #7A1F2B 0%, #5A1620 100%)' }}>
               <div className="flex items-start justify-between">
                 <div className="flex gap-3">
                   <span className="text-white text-base">✨</span>
@@ -2443,7 +2496,7 @@ export default function App() {
                     <h4 className="text-xs font-black uppercase tracking-wider text-white">
                       {language === 'hi' ? 'ऐप इंस्टॉल करें' : 'Install App'}
                     </h4>
-                    <p className="text-[11px] text-orange-50 mt-1 leading-relaxed">
+                    <p className="text-[11px] text-red-100 mt-1 leading-relaxed">
                       {language === 'hi' 
                         ? 'आसान पहुंच और त्वरित आध्यात्मिक अनुभव के लिए तेरापंथ एआई हब को अपनी होमस्क्रीन पर जोड़ें।' 
                         : 'Add Terapanth AI Hub to your homescreen for instant, offline-friendly access.'}
@@ -2452,7 +2505,7 @@ export default function App() {
                 </div>
                 <button 
                   onClick={() => setShowInstallBanner(false)}
-                  className="p-1 hover:bg-white/20 rounded-full transition-colors text-orange-100 hover:text-white"
+                  className="p-1 hover:bg-white/20 rounded-full transition-colors text-red-200 hover:text-white"
                 >
                   <X size={14} />
                 </button>
@@ -2460,13 +2513,13 @@ export default function App() {
               <div className="flex justify-end gap-2">
                 <button
                   onClick={() => setShowInstallBanner(false)}
-                  className="px-3 py-1 text-[10px] uppercase font-bold tracking-wider text-orange-100 hover:text-white transition-colors"
+                  className="px-3 py-1 text-[10px] uppercase font-bold tracking-wider text-red-200 hover:text-white transition-colors"
                 >
                   {language === 'hi' ? 'बाद में' : 'Later'}
                 </button>
                 <button
                   onClick={handleInstallApp}
-                  className="px-4 py-1.5 bg-white text-orange-600 hover:bg-orange-50 active:scale-95 font-extrabold uppercase tracking-widest text-[10px] rounded-lg transition-all duration-300 shadow-md flex items-center gap-1.5"
+                  className="px-4 py-1.5 bg-white text-[#7A1F2B] hover:bg-stone-100 active:scale-95 font-extrabold uppercase tracking-widest text-[10px] rounded-lg transition-all duration-300 shadow-md flex items-center gap-1.5"
                 >
                   <CloudDownload size={12} />
                   {language === 'hi' ? 'इंस्टॉल करें' : 'Install'}
@@ -2483,7 +2536,7 @@ export default function App() {
           {/* Quick Actions trigger */}
           <button 
             onClick={() => setShowQuickActions(!showQuickActions)}
-            className={`w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg transition-all bg-gradient-to-r from-orange-500 via-orange-400 to-amber-500 hover:brightness-105 active:scale-95 ${
+            className={`w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg transition-all bg-[#7A1F2B] hover:bg-[#5A1620] active:scale-95 ${
               showQuickActions ? 'rotate-90' : ''
             }`}
           >
@@ -2542,6 +2595,10 @@ export default function App() {
           onZenScheduleEndChange={handleZenScheduleEndChange}
           zenMuteAll={zenMuteAll}
           onZenMuteAllChange={handleZenMuteAllChange}
+          hapticButtonClicksEnabled={hapticButtonClicksEnabled}
+          onHapticButtonClicksChange={setHapticButtonClicksEnabled}
+          hapticTimerCompletionsEnabled={hapticTimerCompletionsEnabled}
+          onHapticTimerCompletionsChange={setHapticTimerCompletionsEnabled}
         />
 
 

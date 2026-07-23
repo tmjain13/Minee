@@ -42,10 +42,24 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({ activeTab, setA
     window.addEventListener('online', checkSyncQueue);
     window.addEventListener('offline', checkSyncQueue);
 
+    const handleServiceWorkerMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'TRIGGER_BACKGROUND_SYNC') {
+        console.log('[Offline Sync] Service Worker triggered background sync.');
+        checkSyncQueue();
+      }
+    };
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
+    }
+
     return () => {
       clearInterval(interval);
       window.removeEventListener('online', checkSyncQueue);
       window.removeEventListener('offline', checkSyncQueue);
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage);
+      }
     };
   }, [user]);
 
@@ -56,6 +70,26 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({ activeTab, setA
     { id: 'sadhana', icon: Heart, labelEn: 'Sadhana', labelHi: 'साधना' },
     { id: 'profile', icon: User, labelEn: 'Profile', labelHi: 'प्रोफ़ाइल' }
   ];
+
+  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      const nextIndex = (index + 1) % navItems.length;
+      setActiveTab(navItems[nextIndex].id);
+      setTimeout(() => {
+        const nextEl = document.getElementById(`tp-nav-tab-${navItems[nextIndex].id}`);
+        nextEl?.focus();
+      }, 50);
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const prevIndex = (index - 1 + navItems.length) % navItems.length;
+      setActiveTab(navItems[prevIndex].id);
+      setTimeout(() => {
+        const prevEl = document.getElementById(`tp-nav-tab-${navItems[prevIndex].id}`);
+        prevEl?.focus();
+      }, 50);
+    }
+  };
 
   return (
     <nav 
@@ -78,13 +112,15 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({ activeTab, setA
             </div>
           )}
 
-          {navItems.map((item) => {
+          {navItems.map((item, idx) => {
             const Active = activeTab === item.id;
             const Icon = item.icon;
 
             return (
               <button
                 key={item.id}
+                id={`tp-nav-tab-${item.id}`}
+                onKeyDown={(e) => handleKeyDown(e, idx)}
                 onClick={() => {
                   if (typeof navigator !== 'undefined' && navigator.vibrate) {
                     navigator.vibrate(30);

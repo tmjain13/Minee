@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Search, X, BookOpen, Sparkles, ChevronRight, ArrowLeft, Hash, Tag, FileText } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { KnowledgeItem } from "../hooks/useSyncKnowledgeBase";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 interface GlobalSearchModalProps {
   isOpen: boolean;
@@ -21,6 +22,16 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState<KnowledgeItem | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleCloseOrBack = () => {
+    if (selectedItem) {
+      setSelectedItem(null);
+    } else {
+      onClose();
+    }
+  };
+
+  const modalRef = useFocusTrap(isOpen, handleCloseOrBack);
 
   // Focus input on mount/open
   useEffect(() => {
@@ -128,21 +139,6 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
     return defaultSuggestions;
   }, []);
 
-  // Keyboard navigation support
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (selectedItem) {
-          setSelectedItem(null);
-        } else {
-          onClose();
-        }
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedItem, onClose]);
-
   // Standardize categories as requested: 'Acharyas', 'Rituals', 'Knowledge'
   const getStandardizedCategory = (category: string) => {
     const cat = (category || "").toLowerCase();
@@ -182,6 +178,10 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
 
           {/* Modal Container */}
           <motion.div
+            ref={modalRef as React.RefObject<HTMLDivElement>}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Global Search"
             initial={{ opacity: 0, scale: 0.95, y: 30 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 30 }}

@@ -56,8 +56,30 @@ export const SharedFooterNav: React.FC<SharedFooterNavProps> = ({
     setTouchStartY(null);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      const nextIndex = (index + 1) % navConfig.length;
+      onNavClick(navConfig[nextIndex].id);
+      setTimeout(() => {
+        const nextEl = document.getElementById(`nav-tab-${navConfig[nextIndex].id.toLowerCase()}`);
+        nextEl?.focus();
+      }, 50);
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const prevIndex = (index - 1 + navConfig.length) % navConfig.length;
+      onNavClick(navConfig[prevIndex].id);
+      setTimeout(() => {
+        const prevEl = document.getElementById(`nav-tab-${navConfig[prevIndex].id.toLowerCase()}`);
+        prevEl?.focus();
+      }, 50);
+    }
+  };
+
   return (
-    <div 
+    <nav 
+      role="navigation"
+      aria-label="Bottom Navigation"
       className="bottom-panel-container fixed bottom-0 left-0 right-0 z-[9999] bg-white dark:bg-zinc-950 border-t border-orange-200 dark:border-orange-900 shadow-[0_-4px_30px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_30px_rgba(0,0,0,0.5)] transition-colors duration-300"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
@@ -69,7 +91,7 @@ export const SharedFooterNav: React.FC<SharedFooterNavProps> = ({
       <div 
         className="w-full max-w-[800px] mx-auto flex items-center justify-around relative"
       >
-        {navConfig.map((item) => {
+        {navConfig.map((item, idx) => {
           const isActive = activeNav === item.id || (item.id === 'QUICK' && isQuickActionsOpen);
           
           return (
@@ -78,12 +100,15 @@ export const SharedFooterNav: React.FC<SharedFooterNavProps> = ({
               id={`nav-tab-${item.id.toLowerCase()}`}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onKeyDown={(e) => handleKeyDown(e, idx)}
               onClick={() => {
                 if (typeof navigator !== 'undefined' && navigator.vibrate) {
                   navigator.vibrate(40);
                 }
                 onNavClick(item.id);
               }}
+              aria-label={item.label}
+              aria-current={isActive ? 'page' : undefined}
               className="flex-1 flex flex-col items-center justify-center min-w-[60px] flex-shrink-0 bg-transparent border-none p-0 outline-none cursor-pointer select-none"
               style={{ WebkitTapHighlightColor: 'transparent' }}
             >
@@ -132,6 +157,6 @@ export const SharedFooterNav: React.FC<SharedFooterNavProps> = ({
           );
         })}
       </div>
-    </div>
+    </nav>
   );
 };

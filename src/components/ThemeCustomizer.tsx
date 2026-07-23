@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import toast from 'react-hot-toast';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface ThemeCustomizerProps {
   isOpen: boolean;
@@ -42,6 +43,10 @@ interface ThemeCustomizerProps {
   onZenScheduleEndChange?: (end: string) => void;
   zenMuteAll?: boolean;
   onZenMuteAllChange?: (enabled: boolean) => void;
+  hapticButtonClicksEnabled: boolean;
+  onHapticButtonClicksChange: (enabled: boolean) => void;
+  hapticTimerCompletionsEnabled: boolean;
+  onHapticTimerCompletionsChange: (enabled: boolean) => void;
 }
 
 const PALETTES = [
@@ -49,7 +54,7 @@ const PALETTES = [
   { id: 'sunset', name: 'Sunset (Warmth)', color: '#4A1E11', bg: '#FFF5F1' },
   { id: 'ocean', name: 'Ocean (Calm)', color: '#002244', bg: '#F0F8FF' },
   { id: 'forest', name: 'Forest (Peace)', color: '#1A331A', bg: '#F1F8F1' },
-  { id: 'saffron', name: 'Saffron (Sacred)', color: '#7c2d12', bg: '#fffaf0' },
+  { id: 'saffron', name: 'Crimson (Sacred)', color: '#b91c1c', bg: '#fff5f5' },
 ] as const;
 
 const previewTexts = [
@@ -92,10 +97,15 @@ export default function ThemeCustomizer({
   zenScheduleEnd = '06:00',
   onZenScheduleEndChange,
   zenMuteAll = false,
-  onZenMuteAllChange
+  onZenMuteAllChange,
+  hapticButtonClicksEnabled,
+  onHapticButtonClicksChange,
+  hapticTimerCompletionsEnabled,
+  onHapticTimerCompletionsChange
 }: ThemeCustomizerProps) {
   const { language } = useLanguage();
   const { user } = useAuth();
+  const modalRef = useFocusTrap(isOpen, onClose);
   const [activePreviewIndex, setActivePreviewIndex] = useState(0);
   const [previewing, setPreviewing] = useState<string | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -143,6 +153,8 @@ export default function ThemeCustomizer({
       case 'zenScheduleStart': onZenScheduleStartChange?.(value); break;
       case 'zenScheduleEnd': onZenScheduleEndChange?.(value); break;
       case 'zenMuteAll': onZenMuteAllChange?.(value); break;
+      case 'hapticButtonClicks': onHapticButtonClicksChange(value); break;
+      case 'hapticTimerCompletions': onHapticTimerCompletionsChange(value); break;
     }
 
     // Save to Firestore
@@ -190,6 +202,10 @@ export default function ThemeCustomizer({
             className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200]"
           />
           <motion.div
+            ref={modalRef as React.RefObject<HTMLDivElement>}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="theme-customizer-title"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
@@ -198,11 +214,12 @@ export default function ThemeCustomizer({
           >
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="serif-text text-2xl font-bold text-[var(--text-spiritual)]">Theme & Preferences</h3>
+                <h3 id="theme-customizer-title" className="serif-text text-2xl font-bold text-[var(--text-spiritual)]">Theme & Preferences</h3>
                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] mt-1">Select your spiritual atmosphere</p>
               </div>
               <button
                 onClick={onClose}
+                aria-label="Close Theme Customizer"
                 className="p-2 bg-black/5 dark:bg-white/5 rounded-full text-gray-400 hover:text-black dark:hover:text-white transition-colors"
               >
                 <X size={20} />
@@ -682,6 +699,67 @@ export default function ThemeCustomizer({
                         ))}
                       </div>
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 px-1" id="haptics-settings-header">Haptics</h4>
+                <div className="bg-black/5 dark:bg-white/5 rounded-3xl p-5 border border-black/5 dark:border-white/5 space-y-5">
+                  {/* Button Click Haptics */}
+                  <div className="flex items-center justify-between pb-4 border-b border-black/5 dark:border-white/5">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-500">
+                        <Vibrate size={20} />
+                      </div>
+                      <div>
+                        <span className="block font-bold text-sm text-[var(--text-spiritual)]">
+                          {language === 'hi' ? 'बटन क्लिक कंपन' : 'Button Click Haptics'}
+                        </span>
+                        <span className="block text-[10px] text-gray-400 font-medium uppercase tracking-wider mt-0.5">
+                          {language === 'hi' ? 'बटन दबाने पर सूक्ष्म कंपन' : 'Tactile vibration feedback on button clicks'}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handlePreferenceChange('hapticButtonClicks', !hapticButtonClicksEnabled)}
+                      className={`relative w-12 h-6 rounded-full transition-colors ${hapticButtonClicksEnabled ? 'bg-indigo-500' : 'bg-gray-300 dark:bg-gray-700'}`}
+                      id="haptic-button-clicks-toggle"
+                      aria-label="Toggle button click haptics"
+                    >
+                      <motion.div
+                        animate={{ x: hapticButtonClicksEnabled ? 26 : 4 }}
+                        className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
+                      />
+                    </button>
+                  </div>
+
+                  {/* Timer Completion Haptics */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-pink-500/10 rounded-2xl text-pink-500 animate-pulse">
+                        <Vibrate size={20} />
+                      </div>
+                      <div>
+                        <span className="block font-bold text-sm text-[var(--text-spiritual)]">
+                          {language === 'hi' ? 'टाइमर पूर्णता कंपन' : 'Timer Completion Haptics'}
+                        </span>
+                        <span className="block text-[10px] text-gray-400 font-medium uppercase tracking-wider mt-0.5">
+                          {language === 'hi' ? 'साधना या ध्यान टाइमर पूरा होने पर अलार्म कंपन' : 'Vibrate on session timers and milestone completions'}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handlePreferenceChange('hapticTimerCompletions', !hapticTimerCompletionsEnabled)}
+                      className={`relative w-12 h-6 rounded-full transition-colors ${hapticTimerCompletionsEnabled ? 'bg-pink-500' : 'bg-gray-300 dark:bg-gray-700'}`}
+                      id="haptic-timer-completions-toggle"
+                      aria-label="Toggle timer completion haptics"
+                    >
+                      <motion.div
+                        animate={{ x: hapticTimerCompletionsEnabled ? 26 : 4 }}
+                        className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
+                      />
+                    </button>
                   </div>
                 </div>
               </div>

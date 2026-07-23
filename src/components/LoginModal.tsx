@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LoginPage } from './auth/LoginPage';
 import { X } from 'lucide-react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -9,6 +10,8 @@ interface LoginModalProps {
 }
 
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
+  const modalRef = useFocusTrap(isOpen, onClose);
+
   if (!isOpen) return null;
 
   return (
@@ -25,6 +28,10 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
         {/* Modal Window Container */}
         <motion.div
+          ref={modalRef as React.RefObject<HTMLDivElement>}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Login Dialog"
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}

@@ -147,7 +147,7 @@ createRoot(document.getElementById('root')!).render(
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              background: "linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%)",
+              background: "#FAF8F4",
               padding: "24px",
               fontFamily: "system-ui, sans-serif",
             }}
@@ -155,12 +155,13 @@ createRoot(document.getElementById('root')!).render(
             <div
               style={{
                 background: "white",
-                borderRadius: "20px",
+                borderRadius: "22px",
                 padding: "40px",
                 maxWidth: "460px",
                 width: "100%",
                 textAlign: "center",
-                boxShadow: "0 20px 60px rgba(234, 88, 12, 0.15)",
+                boxShadow: "0 20px 60px rgba(122, 31, 43, 0.08)",
+                border: "1px solid #E8E2DD"
               }}
             >
               <div style={{ fontSize: "48px", marginBottom: "16px" }}>
@@ -168,7 +169,7 @@ createRoot(document.getElementById('root')!).render(
               </div>
               <h2
                 style={{
-                  color: "#c2410c",
+                  color: "#7A1F2B",
                   fontSize: "20px",
                   fontWeight: 700,
                   marginBottom: "12px",
@@ -181,7 +182,7 @@ createRoot(document.getElementById('root')!).render(
               </h2>
               <p
                 style={{
-                  color: "#78716c",
+                  color: "#6B6B6B",
                   fontSize: "14px",
                   marginBottom: "24px",
                   lineHeight: 1.6,
@@ -191,7 +192,7 @@ createRoot(document.getElementById('root')!).render(
                   <>
                     <strong>नेटवर्क कनेक्शन में समस्या आई है।</strong> कृपया अपने इंटरनेट कनेक्शन की जांच करें या पेज को फिर से लोड करें।
                     <br />
-                    <span style={{ display: 'block', marginTop: '8px', fontSize: '13px', color: '#854d0e' }}>
+                    <span style={{ display: 'block', marginTop: '8px', fontSize: '13px', color: '#7A1F2B' }}>
                       A network issue or application update occurred while loading this section. Please check your internet connection.
                     </span>
                   </>
@@ -199,7 +200,7 @@ createRoot(document.getElementById('root')!).render(
                   <>
                     <strong>सिस्टम में एक अनपेक्षित त्रुटि आई है।</strong> कृपया डेवलपर टीम को रिपोर्ट करने के लिए पेज रिफ्रेश करें।
                     <br />
-                    <span style={{ display: 'block', marginTop: '8px', fontSize: '13px', color: '#991b1b' }}>
+                    <span style={{ display: 'block', marginTop: '8px', fontSize: '13px', color: '#7A1F2B' }}>
                       An unexpected application runtime error occurred. Our diagnostics have been recorded.
                     </span>
                   </>
@@ -211,15 +212,15 @@ createRoot(document.getElementById('root')!).render(
                   window.location.reload();
                 }}
                 style={{
-                  background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+                  background: "#7A1F2B",
                   color: "white",
                   border: "none",
                   padding: "12px 32px",
-                  borderRadius: "12px",
+                  borderRadius: "14px",
                   fontSize: "14px",
                   fontWeight: 600,
                   cursor: "pointer",
-                  boxShadow: "0 4px 12px rgba(234, 88, 12, 0.3)",
+                  boxShadow: "0 4px 12px rgba(122, 31, 43, 0.2)",
                 }}
               >
                 Refresh Page / पेज रिफ्रेश करें

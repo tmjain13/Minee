@@ -65,6 +65,19 @@ self.addEventListener('message', (event) => {
   }
 });
 
+// Background Sync event listener for offline queue sync
+self.addEventListener('sync', (event: any) => {
+  if (event.tag === 'sadhana-sync') {
+    event.waitUntil(
+      self.clients.matchAll({ includeUncontrolled: true, type: 'window' }).then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ type: 'TRIGGER_BACKGROUND_SYNC' });
+        });
+      })
+    );
+  }
+});
+
 // Push notification validation
 self.addEventListener('push', (event) => {
   if (!event.data) return;
