@@ -185,9 +185,6 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
                   Minee
                 </span>
               </div>
-              <span className="text-[11px] text-stone-500 dark:text-stone-400 font-sans">
-                {greeting}, {currentUser?.displayName?.split(" ")[0] || "Sravaka"}
-              </span>
             </div>
           </div>
 

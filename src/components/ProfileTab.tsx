@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { db, auth } from "../lib/firebase";
 import { signOut } from "firebase/auth";
-import { doc, updateDoc, getDoc, onSnapshot } from "firebase/firestore";
+import { doc, updateDoc, getDoc, onSnapshot, collection, getDocs, query, orderBy } from "firebase/firestore";
+import { jsPDF } from "jspdf";
 import { devLog } from "../lib/devLog";
 import {
   Loader2,
@@ -143,6 +144,289 @@ export default function ProfileTab({
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [privacyLang, setPrivacyLang] = useState<"en" | "hi">("hi");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
+
+  const exportToPDF = async () => {
+    setIsExportingPDF(true);
+    try {
+      const doc = new jsPDF();
+      let y = 20;
+
+      const checkPageOverflow = (needed: number) => {
+        if (y + needed > 275) {
+          doc.addPage();
+          // Subtle header on new page
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8);
+          doc.setTextColor(150, 150, 150);
+          doc.text("Terapanth AI - Sadhana Journey Ledger", 15, 12);
+          doc.line(15, 14, 195, 14);
+          y = 20;
+        }
+      };
+
+      // Title Block
+      doc.setFillColor(110, 31, 42); // Brand Maroon #6E1F2A
+      doc.rect(15, y, 180, 22, "F");
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("TERAPANTH AI", 20, y + 10);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text("Spiritual Purification Ledger & Sadhana Journey Report", 20, y + 16);
+      
+      // Right side decorative date
+      const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      doc.setFontSize(8);
+      doc.text(dateStr, 155, y + 10);
+      y += 32;
+
+      // User context info
+      doc.setTextColor(60, 60, 60);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text(`Sadhak Email: ${user?.email || 'Anonymous Terapanth Sadhak'}`, 15, y);
+      doc.text(`Display Name: ${user?.displayName || 'Terapanth Disciple'}`, 15, y + 5);
+      y += 12;
+
+      // Horizontal separator
+      doc.setDrawColor(220, 220, 220);
+      doc.line(15, y, 195, y);
+      y += 8;
+
+      // SECTION 1: OVERVIEW & STREAKS
+      checkPageOverflow(40);
+      doc.setFillColor(245, 245, 240);
+      doc.rect(15, y, 180, 25, "F");
+      
+      doc.setTextColor(110, 31, 42);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text("1. STREAKS & OVERVIEW SUMMARY", 20, y + 6);
+      
+      const currentStreak = localStorage.getItem('terapanth_sadhana_streak_count') || "0";
+      const totalPoints = localStorage.getItem('terapanth_sadhana_points_count') || "0";
+
+      doc.setTextColor(80, 80, 80);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9.5);
+      doc.text(`Current Daily Sadhana Streak: ${currentStreak} Days`, 20, y + 14);
+      doc.text(`Total Spiritual Points: ${totalPoints} Points`, 20, y + 19);
+      y += 30;
+
+      // SECTION 2: MEDITATION MOOD HISTORY (Last 7 Days)
+      checkPageOverflow(60);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(110, 31, 42);
+      doc.setFontSize(11);
+      doc.text("2. POST-MEDITATION EMOTIONAL MOOD LOGS", 15, y);
+      y += 6;
+
+      const medMoodsRaw = localStorage.getItem('meditation_mood_history');
+      let medMoods: any[] = [];
+      if (medMoodsRaw) {
+        try {
+          medMoods = JSON.parse(medMoodsRaw);
+        } catch(e) {}
+      }
+
+      if (medMoods.length === 0) {
+        doc.setFont("helvetica", "italic");
+        doc.setTextColor(140, 140, 140);
+        doc.setFontSize(9);
+        doc.text("No recent meditation session mood logs found.", 15, y);
+        y += 10;
+      } else {
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(80, 80, 80);
+        doc.setFontSize(9);
+        
+        // Draw miniature table header
+        doc.setFillColor(240, 240, 240);
+        doc.rect(15, y, 180, 7, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(50, 50, 50);
+        doc.text("Date", 20, y + 5);
+        doc.text("Mood state", 50, y + 5);
+        doc.text("Reflection/Notes", 100, y + 5);
+        y += 10;
+
+        medMoods.slice(0, 10).forEach(log => {
+          checkPageOverflow(12);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(80, 80, 80);
+          
+          doc.text(String(log.date || ''), 20, y);
+          doc.text(`${log.emoji || ''} ${log.moodLabel || ''} (Score: ${log.score || ''})`, 50, y);
+          
+          // Truncate note text to fit nicely
+          const noteText = String(log.note || '');
+          const truncatedNote = noteText.length > 45 ? noteText.substring(0, 42) + '...' : noteText;
+          doc.text(truncatedNote, 100, y);
+          y += 8;
+        });
+        y += 4;
+      }
+
+      // SECTION 3: FASTING & TAP LOGS
+      checkPageOverflow(50);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(110, 31, 42);
+      doc.setFontSize(11);
+      doc.text("3. FASTING & TAP JOURNAL", 15, y);
+      y += 6;
+
+      let fastingLogs: any[] = [];
+      if (user?.uid) {
+        try {
+          const fastingRef = collection(db, 'users', user.uid, 'fastingLogs');
+          const fastingSnap = await getDocs(query(fastingRef, orderBy('date', 'desc')));
+          fastingSnap.forEach(snap => {
+            fastingLogs.push({ id: snap.id, ...snap.data() });
+          });
+        } catch(e) {
+          console.warn("Could not query fasting logs from Firebase, using offline sync fallback.");
+        }
+      }
+
+      // Fallback/cache
+      if (fastingLogs.length === 0) {
+        const cached = localStorage.getItem('sadhana_offline_sync_fastingLogs');
+        if (cached) {
+          try { fastingLogs = JSON.parse(cached); } catch(e){}
+        }
+      }
+
+      if (fastingLogs.length === 0) {
+        doc.setFont("helvetica", "italic");
+        doc.setTextColor(140, 140, 140);
+        doc.setFontSize(9);
+        doc.text("No active fasting or penance logs registered.", 15, y);
+        y += 10;
+      } else {
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(80, 80, 80);
+        doc.setFontSize(9);
+        
+        doc.setFillColor(240, 240, 240);
+        doc.rect(15, y, 180, 7, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(50, 50, 50);
+        doc.text("Date", 20, y + 5);
+        doc.text("Vow Type", 60, y + 5);
+        doc.text("Duration", 110, y + 5);
+        doc.text("Spiritual Impact", 150, y + 5);
+        y += 10;
+
+        fastingLogs.slice(0, 10).forEach(log => {
+          checkPageOverflow(12);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(80, 80, 80);
+          
+          doc.text(String(log.date || ''), 20, y);
+          const typeCapitalized = String(log.type || '').toUpperCase();
+          doc.text(typeCapitalized, 60, y);
+          doc.text(`${log.duration ? log.duration + ' hrs' : 'Standard'}`, 110, y);
+          doc.text(`+ ${log.impact || 2} Points`, 150, y);
+          y += 8;
+        });
+        y += 4;
+      }
+
+      // SECTION 4: SPIRITUAL JOURNAL REFLECTIONS
+      checkPageOverflow(50);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(110, 31, 42);
+      doc.setFontSize(11);
+      doc.text("4. SPIRITUAL JOURNAL OBSERVATIONS & AI REFLECTIONS", 15, y);
+      y += 6;
+
+      let journalLogs: any[] = [];
+      if (user?.uid) {
+        try {
+          const journalRef = collection(db, 'users', user.uid, 'spiritualJournal');
+          const journalSnap = await getDocs(query(journalRef, orderBy('createdAt', 'desc')));
+          journalSnap.forEach(snap => {
+            journalLogs.push({ id: snap.id, ...snap.data() });
+          });
+        } catch(e) {
+          console.warn("Could not query journal logs from Firebase, using offline sync fallback.");
+        }
+      }
+
+      if (journalLogs.length === 0) {
+        doc.setFont("helvetica", "italic");
+        doc.setTextColor(140, 140, 140);
+        doc.setFontSize(9);
+        doc.text("No journal observations or AI guide feedback recorded.", 15, y);
+        y += 10;
+      } else {
+        journalLogs.slice(0, 5).forEach((entry, idx) => {
+          checkPageOverflow(40);
+          
+          // Small date strip header
+          doc.setFillColor(245, 240, 240);
+          doc.rect(15, y, 180, 6, "F");
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(110, 31, 42);
+          doc.setFontSize(9);
+          doc.text(`Entry date: ${entry.id} | Mood state: ${entry.mood || 'Shant'}`, 20, y + 4.5);
+          y += 10;
+
+          // Journal Text
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(80, 80, 80);
+          doc.setFontSize(8.5);
+          
+          const rawText = String(entry.text || '');
+          const textLines = doc.splitTextToSize(`Self-Observation: ${rawText}`, 170);
+          textLines.forEach((line: string) => {
+            checkPageOverflow(5);
+            doc.text(line, 20, y);
+            y += 4.5;
+          });
+          
+          // AI Reflection Text
+          if (entry.aiReflection) {
+            y += 2;
+            checkPageOverflow(15);
+            doc.setFont("helvetica", "italic");
+            doc.setTextColor(130, 100, 30); // Golden brown for AI
+            
+            const rawAi = String(entry.aiReflection);
+            const aiLines = doc.splitTextToSize(`AI Guru Guidance: ${rawAi}`, 170);
+            aiLines.forEach((line: string) => {
+              checkPageOverflow(5);
+              doc.text(line, 20, y);
+              y += 4.5;
+            });
+          }
+
+          y += 5;
+        });
+      }
+
+      // Elegant Footer at bottom of document
+      checkPageOverflow(20);
+      doc.setDrawColor(200, 200, 200);
+      doc.line(15, 278, 195, 278);
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(8);
+      doc.setTextColor(120, 120, 120);
+      doc.text("May your consciousness be purified through regular introspection.", 15, 284);
+      doc.setFont("helvetica", "bold");
+      doc.text("Terapanth AI Hub © 2026", 160, 284);
+
+      // Save PDF
+      doc.save(`Terapanth_AI_Sadhana_Journey_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error("PDF generation failed:", error);
+    } finally {
+      setIsExportingPDF(false);
+    }
+  };
 
   // --- Offline Simulation State ---
   const [isOfflineSimulationActive, setIsOfflineSimulationActive] = useState(() => {
@@ -1853,7 +2137,30 @@ export default function ProfileTab({
                 records, and daily spiritual journal into a highly portable
                 encrypted JSON format for storage or migrations.
               </p>
-              <div className="flex items-center justify-end pt-1">
+              <div className="flex items-center justify-end gap-2 pt-1 flex-wrap">
+                {/* PDF Export Report Button */}
+                <button
+                  onClick={exportToPDF}
+                  disabled={isExportingPDF}
+                  className={`py-1.5 px-3 rounded-lg text-[9px] font-extrabold uppercase tracking-widest flex items-center gap-1.5 transition-all shadow-sm ${
+                    isExportingPDF
+                      ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 cursor-wait"
+                      : "bg-[#6E1F2A] hover:bg-[#8B2232] text-white active:scale-95 cursor-pointer border border-[#8B2232]/10"
+                  }`}
+                  title="Export complete spiritual reflections, streaks, and journal observations into a PDF report"
+                >
+                  {isExportingPDF ? (
+                    <>
+                      <Loader2 className="animate-spin" size={12} />{" "}
+                      Exporting PDF...
+                    </>
+                  ) : (
+                    <>
+                      <FileText size={12} /> Export PDF Report
+                    </>
+                  )}
+                </button>
+
                 <button
                   onClick={() => setShowExportConfirmation(true)}
                   disabled={isExportingData}

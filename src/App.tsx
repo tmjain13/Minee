@@ -67,6 +67,7 @@ import LoginModal from "./components/LoginModal";
 import StaticUnifiedHomeDashboard from "./components/UnifiedHomeDashboard";
 import StaticThemeCustomizer from "./components/ThemeCustomizer";
 import * as Sentry from "@sentry/react";
+import StreakCelebration from "./components/StreakCelebration";
 
 // --- SAFE LAZY WRAPPER FOR CHUNK-LOAD SELF-HEALING ---
 const retryLoad = async <T,>(
@@ -2619,6 +2620,9 @@ export default function App() {
           onTourComplete={() => setShowTour(false)}
         />
       )}
+
+      {/* Daily Sadhana Streak Celebration Animation Overlay */}
+      <StreakCelebration />
     </div>
   );
 }
