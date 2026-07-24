@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, Variants } from 'motion/react';
 import { Share2, Bookmark, ArrowRight, MapPin, Flame, Clock, Calendar, Sun, Moon, Sunrise, BarChart3, RefreshCw, Plus, Mic, Send, Copy, Star, Phone, Trash2, Sparkles, Sliders, Quote, BookOpen, Loader2, X, Search } from 'lucide-react';
 import DashboardCustomizerModal, { DashboardPreferences, DEFAULT_PREFERENCES } from './DashboardCustomizerModal';
 import { useAuth } from '../context/AuthContext';
@@ -179,6 +179,31 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
 }) {
   const { user } = useAuth();
   const { language } = useLanguage();
+
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.07,
+        delayChildren: 0.08,
+      },
+    },
+  };
+
+  const cardVariants: Variants = {
+    hidden: { opacity: 0, y: 24 },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring",
+        stiffness: 95,
+        damping: 17,
+        mass: 0.85,
+      },
+    },
+  };
 
   // --- Real-time Local Digital Clock Engine ---
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -664,7 +689,10 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
   };
 
   return (
-    <div 
+    <motion.div 
+      initial="hidden"
+      animate="show"
+      variants={containerVariants}
       className={`w-full flex flex-col gap-4 py-4 px-3 animate-in fade-in duration-200 transition-colors bg-transparent ${isDarkMode ? 'text-stone-100' : 'text-stone-800'}`}
       onTouchStart={(e) => {
         // Only stop propagation if it's clearly a horizontal gesture, 
@@ -675,19 +703,11 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
       }}
     >
       
-      {/* GREETING BAR */}
-      <div className={`py-2 px-4 text-center border rounded-2xl shadow-xs shrink-0 flex items-center justify-center gap-1.5 ${
-        isDarkMode 
-          ? 'bg-orange-950/20 border-orange-900/30 text-orange-400 font-semibold' 
-          : 'bg-orange-50/50 border-orange-100 text-orange-700 font-semibold'
-      }`}>
-        <span className="text-xs">
-          {getDynamicGreeting()} • जय जिनेन्द्र! 🔥 {streakCount} {language === 'hi' ? 'दिनों का सिलसिला' : 'Days Streak'}
-        </span>
-      </div>
-
       {/* LOCATION SELECTION BAR */}
-      <div className="flex items-center justify-between w-full shrink-0 gap-3 mt-5 mb-3 px-1">
+      <motion.div 
+        variants={cardVariants}
+        className="flex items-center justify-between w-full shrink-0 gap-3 mt-5 mb-3 px-1"
+      >
         <button 
           onClick={() => setModalOpen(true)}
           className={`group flex items-center gap-2.5 px-6 py-3 transition-all duration-300 rounded-full text-xs font-black shadow-lg border cursor-pointer hover:scale-[1.03] active:scale-95 translate-y-3.5 ${
@@ -713,10 +733,11 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
             Set Default
           </button>
         )}
-      </div>
+      </motion.div>
       
       {/* 1. PATH OF NON-VIOLENCE MOUNTAIN BANNER */}
       <motion.div 
+        variants={cardVariants}
         whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
         whileTap={{ scale: 0.98 }} 
         className={`relative w-full h-36 rounded-2xl overflow-hidden shadow-xs border shrink-0 transition-all ${isDarkMode ? 'border-stone-800' : 'border-stone-200'}`}
@@ -738,6 +759,7 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
 
       {/* 2. PERSONALIZED GREETING LAYER */}
       <motion.div 
+        variants={cardVariants}
         whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
         whileTap={{ scale: 0.98 }} 
         className={`w-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 shrink-0 flex justify-between items-center ${
@@ -779,10 +801,14 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
       </motion.div>
 
       {/* DYNAMIC CARD GRID (1 col mobile, 2 cols tablet, 3 cols desktop) with consistent card heights */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full items-stretch">
+      <motion.div 
+        variants={containerVariants}
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full items-stretch"
+      >
 
         {/* SOLAR LIFECYCLE CARD */}
         <motion.div 
+          variants={cardVariants}
           whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
           whileTap={{ scale: 0.98 }} 
           className={`w-full p-4 rounded-2xl border transition-all duration-200 flex flex-col justify-between gap-4 ${
@@ -853,6 +879,7 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
 
         {/* LOCAL VIHAR UPDATES CARD */}
         <motion.div 
+          variants={cardVariants}
           whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
           whileTap={{ scale: 0.98 }} 
           className={`w-full p-4 rounded-2xl border transition-all duration-200 flex flex-col justify-between gap-3 ${
@@ -934,6 +961,7 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
 
         {/* PARYUSHANA MAHAPARVA COUNTDOWN TIMER CARD */}
         <motion.div 
+          variants={cardVariants}
           whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
           whileTap={{ scale: 0.98 }} 
           className={`w-full h-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-4 ${
@@ -1075,6 +1103,7 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
 
         {/* RECOMMENDED DAILY VACHAN */}
         <motion.div 
+          variants={cardVariants}
           whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
           whileTap={{ scale: 0.98 }} 
           className={`w-full h-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-4 ${
@@ -1157,6 +1186,7 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
         {/* 4. VIHAR STATUS CARD */}
         {preferences.quick_actions && (
           <motion.div 
+            variants={cardVariants}
             whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
             whileTap={{ scale: 0.98 }} 
             className={`w-full h-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-4 ${
@@ -1191,6 +1221,7 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
         {/* MY SAVED SAINTS QUICK-ACCESS DECK */}
         {preferences.quick_links && (
           <motion.div 
+            variants={cardVariants}
             whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
             whileTap={{ scale: 0.98 }} 
             className={`w-full h-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-3 ${
@@ -1266,6 +1297,7 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
         {/* 5. MONASTIC ITINERARY SYSTEM WITH SMOOTH REGIONAL FILTERING */}
         {preferences.quick_links && (
           <motion.div 
+            variants={cardVariants}
             whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
             whileTap={{ scale: 0.98 }} 
             className={`w-full h-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-3 ${
@@ -1433,13 +1465,17 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
 
         {/* COMMUNITY POLLS COMPONENT */}
         {preferences.quick_links && (
-          <div className="md:col-span-2 lg:col-span-3">
+          <motion.div 
+            variants={cardVariants}
+            className="md:col-span-2 lg:col-span-3"
+          >
             <CommunityPolls user={user} setIsLoginModalOpen={setIsLoginModalOpen} />
-          </div>
+          </motion.div>
         )}
 
         {/* DAILY VACHAN CARD */}
         <motion.div 
+          variants={cardVariants}
           whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
           whileTap={{ scale: 0.98 }} 
           className={`w-full h-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-3 ${
@@ -1482,6 +1518,7 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
 
         {/* 6. DAILY SUVICHAR ENGINE LAYER */}
         <motion.div 
+          variants={cardVariants}
           whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
           whileTap={{ scale: 0.98 }} 
           className={`w-full h-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-3 ${
@@ -1508,10 +1545,13 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
         </motion.div>
 
         {/* 7.1. DYNAMIC LUNAR MOON PHASE & TITHI WIDGET */}
-        <MoonPhaseWidget isDarkMode={isDarkMode} setActiveTab={setActiveTab} />
+        <motion.div variants={cardVariants}>
+          <MoonPhaseWidget isDarkMode={isDarkMode} setActiveTab={setActiveTab} />
+        </motion.div>
 
         {/* DARSHAN GALLERY CARD (Migrated from Footer) */}
         <motion.div 
+          variants={cardVariants}
           whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
           whileTap={{ scale: 0.98 }} 
           className={`w-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 ${
@@ -1561,6 +1601,7 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
 
         {/* THE CANONICAL UNIFIED WINGS MATRIX - FULL GRAPHICAL BRANDING UPGRADE */}
         <motion.div 
+          variants={cardVariants}
           whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
           whileTap={{ scale: 0.98 }} 
           className={`w-full h-full p-5 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-4 ${
@@ -1607,6 +1648,7 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
 
         {/* 9. REFINEMENT TRACK FOR CHECKLIST AND QUIZ CORES */}
         <motion.div 
+          variants={cardVariants}
           whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
           whileTap={{ scale: 0.98 }} 
           className={`w-full h-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col justify-between gap-4 ${
@@ -1640,11 +1682,12 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
           </div>
         </motion.div>
 
-      </div>
+      </motion.div>
 
       {/* COMPLETELY REFACTORED PREMIUM LIGHT-THEME ABOUT US & FOOTER */}
       <div className="clear-both w-full block mt-4 mb-6 px-1">
         <motion.div 
+          variants={cardVariants}
           whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
           whileTap={{ scale: 0.98 }} 
           className={`w-full p-5 rounded-2xl border backdrop-blur-sm transition-all duration-200 flex flex-col gap-4 ${
@@ -1923,7 +1966,7 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
         )}
       </AnimatePresence>
 
-    </div>
+    </motion.div>
   );
 }
 

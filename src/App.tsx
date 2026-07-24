@@ -1439,12 +1439,12 @@ export default function App() {
       style={{
         ...appStyle,
         backgroundColor: 'var(--bg-cream)',
-        // Safe luxury subtle geometric pattern instead of broken postimg URLs
         backgroundImage: isDarkActive 
-          ? `radial-gradient(#2e251e 0.5px, transparent 0.5px), radial-gradient(#2e251e 0.5px, #141210 0.5px)`
-          : `radial-gradient(#e6dccb 0.5px, transparent 0.5px), radial-gradient(#e6dccb 0.5px, var(--bg-cream) 0.5px)`,
-        backgroundSize: '20px 20px',
-        backgroundPosition: '0 0, 10px 10px'
+          ? `radial-gradient(circle at 50% 0%, rgba(212, 175, 100, 0.12), transparent 60%), radial-gradient(circle at 80% 20%, rgba(110, 31, 42, 0.2), transparent 50%), radial-gradient(#38272a 0.6px, transparent 0.6px), radial-gradient(#38272a 0.6px, #12090B 0.6px)`
+          : `radial-gradient(circle at 50% 0%, rgba(182, 141, 64, 0.08), transparent 65%), radial-gradient(circle at 80% 15%, rgba(110, 31, 42, 0.04), transparent 50%), radial-gradient(#e2d7c5 0.6px, transparent 0.6px), radial-gradient(#e2d7c5 0.6px, var(--bg-cream) 0.6px)`,
+        backgroundSize: '100% 100%, 100% 100%, 20px 20px, 20px 20px',
+        backgroundPosition: '0 0, 0 0, 0 0, 10px 10px',
+        backgroundAttachment: 'fixed',
       }}
       className={`${activeTab === "chat" ? "h-[100dvh] overflow-hidden" : "min-h-[100dvh] h-[100dvh] overflow-y-auto"} w-full flex flex-col relative antialiased select-none p-0 m-0 border-none outline-none transition-colors duration-300 ${
         highContrast ? "contrast-125 saturate-150" : ""

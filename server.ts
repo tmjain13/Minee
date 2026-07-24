@@ -125,7 +125,7 @@ export const offlineAICache = new OfflineAICache();
 async function startServer() {
   const app = express();
   app.set("trust proxy", 1);
-  const PORT = 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
   let projectId = process.env.FIREBASE_PROJECT_ID;
   let databaseId = process.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID;

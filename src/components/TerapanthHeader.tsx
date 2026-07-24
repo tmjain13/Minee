@@ -161,30 +161,25 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           {/* Logo & Greeting Section */}
           <div className="flex items-center gap-3">
-            <div className="relative w-8 h-8 rounded-full flex items-center justify-center bg-[#6E1F2A]/10 dark:bg-[#B68D40]/15 p-1">
+            <div className="relative w-10 h-10 shrink-0 flex items-center justify-center">
               <img
                 src="https://i.postimg.cc/rp8MS1YG/Untitled-design-20260719-150333-0000.png"
                 alt="Terapanth Logo"
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain drop-shadow-xs"
                 loading="lazy"
                 referrerPolicy="no-referrer"
               />
               <span
-                className={`absolute bottom-0 right-0 w-2 h-2 rounded-full ring-2 ring-white dark:ring-[#12090B] ${
+                className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-white dark:ring-[#12090B] ${
                   isOnline ? "bg-emerald-500" : "bg-amber-500"
                 }`}
               />
             </div>
 
             <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="font-serif font-bold text-base leading-none text-[#6E1F2A] dark:text-[#D4AF64]">
-                  Terapanth AI
-                </span>
-                <span className="text-[10px] font-medium text-stone-400 dark:text-stone-500 font-sans uppercase tracking-widest">
-                  Minee
-                </span>
-              </div>
+              <span className="font-serif font-bold text-lg leading-none text-[#6E1F2A] dark:text-[#D4AF64]">
+                Terapanth AI
+              </span>
             </div>
           </div>
 
