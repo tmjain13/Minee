@@ -132,6 +132,21 @@ const SadhanaDiary = memo(() => {
   const [showClearJournalConfirm, setShowClearJournalConfirm] = useState(false);
   const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
   const [speedDialOpen, setSpeedDialOpen] = useState(false);
+  const [dismissedEveningReminder, setDismissedEveningReminder] = useState(false);
+  const [forceEveningTest, setForceEveningTest] = useState(false);
+
+  // Check if user has logged a diary entry today
+  const hasLoggedToday = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return entries.some(e => {
+      if (!e.timestamp) return false;
+      const dateObj = e.timestamp.toDate ? e.timestamp.toDate() : new Date(e.timestamp);
+      return dateObj.toISOString().split('T')[0] === todayStr;
+    });
+  }, [entries]);
+
+  const isEvening = new Date().getHours() >= 17; // 5:00 PM onwards
+  const showEveningReminder = (!hasLoggedToday && (isEvening || forceEveningTest)) && !dismissedEveningReminder;
 
   // Specialized Paryushana Fasting Calculator States
   const [fastVowType, setFastVowType] = useState('upvas');
@@ -949,6 +964,57 @@ const SadhanaDiary = memo(() => {
 
   return (
     <div className="space-y-6">
+      {/* Evening Sadhana Diary Notification Banner */}
+      <AnimatePresence>
+        {showEveningReminder && (
+          <motion.div
+            initial={{ opacity: 0, y: -15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            className="bg-gradient-to-r from-orange-600 via-amber-600 to-amber-700 text-white rounded-3xl p-5 shadow-lg flex flex-col md:flex-row items-center justify-between gap-4 border border-amber-400/30 relative overflow-hidden"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center shrink-0 font-bold text-xl">
+                🌙
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded font-mono">
+                    सांध्य दैनिक स्मरण (Evening Sadhana Reminder)
+                  </span>
+                </div>
+                <h4 className="text-sm font-bold mt-1">
+                  आज की साधना डायरी दर्ज करें (Complete Today's Reflection)
+                </h4>
+                <p className="text-xs text-amber-100 opacity-95 mt-0.5">
+                  संध्या का समय हो चुका है। अपनी दैनिक स्वाध्याय, प्रतिक्रमण एवं आत्म-निरीक्षण प्रविष्टियाँ सहेजें।
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 w-full md:w-auto justify-end">
+              <button
+                onClick={() => {
+                  setIsAdding(true);
+                  const el = document.getElementById('sadhana-journal-editor');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-4 py-2 bg-white text-orange-700 hover:bg-amber-50 rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm transition-all active:scale-95 cursor-pointer"
+              >
+                डायरी लिखें (Log Now)
+              </button>
+              <button
+                onClick={() => setDismissedEveningReminder(true)}
+                className="p-2 text-amber-200 hover:text-white rounded-xl hover:bg-white/10 transition-all cursor-pointer"
+                title="Dismiss Reminder"
+              >
+                ✕
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Sadhana Streak & Daily Reminder Consent UI */}
       <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent rounded-3xl p-5 border border-amber-500/20 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-4 w-full md:w-auto">
@@ -974,7 +1040,18 @@ const SadhanaDiary = memo(() => {
         </div>
 
         {/* Daily Alarm toggle button */}
-        <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+          <button
+            onClick={() => {
+              setDismissedEveningReminder(false);
+              setForceEveningTest(!forceEveningTest);
+            }}
+            className="px-3 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all border border-amber-500/20 cursor-pointer flex items-center gap-1.5"
+            title="Test Evening Sadhana Reminder Notification"
+          >
+            <span>🌙 सांध्य स्मरण (Test Evening Alert)</span>
+          </button>
+
           <button
             onClick={toggleAlarm}
             className={`px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95 ${

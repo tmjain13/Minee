@@ -24,8 +24,10 @@ import {
   Quote,
   ChevronLeft,
   Mic,
-  MicOff
+  MicOff,
+  Heart
 } from 'lucide-react';
+import SadhanaGratitude from './SadhanaGratitude';
 import {
   ResponsiveContainer,
   LineChart,
@@ -112,6 +114,7 @@ interface SpiritualJournalProps {
 
 export default function SpiritualJournal({ onBack }: SpiritualJournalProps) {
   const { user } = useAuth();
+  const [activeJournalTab, setActiveJournalTab] = useState<'reflection' | 'gratitude'>('reflection');
   const [text, setText] = useState(() => localStorage.getItem('spiritual_journal_draft') || "");
   const [selectedMood, setSelectedMood] = useState(() => localStorage.getItem('spiritual_journal_mood') || "🧘 शांत");
   const [emotionalState, setEmotionalState] = useState(() => localStorage.getItem('spiritual_journal_emotional_state') || "");
@@ -736,11 +739,44 @@ export default function SpiritualJournal({ onBack }: SpiritualJournalProps) {
         </button>
       </div>
 
-      {/* Current Date Ribbon */}
-      <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 bg-rose-500/5 px-4.5 py-3 rounded-2xl border border-rose-500/10 text-xs font-black">
-        <Calendar size={14} />
-        <span>आज की तिथि: {todayHindiDate}</span>
+      {/* Tab Navigation Ribbon */}
+      <div className="flex items-center justify-between gap-3 bg-black/5 dark:bg-white/5 p-1.5 rounded-2xl border border-black/5 dark:border-white/5">
+        <button
+          type="button"
+          onClick={() => setActiveJournalTab('reflection')}
+          className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            activeJournalTab === 'reflection'
+              ? 'bg-gradient-to-r from-red-600 to-rose-500 text-white shadow-sm'
+              : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
+          }`}
+        >
+          <BookOpen size={14} />
+          <span>आत्म-चिंतन (Reflections)</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveJournalTab('gratitude')}
+          className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            activeJournalTab === 'gratitude'
+              ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm'
+              : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
+          }`}
+        >
+          <Heart size={14} />
+          <span>कृतज्ञता डायरी (Gratitude Log)</span>
+        </button>
       </div>
+
+      {activeJournalTab === 'gratitude' ? (
+        <SadhanaGratitude />
+      ) : (
+        <>
+          {/* Current Date Ribbon */}
+          <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 bg-rose-500/5 px-4.5 py-3 rounded-2xl border border-rose-500/10 text-xs font-black">
+            <Calendar size={14} />
+            <span>आज की तिथि: {todayHindiDate}</span>
+          </div>
 
       {/* 📊 SPIRITUAL JOURNAL SUMMARY & TREND VIEW */}
       <div className="bg-black/[0.01] dark:bg-white/[0.01] border border-black/5 dark:border-white/5 rounded-3xl p-5 sm:p-6 space-y-5">
@@ -1382,6 +1418,8 @@ export default function SpiritualJournal({ onBack }: SpiritualJournalProps) {
           </div>
         )}
       </div>
+        </>
+      )}
 
     </div>
   );

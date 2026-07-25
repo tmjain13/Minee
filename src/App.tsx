@@ -177,6 +177,10 @@ interface Todo {
   id: string;
   text: string;
   completed: boolean;
+  tag?: string;
+  completedAt?: number;
+  dueTime?: string;
+  impact?: 'Low' | 'Medium' | 'High';
 }
 
 const DEFAULT_TAB_ORDER = ['home', 'chat', 'sadhana', 'panchang', 'profile'];
@@ -515,17 +519,57 @@ export default function App() {
       }
     }
     return [
-      { id: "1", text: "Navkar Mantra Chanting (जाप साधना)", completed: false },
-      { id: "2", text: "Samayik Meditation - 48 mins (सामायिक साधना)", completed: false },
-      { id: "3", text: "Swadhya - Spiritual Self-Study (स्वाध्याय)", completed: false },
-      { id: "4", text: "Chauvihar - No food after sunset (चौविहार व्रत)", completed: false },
-      { id: "5", text: "Pratikraman - Evening Ritual (प्रतिक्रमण)", completed: false }
+      { id: "1", text: "Navkar Mantra Chanting (जाप साधना)", completed: false, tag: "Daily" },
+      { id: "2", text: "Samayik Meditation - 48 mins (सामायिक साधना)", completed: false, tag: "Daily" },
+      { id: "3", text: "Swadhya - Spiritual Self-Study (स्वाध्याय)", completed: false, tag: "Daily" },
+      { id: "4", text: "Chauvihar - No food after sunset (चौविहार व्रत)", completed: false, tag: "Evening" },
+      { id: "5", text: "Pratikraman - Evening Ritual (प्रतिक्रमण)", completed: false, tag: "Evening" },
+      { id: "6", text: "Anekantavada & Ahimsa Reflection (विचार मंथन)", completed: false, tag: "Weekly" },
+      { id: "7", text: "Poshadh & Tapa Observance (पोषध व्रत)", completed: false, tag: "Special Ritual" }
     ];
   });
 
   useEffect(() => {
     localStorage.setItem("sadhana_todos", JSON.stringify(todos));
   }, [todos]);
+
+  // --- ARCHIVED TODOS & AUTO-ARCHIVE ENGINE (24h) ---
+  const [archivedTodos, setArchivedTodos] = useState<Todo[]>(() => {
+    try {
+      const saved = localStorage.getItem("terapanth_archived_todos");
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem("terapanth_archived_todos", JSON.stringify(archivedTodos));
+  }, [archivedTodos]);
+
+  useEffect(() => {
+    const checkAutoArchive = () => {
+      const now = Date.now();
+      const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+      
+      setTodos((prevTodos) => {
+        const expired = prevTodos.filter(
+          (t) => t.completed && t.completedAt && (now - t.completedAt >= TWENTY_FOUR_HOURS_MS)
+        );
+        if (expired.length > 0) {
+          setArchivedTodos((prevArchived) => [...prevArchived, ...expired]);
+          return prevTodos.filter(
+            (t) => !(t.completed && t.completedAt && (now - t.completedAt >= TWENTY_FOUR_HOURS_MS))
+          );
+        }
+        return prevTodos;
+      });
+    };
+
+    checkAutoArchive();
+    const interval = setInterval(checkAutoArchive, 60000); // Run every 60s
+    return () => clearInterval(interval);
+  }, []);
 
   const [todoInput, setTodoInput] = useState("");
   const [timelineIndex, setTimelineIndex] = useState(0);
@@ -1417,7 +1461,17 @@ export default function App() {
       navigator.vibrate(25);
     }
     setTodos((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
+      prev.map((t) => {
+        if (t.id === id) {
+          const nextCompleted = !t.completed;
+          return {
+            ...t,
+            completed: nextCompleted,
+            completedAt: nextCompleted ? Date.now() : undefined,
+          };
+        }
+        return t;
+      })
     );
   }, []);
 
@@ -1545,6 +1599,8 @@ export default function App() {
                   handleAddTodo={handleAddTodo}
                   handleToggleTodo={handleToggleTodo}
                   handleDeleteTodo={handleDeleteTodo}
+                  archivedTodos={archivedTodos}
+                  setArchivedTodos={setArchivedTodos}
                 />
               </motion.div>
             )}

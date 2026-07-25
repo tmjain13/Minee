@@ -150,13 +150,13 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({
 
   return (
     <div
-      className={`fixed bottom-4 left-0 right-0 z-50 px-3 md:px-6 pointer-events-none transition-all duration-300 ${
-        isPaginationVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
+      className={`fixed bottom-0 left-0 right-0 z-50 pointer-events-none transition-all duration-300 ${
+        isPaginationVisible ? 'translate-y-0 opacity-100' : 'translate-y-16 opacity-0'
       }`}
     >
-      {/* Outer Floating Container with Gold Border and Soft Deep Shadow */}
+      {/* Grounded Outer Container anchored to viewport bottom */}
       <nav
-        className="max-w-lg mx-auto pointer-events-auto relative shadow-[0_12px_36px_rgba(110,31,42,0.3)] rounded-full"
+        className="max-w-md mx-auto pointer-events-auto relative shadow-[0_-8px_30px_rgba(0,0,0,0.4)] rounded-t-3xl sm:rounded-t-full"
         aria-label="Primary Navigation"
       >
         {/* Subtle Offline Sync Badge */}
@@ -167,8 +167,8 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({
           </div>
         )}
 
-        {/* Main Maroon Pill Bar with Curved Center Notch */}
-        <div className="relative bg-gradient-to-b from-[#8B2232] via-[#7B1B28] to-[#5C101A] border border-[#C59B27]/60 rounded-full px-4 py-2 flex items-center justify-between text-[#F3E5C8]">
+        {/* Main Maroon Bar Grounded at Screen Bottom */}
+        <div className="relative bg-gradient-to-b from-[#8B2232] via-[#7B1B28] to-[#5C101A] border-t border-x border-[#C59B27]/60 rounded-t-3xl sm:rounded-t-full px-4 py-2.5 pb-safe pb-2.5 flex items-center justify-between text-[#F3E5C8]">
           
           {/* Central Raised Arch/Bridge Ring for AI Circle */}
           <div className="absolute left-1/2 -top-5 -translate-x-1/2 w-[72px] h-[72px] rounded-full bg-gradient-to-b from-[#8B2232] to-[#6E1F2A] border border-[#C59B27]/70 p-1 flex items-center justify-center shadow-[0_4px_18px_rgba(0,0,0,0.25)]">

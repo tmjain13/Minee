@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { useAuth } from "../context/AuthContext";
 import { db, auth } from "../lib/firebase";
 import { signOut } from "firebase/auth";
@@ -1194,6 +1195,164 @@ export default function ProfileTab({
               </div>
             </div>
           </div>
+
+          {/* Framer Motion Animated Sadhana Streak Counter Card */}
+          {(() => {
+            const [streakVal, setStreakVal] = useState(() => Number(localStorage.getItem('terapanth_sadhana_streak_count') || 7));
+            const [isUpdating, setIsUpdating] = useState(false);
+
+            const handleIncrementStreak = () => {
+              setIsUpdating(true);
+              const nextVal = streakVal + 1;
+              setStreakVal(nextVal);
+              localStorage.setItem('terapanth_sadhana_streak_count', String(nextVal));
+              if ('vibrate' in navigator) navigator.vibrate([40, 30, 80]);
+              setTimeout(() => setIsUpdating(false), 800);
+            };
+
+            return (
+              <motion.div
+                initial={{ scale: 0.88, opacity: 0 }}
+                animate={{
+                  scale: isUpdating ? [1, 1.15, 1] : 1,
+                  opacity: 1,
+                  boxShadow: isUpdating
+                    ? ["0 0 0px rgba(249,115,22,0)", "0 0 35px rgba(249,115,22,0.8)", "0 0 12px rgba(249,115,22,0.25)"]
+                    : "0 4px 20px -2px rgba(249,115,22,0.15)"
+                }}
+                transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                className="p-6 bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-white dark:to-zinc-900 rounded-2xl border border-orange-500/30 shadow-md relative overflow-hidden"
+                id="animated-sadhana-streak-counter"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <motion.div
+                      animate={{
+                        rotate: isUpdating ? [0, 15, -15, 0] : [0, 5, -5, 0],
+                        scale: isUpdating ? [1, 1.3, 1] : [1, 1.05, 1],
+                      }}
+                      transition={{
+                        repeat: isUpdating ? 0 : Infinity,
+                        duration: isUpdating ? 0.6 : 3,
+                        ease: "easeInOut"
+                      }}
+                      className="p-3 bg-gradient-to-tr from-orange-500 to-amber-500 text-white rounded-2xl shadow-lg"
+                    >
+                      <Flame size={24} className="animate-pulse" />
+                    </motion.div>
+                    <div>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-orange-600 dark:text-orange-400 font-mono">
+                        साधना निरंतरता (Spiritual Streak)
+                      </span>
+                      <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-100 flex items-center gap-2 font-mono">
+                        <motion.span
+                          key={streakVal}
+                          initial={{ scale: 0.5, y: -10, opacity: 0 }}
+                          animate={{ scale: 1, y: 0, opacity: 1 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                          className="text-2xl text-orange-600 dark:text-orange-400 font-black"
+                        >
+                          {streakVal}
+                        </motion.span>
+                        <span>दिवस (Days Active)</span>
+                      </h3>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleIncrementStreak}
+                    className="px-3.5 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 active:scale-95 text-white text-[10px] font-black uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer border border-white/20"
+                    title="Mark today's Sadhana completed & grow streak"
+                  >
+                    <Sparkles size={12} />
+                    <span>+1 Streak</span>
+                  </button>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-orange-500/10 flex items-center justify-between text-[10px] font-bold text-zinc-400">
+                  <span>🔥 Status: {streakVal >= 30 ? "सिद्ध साधक (Master)" : streakVal >= 14 ? "नियमित साधक (Disciplined)" : "अभ्यासी (Practitioner)"}</span>
+                  <span className="text-orange-500 font-mono">Next Milestone: {Math.ceil((streakVal + 1) / 7) * 7} Days</span>
+                </div>
+              </motion.div>
+            );
+          })()}
+
+          {/* Visual Weekly Sadhana Consistency Progress Bar Card */}
+          {(() => {
+            const metCount = weeklyBarData.filter(d => d.meditation >= 15 || d.mantra >= 108).length;
+            const totalDays = weeklyBarData.length || 7;
+            const percent = totalDays > 0 ? Math.round((metCount / totalDays) * 100) : 86;
+
+            return (
+              <div className="flex flex-col gap-4 p-6 bg-gradient-to-br from-orange-500/5 via-amber-500/5 to-transparent bg-white dark:bg-zinc-900 rounded-2xl border border-orange-500/20 shadow-sm w-full" id="weekly-sadhana-consistency-card">
+                <div className="w-full flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2.5 bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded-xl">
+                      <Flame size={18} />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                        <span>साधना निरंतरता (Weekly Sadhana Consistency)</span>
+                        <span className="px-2 py-0.5 text-[9px] font-black uppercase bg-orange-500/15 text-orange-600 dark:text-orange-400 rounded-full border border-orange-500/20">
+                          {percent >= 80 ? "उत्कृष्ट (High)" : percent >= 50 ? "मध्यम (Good)" : "नियमितता आवश्यक"}
+                        </span>
+                      </h3>
+                      <p className="text-[10px] text-zinc-400 mt-0.5 font-medium">
+                        Percentage of days daily spiritual goals were completed
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-2xl font-black text-orange-600 dark:text-orange-400 font-mono tracking-tight">
+                      {percent}%
+                    </span>
+                    <span className="text-[9px] font-bold text-zinc-400 block uppercase tracking-wider">
+                      {metCount}/{totalDays} Days Met
+                    </span>
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="space-y-1.5">
+                  <div className="w-full h-3 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden p-0.5 border border-black/5 dark:border-white/5">
+                    <div
+                      className="h-full bg-gradient-to-r from-orange-500 via-amber-500 to-emerald-500 rounded-full transition-all duration-1000 shadow-xs"
+                      style={{ width: `${percent}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between items-center text-[9.5px] font-bold text-zinc-400 px-0.5">
+                    <span>0% Start</span>
+                    <span>Goal: 100% (7/7 Days)</span>
+                  </div>
+                </div>
+
+                {/* Daily Status Pills */}
+                <div className="pt-2 border-t border-black/5 dark:border-zinc-800/80">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-zinc-400 block mb-2">
+                    इस सप्ताह का दैनिक रिकॉर्ड (Past 7 Days Status)
+                  </span>
+                  <div className="grid grid-cols-7 gap-1.5">
+                    {weeklyBarData.map((d, idx) => {
+                      const isMet = d.meditation >= 15 || d.mantra >= 108;
+                      return (
+                        <div
+                          key={idx}
+                          className={`flex flex-col items-center justify-center p-2 rounded-xl text-center border transition-all ${
+                            isMet
+                              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400"
+                              : "bg-zinc-100 dark:bg-zinc-800/50 border-black/5 dark:border-zinc-800 text-zinc-400"
+                          }`}
+                        >
+                          <span className="text-[9px] font-black uppercase">{d.name}</span>
+                          <span className="text-xs font-bold mt-0.5">{isMet ? "✓" : "•"}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Daily Sadhana Summary Chart */}
           <div className="flex flex-col gap-4 p-6 bg-white dark:bg-zinc-900 rounded-2xl border border-black/5 dark:border-zinc-800/80 shadow-sm mt-0 w-full">

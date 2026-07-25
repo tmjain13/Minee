@@ -1,7 +1,7 @@
 import { memo, useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-const confetti = (...args: any[]) => {};
-import { Clock, Play, Pause, RotateCcw, Sparkles, Volume2, VolumeX, ShieldCheck, Calendar, Plus, Trash2, CheckCircle2, ChevronRight, Info, Coffee, Sun, Moon, BookOpen, TrendingUp, Download, FileText, Wind, Flame, Timer, RefreshCw, Mic, FlameKindling, CheckSquare, X, Loader2, Send, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
+import confetti from 'canvas-confetti';
+import { Clock, Play, Pause, RotateCcw, Sparkles, Volume2, VolumeX, ShieldCheck, Calendar, Plus, Trash2, CheckCircle2, ChevronRight, ChevronDown, Info, Coffee, Sun, Moon, BookOpen, TrendingUp, Download, FileText, Wind, Flame, Timer, RefreshCw, Mic, FlameKindling, CheckSquare, X, Loader2, Send, GripVertical, ArrowUp, ArrowDown, Tag, Filter, Bookmark, Search, BellRing } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -19,6 +19,7 @@ import { Registry } from '../integrations/ComponentRegistry';
 import { KNOWLEDGE_BASE } from '../data/knowledge';
 import ArticleReader from './ArticleReader';
 import { LeshyaDhyanVisualizer, ShvasPrekshaGuidedBreathing } from './PrekshaGuidedPractices';
+import SadhanaGoalsAndPoints from './SadhanaGoalsAndPoints';
 
 // Lazy-loaded components from the Component Registry
 const DhyanTimer = Registry.DhyanTimer;
@@ -308,7 +309,10 @@ const SadhanaTab = memo(({
   setTodoInput,
   handleAddTodo,
   handleToggleTodo,
-  handleDeleteTodo
+  handleDeleteTodo,
+  onQuickPrayer,
+  archivedTodos = [],
+  setArchivedTodos
 }: { 
   mantraAudioCueEnabled?: boolean; 
   dailyStreak?: number; 
@@ -328,6 +332,9 @@ const SadhanaTab = memo(({
   handleAddTodo?: () => void;
   handleToggleTodo?: (id: string) => void;
   handleDeleteTodo?: (id: string) => void;
+  onQuickPrayer?: () => void;
+  archivedTodos?: any[];
+  setArchivedTodos?: any;
 }) => {
   const { user } = useAuth();
   const { language } = useLanguage();
@@ -473,9 +480,68 @@ const SadhanaTab = memo(({
   const [showJournalModal, setShowJournalModal] = useState(false);
   const [sessionDuration, setSessionDuration] = useState(48);
   const [sessionMood, setSessionMood] = useState("🧘 शांत");
-  const [sessionJournalText, setSessionJournalText] = useState("");
+  const [sessionJournalText, setSessionJournalText] = useState(() => {
+    try {
+      return localStorage.getItem('sadhana_summary_observation_autosave') || "";
+    } catch (e) {
+      return "";
+    }
+  });
   const [sessionEmotionalState, setSessionEmotionalState] = useState("");
   const [isSavingJournal, setIsSavingJournal] = useState(false);
+
+  // Auto-save observation text area input to localStorage on change
+  useEffect(() => {
+    try {
+      if (sessionJournalText) {
+        localStorage.setItem('sadhana_summary_observation_autosave', sessionJournalText);
+      } else {
+        localStorage.removeItem('sadhana_summary_observation_autosave');
+      }
+    } catch (e) {
+      console.warn("Observation autosave error:", e);
+    }
+  }, [sessionJournalText]);
+
+  // Compute meditation duration trend across the last 7 sessions
+  const last7MeditationSessionsData = useMemo(() => {
+    let savedSessions: { date: string; duration: number }[] = [];
+    try {
+      const raw = localStorage.getItem('sadhana_meditation_recent_sessions');
+      if (raw) savedSessions = JSON.parse(raw);
+    } catch (e) {
+      console.warn("Failed to load recent meditation sessions", e);
+    }
+
+    if (!savedSessions || savedSessions.length === 0) {
+      const days = ['Day -6', 'Day -5', 'Day -4', 'Day -3', 'Day -2', 'Yesterday', 'Today'];
+      const defaults = [15, 20, 30, 25, 48, 30, sessionDuration || 48];
+      return days.map((day, idx) => ({
+        session: day,
+        duration: defaults[idx]
+      }));
+    }
+
+    const last6 = savedSessions.slice(-6);
+    const points = last6.map((s, idx) => ({
+      session: s.date || `S-${idx + 1}`,
+      duration: s.duration
+    }));
+
+    points.push({
+      session: 'Current',
+      duration: sessionDuration || 48
+    });
+
+    while (points.length < 7) {
+      points.unshift({
+        session: `S-${points.length + 1}`,
+        duration: 15 + (points.length * 5)
+      });
+    }
+
+    return points.slice(-7);
+  }, [sessionDuration]);
 
   const startVoiceCommand = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -827,6 +893,47 @@ const SadhanaTab = memo(({
     }
   };
 
+  const playSoftChime = () => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(528, audioCtx.currentTime); // 528Hz Solfeggio / Om frequency
+      osc.frequency.exponentialRampToValueAtTime(1056, audioCtx.currentTime + 1.2);
+
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2.5);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start();
+      osc.stop(audioCtx.currentTime + 2.5);
+      setTimeout(() => audioCtx.close(), 3000);
+    } catch (e) {
+      console.error('Chime audio error:', e);
+    }
+  };
+
+  const handleQuickPrayer = () => {
+    playSoftChime();
+    if ('vibrate' in navigator) {
+      navigator.vibrate([60, 40, 60]);
+    }
+    setActiveSubTab('timer');
+    setTimeLeft(5 * 60);
+    setSessionDuration(5);
+    setIsActive(true);
+    if (setShareToast) {
+      setShareToast({
+        show: true,
+        message: 'Quick Prayer: 5-Minute Meditation Started 🕊️'
+      });
+    }
+  };
+
   const reflection = useMemo(() => {
     const day = new Date().getDate();
     return DAILY_REFLECTIONS[day % DAILY_REFLECTIONS.length];
@@ -870,6 +977,19 @@ const SadhanaTab = memo(({
             setSessionDuration(48);
             setShowJournalModal(true);
             if (interval) clearInterval(interval);
+
+            // Celebrate long meditation milestone (>= 30 mins)
+            try {
+              confetti({
+                particleCount: 90,
+                spread: 75,
+                origin: { y: 0.6 },
+                colors: ['#f97316', '#fbbf24', '#10b981', '#6366f1']
+              });
+            } catch (e) {
+              console.warn("Confetti animation error:", e);
+            }
+
             // Goal reached: Completion heavy haptics [150ms play, 100ms pause, etc]
             if ('vibrate' in navigator) {
               navigator.vibrate([150, 100, 150, 100, 300]);
@@ -1015,6 +1135,33 @@ const SadhanaTab = memo(({
         });
       }
 
+      // Record session duration into recent sessions history
+      try {
+        const existing = JSON.parse(localStorage.getItem('sadhana_meditation_recent_sessions') || '[]');
+        const todayLabel = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const updated = [...existing, { date: todayLabel, duration: Number(sessionDuration) || 1 }].slice(-14);
+        localStorage.setItem('sadhana_meditation_recent_sessions', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Failed to update recent session history', e);
+      }
+
+      // Clear observation autosave
+      localStorage.removeItem('sadhana_summary_observation_autosave');
+
+      // Trigger celebratory confetti for long meditation milestone (>= 30 mins)
+      if (Number(sessionDuration) >= 30) {
+        try {
+          confetti({
+            particleCount: 90,
+            spread: 80,
+            origin: { y: 0.55 },
+            colors: ['#f97316', '#fbbf24', '#10b981', '#6366f1', '#ec4899']
+          });
+        } catch (e) {
+          console.warn('Confetti error:', e);
+        }
+      }
+
       // Reset states
       setShowJournalModal(false);
       setSessionJournalText("");
@@ -1076,6 +1223,9 @@ const SadhanaTab = memo(({
           message: `क्विक नोट सफलतापूर्वक साधना जर्नल में सहेजा गया! 🕊️` 
         });
       }
+
+      // Clear observation autosave
+      localStorage.removeItem('sadhana_summary_observation_autosave');
 
       // Reset states
       setShowJournalModal(false);
@@ -1549,6 +1699,9 @@ const SadhanaTab = memo(({
           )}
         </div>
       )}
+
+      {/* 🎯 DAILY SPIRITUAL GOALS & 7-DAY RECHARTS POINTS TREND & 6 PM REMINDER */}
+      <SadhanaGoalsAndPoints />
 
       {/* Quick Alarm Toggle Dashboard */}
       <div id="quick-alarm-dashboard" className="bg-[var(--card-bg)] border border-black/5 dark:border-white/5 rounded-3xl p-6 space-y-4 shadow-md backdrop-blur-sm">
@@ -2921,6 +3074,8 @@ const SadhanaTab = memo(({
               handleToggleTodo={handleToggleTodo} 
               handleDeleteTodo={handleDeleteTodo}
               language={language}
+              archivedTodos={archivedTodos}
+              setArchivedTodos={setArchivedTodos}
             />
           </motion.div>
         )}
@@ -3052,6 +3207,64 @@ const SadhanaTab = memo(({
                   />
                 </div>
 
+                {/* 📈 7-SESSION MEDITATION DURATION TREND LINE CHART */}
+                <div className="p-4 bg-orange-500/5 dark:bg-orange-500/10 rounded-2xl border border-orange-500/15 space-y-2 text-left">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-orange-600 dark:text-orange-400">
+                      <TrendingUp size={14} />
+                      <span className="text-[10px] font-black uppercase tracking-wider">
+                        ध्यान अवधि रुझान (Meditation Duration Trend - Last 7 Sessions)
+                      </span>
+                    </div>
+                    <span className="text-[9px] font-mono font-bold text-orange-600 dark:text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full border border-orange-500/20">
+                      Avg: {Math.round(last7MeditationSessionsData.reduce((a, b) => a + b.duration, 0) / 7)} mins
+                    </span>
+                  </div>
+
+                  <div className="w-full h-28 pt-1">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={last7MeditationSessionsData} margin={{ top: 8, right: 10, left: -25, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.15} vertical={false} />
+                        <XAxis 
+                          dataKey="session" 
+                          fontSize={9} 
+                          tickLine={false} 
+                          axisLine={false} 
+                          tick={{ fill: '#9ca3af', fontWeight: 'bold' }} 
+                        />
+                        <YAxis 
+                          fontSize={9} 
+                          tickLine={false} 
+                          axisLine={false} 
+                          tick={{ fill: '#9ca3af' }}
+                          unit="m"
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            borderRadius: '12px',
+                            border: '1px solid rgba(249,115,22,0.3)',
+                            backgroundColor: 'var(--card-bg, #ffffff)',
+                            color: 'var(--text-main, #1c1917)',
+                            fontSize: '11px',
+                            fontWeight: 'bold',
+                            padding: '6px 10px'
+                          }}
+                          formatter={(val: any) => [`${val} Minutes`, 'Duration']}
+                          labelStyle={{ color: '#f97316', fontSize: '9px', fontWeight: '900' }}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="duration" 
+                          stroke="#f97316" 
+                          strokeWidth={2.5} 
+                          dot={{ r: 3, fill: '#f97316', strokeWidth: 2, stroke: '#ffffff' }}
+                          activeDot={{ r: 5, fill: '#ea580c' }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
                 {/* Premium Sadhana Benefits Section with soft entrance animation */}
                 <motion.div
                   initial={{ opacity: 0, y: 15 }}
@@ -3072,9 +3285,16 @@ const SadhanaTab = memo(({
 
                 {/* Journal Experience Textarea */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-400 block">
-                    Sadhana Experience Journal (साधना अनुभव लेखन)
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-gray-400 block">
+                      Sadhana Experience Journal (साधना अनुभव लेखन)
+                    </label>
+                    {sessionJournalText.trim().length > 0 && (
+                      <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md flex items-center gap-1 border border-emerald-500/20">
+                        <CheckCircle2 size={10} /> Auto-saved draft
+                      </span>
+                    )}
+                  </div>
                   <textarea
                     rows={3}
                     placeholder="इस सत्र में आपके क्या अनुभव रहे? कोई विशेष विचार या कषाय शांति जिसे आपने महसूस किया..."
@@ -3170,7 +3390,10 @@ const SadhanaGoalsSection = ({
   handleAddTodo = () => {},
   handleToggleTodo = () => {},
   handleDeleteTodo = () => {},
-  language = "en"
+  language = "en",
+  onQuickPrayer,
+  archivedTodos = [],
+  setArchivedTodos
 }: {
   todos?: any[];
   setTodos: any;
@@ -3180,10 +3403,151 @@ const SadhanaGoalsSection = ({
   handleToggleTodo?: (id: string) => void;
   handleDeleteTodo?: (id: string) => void;
   language?: string;
+  onQuickPrayer?: () => void;
+  archivedTodos?: any[];
+  setArchivedTodos?: any;
 }) => {
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [activeConfettiId, setActiveConfettiId] = useState<string | null>(null);
+  const [activeTagFilter, setActiveTagFilter] = useState<string>('All');
+  const [searchKeyword, setSearchKeyword] = useState<string>('');
+  const [newGoalTag, setNewGoalTag] = useState<string>('Daily');
+  const [newImpact, setNewImpact] = useState<'Low' | 'Medium' | 'High'>('Medium');
+  const [dueTimeInput, setDueTimeInput] = useState<string>('');
+  const [editingTagId, setEditingTagId] = useState<string | null>(null);
+  const [showArchivedModal, setShowArchivedModal] = useState<boolean>(false);
+
+  const TAG_OPTIONS = [
+    { id: 'Daily', label: { en: 'Daily', hi: 'दैनिक' }, emoji: '☀️' },
+    { id: 'Morning', label: { en: 'Morning', hi: 'प्रातःकालीन' }, emoji: '🌅' },
+    { id: 'Evening', label: { en: 'Evening', hi: 'सायंकालीन' }, emoji: '🌙' },
+    { id: 'Weekly', label: { en: 'Weekly', hi: 'साप्ताहिक' }, emoji: '📅' },
+    { id: 'Special Ritual', label: { en: 'Special Ritual', hi: 'विशेष अनुष्ठान' }, emoji: '✨' },
+  ];
+
+  const PRESET_GOALS = [
+    { hi: '15 मिनट ध्यान (Meditation)', en: '15 mins Meditation', tag: 'Daily', impact: 'Medium' as const },
+    { hi: 'नवकार जाप (Mantra Chanting)', en: 'Mantra Chanting', tag: 'Morning', impact: 'High' as const },
+    { hi: 'अहिंसा व्रत अभ्यास (Ahimsa)', en: 'Ahimsa Practice', tag: 'Weekly', impact: 'High' as const },
+    { hi: 'मौन साधना (Silence Practice)', en: 'Silence Practice', tag: 'Special Ritual', impact: 'High' as const },
+    { hi: 'तप / उपवास (Tapa Observance)', en: 'Tapa Observance', tag: 'Weekly', impact: 'High' as const },
+    { hi: 'चौविहार व्रत (Sunset Fasting)', en: 'Chauvihar Vrat', tag: 'Evening', impact: 'Medium' as const },
+    { hi: 'सायं प्रतिक्रमण (Evening Pratikraman)', en: 'Evening Pratikraman', tag: 'Evening', impact: 'High' as const },
+  ];
+
+  // --- 6:00 PM SPECIAL RITUAL BROWSER NOTIFICATION ENGINE ---
+  useEffect(() => {
+    const check6PMNotification = () => {
+      if (typeof window === 'undefined') return;
+      const now = new Date();
+      const hours = now.getHours();
+
+      if (hours >= 18) {
+        const todayStr = now.toISOString().split('T')[0];
+        const notifKey = `terapanth_ritual_6pm_notified_${todayStr}`;
+        if (localStorage.getItem(notifKey)) return;
+
+        const pendingRituals = todos.filter(
+          (t: any) => (t.tag === 'Special Ritual' || t.tag === 'विशेष अनुष्ठान') && !t.completed
+        );
+
+        if (pendingRituals.length > 0) {
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Terapanth Sadhana Alert 🌅', {
+              body: language === 'hi'
+                ? `सायं 6 बजे विशेष रिमाइंडर: आपके ${pendingRituals.length} अनुष्ठान संकल्प अभी शेष हैं!`
+                : `6 PM Special Reminder: You have ${pendingRituals.length} incomplete Special Ritual task(s) for today!`,
+              icon: '/media/logos/terapanth_logo.png'
+            });
+            localStorage.setItem(notifKey, 'true');
+          }
+        }
+      }
+    };
+
+    check6PMNotification();
+    const interval = setInterval(check6PMNotification, 60000);
+    return () => clearInterval(interval);
+  }, [todos, language]);
+
+  const getTagBadgeStyle = (tag: string = 'Daily') => {
+    switch (tag) {
+      case 'Morning':
+        return 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20';
+      case 'Evening':
+        return 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20';
+      case 'Weekly':
+        return 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20';
+      case 'Special Ritual':
+        return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20';
+      case 'Daily':
+      default:
+        return 'bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/20';
+    }
+  };
+
+  const getTagLabel = (tagId: string) => {
+    const found = TAG_OPTIONS.find(t => t.id === tagId);
+    if (!found) return tagId;
+    return language === 'hi' ? found.label.hi : found.label.en;
+  };
+
+  const getImpactInfo = (impact: 'Low' | 'Medium' | 'High' = 'Medium') => {
+    switch (impact) {
+      case 'High':
+        return {
+          dot: 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.7)] ring-2 ring-red-500/20',
+          badge: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
+          label: language === 'hi' ? 'उच्च प्रभाव' : 'High Impact'
+        };
+      case 'Low':
+        return {
+          dot: 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)] ring-2 ring-emerald-500/20',
+          badge: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+          label: language === 'hi' ? 'निम्न प्रभाव' : 'Low Impact'
+        };
+      case 'Medium':
+      default:
+        return {
+          dot: 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)] ring-2 ring-amber-500/20',
+          badge: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+          label: language === 'hi' ? 'मध्यम प्रभाव' : 'Medium Impact'
+        };
+    }
+  };
+
+  const toggleTaskImpact = (todoId: string, currentImpact: 'Low' | 'Medium' | 'High' = 'Medium') => {
+    const next: 'Low' | 'Medium' | 'High' = 
+      currentImpact === 'Low' ? 'Medium' : currentImpact === 'Medium' ? 'High' : 'Low';
+    setTodos((prev: any[]) =>
+      prev.map(t => (t.id === todoId ? { ...t, impact: next } : t))
+    );
+  };
+
+  const getDueTimeStatus = (dueTime?: string, completed?: boolean) => {
+    if (!dueTime || completed) return null;
+    const parts = dueTime.split(':');
+    if (parts.length < 2) return null;
+    const h = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10);
+    if (isNaN(h) || isNaN(m)) return null;
+
+    const now = new Date();
+    const due = new Date();
+    due.setHours(h, m, 0, 0);
+
+    const diffMs = due.getTime() - now.getTime();
+    const diffMins = Math.round(diffMs / 60000);
+
+    const isApproaching = diffMins >= -60 && diffMins <= 120;
+    return {
+      dueTimeFormatted: dueTime,
+      diffMins,
+      isApproaching,
+      isOverdue: diffMins < 0
+    };
+  };
 
   const onToggle = (id: string) => {
     const todo = todos.find(t => t.id === id);
@@ -3194,11 +3558,68 @@ const SadhanaGoalsSection = ({
     handleToggleTodo(id);
   };
 
+  const handleAddCustomTodo = () => {
+    if (!todoInput.trim()) return;
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(30);
+    }
+    const newTodo = {
+      id: Date.now().toString(),
+      text: todoInput.trim(),
+      completed: false,
+      tag: newGoalTag || 'Daily',
+      dueTime: dueTimeInput.trim() ? dueTimeInput.trim() : undefined,
+      impact: newImpact,
+    };
+    setTodos((prev: any[]) => [...prev, newTodo]);
+    setTodoInput("");
+    setDueTimeInput("");
+  };
+
+  const handleAddPreset = (preset: { hi: string; en: string; tag: string; impact?: 'Low' | 'Medium' | 'High' }) => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(30);
+    }
+    const label = language === 'hi' ? preset.hi : preset.en;
+    const newTodo = {
+      id: Date.now().toString(),
+      text: label,
+      completed: false,
+      tag: preset.tag,
+      impact: preset.impact || 'Medium'
+    };
+    setTodos((prev: any[]) => [...prev, newTodo]);
+  };
+
+  const handleChangeItemTag = (todoId: string, newTag: string) => {
+    setTodos((prev: any[]) =>
+      prev.map(t => (t.id === todoId ? { ...t, tag: newTag } : t))
+    );
+    setEditingTagId(null);
+  };
+
+  const restoreArchivedItem = (archivedId: string) => {
+    const item = archivedTodos.find(a => a.id === archivedId);
+    if (!item) return;
+    if (setArchivedTodos) {
+      setArchivedTodos((prev: any[]) => prev.filter(a => a.id !== archivedId));
+    }
+    setTodos((prev: any[]) => [...prev, { ...item, completed: false, completedAt: undefined }]);
+  };
+
+  const filteredTodos = useMemo(() => {
+    return todos.filter((t: any) => {
+      const matchesTag = activeTagFilter === 'All' || (t.tag || 'Daily') === activeTagFilter;
+      const matchesKeyword = !searchKeyword.trim() || t.text.toLowerCase().includes(searchKeyword.toLowerCase().trim());
+      return matchesTag && matchesKeyword;
+    });
+  }, [todos, activeTagFilter, searchKeyword]);
+
   const completedCount = todos.filter(t => t.completed).length;
   const totalCount = todos.length;
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  // Native drag & drop handlers for desktop/supported browsers
+  // Native drag & drop handlers mapped to master list
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggingIndex(index);
     e.dataTransfer.effectAllowed = "move";
@@ -3213,32 +3634,50 @@ const SadhanaGoalsSection = ({
 
   const handleDragEnd = () => {
     if (draggingIndex !== null && dragOverIndex !== null && draggingIndex !== dragOverIndex) {
-      const updated = [...todos];
-      const [removed] = updated.splice(draggingIndex, 1);
-      updated.splice(dragOverIndex, 0, removed);
-      setTodos(updated);
+      const draggedItem = filteredTodos[draggingIndex];
+      const targetItem = filteredTodos[dragOverIndex];
+      const idxA = todos.findIndex((t: any) => t.id === draggedItem.id);
+      const idxB = todos.findIndex((t: any) => t.id === targetItem.id);
+      if (idxA !== -1 && idxB !== -1) {
+        const updated = [...todos];
+        const [removed] = updated.splice(idxA, 1);
+        updated.splice(idxB, 0, removed);
+        setTodos(updated);
+      }
     }
     setDraggingIndex(null);
     setDragOverIndex(null);
   };
 
-  // Keyboard / Tap reordering helpers
-  const moveUp = (index: number) => {
-    if (index === 0) return;
-    const updated = [...todos];
-    const temp = updated[index];
-    updated[index] = updated[index - 1];
-    updated[index - 1] = temp;
-    setTodos(updated);
+  // Keyboard / Arrow button reordering helpers
+  const moveUp = (filteredIndex: number) => {
+    if (filteredIndex <= 0) return;
+    const currentItem = filteredTodos[filteredIndex];
+    const prevItem = filteredTodos[filteredIndex - 1];
+    const idxA = todos.findIndex((t: any) => t.id === currentItem.id);
+    const idxB = todos.findIndex((t: any) => t.id === prevItem.id);
+    if (idxA !== -1 && idxB !== -1) {
+      const updated = [...todos];
+      const temp = updated[idxA];
+      updated[idxA] = updated[idxB];
+      updated[idxB] = temp;
+      setTodos(updated);
+    }
   };
 
-  const moveDown = (index: number) => {
-    if (index === todos.length - 1) return;
-    const updated = [...todos];
-    const temp = updated[index];
-    updated[index] = updated[index + 1];
-    updated[index + 1] = temp;
-    setTodos(updated);
+  const moveDown = (filteredIndex: number) => {
+    if (filteredIndex >= filteredTodos.length - 1) return;
+    const currentItem = filteredTodos[filteredIndex];
+    const nextItem = filteredTodos[filteredIndex + 1];
+    const idxA = todos.findIndex((t: any) => t.id === currentItem.id);
+    const idxB = todos.findIndex((t: any) => t.id === nextItem.id);
+    if (idxA !== -1 && idxB !== -1) {
+      const updated = [...todos];
+      const temp = updated[idxA];
+      updated[idxA] = updated[idxB];
+      updated[idxB] = temp;
+      setTodos(updated);
+    }
   };
 
   return (
@@ -3256,9 +3695,76 @@ const SadhanaGoalsSection = ({
         </h3>
         <p className="text-xs text-gray-500 mt-2 leading-relaxed">
           {language === 'hi' 
-            ? 'अपने दैनिक आध्यात्मिक लक्ष्यों को यहाँ प्राथमिकता दें। उन्हें अपनी दैनिक साधना के अनुसार पुनर्व्यवस्थित करने के लिए खींचें और छोड़ें (Drag and Drop)।' 
-            : 'Prioritize your spiritual goals here. Drag & drop or use arrow buttons to reorder them based on your daily spiritual routine.'}
+            ? 'अपने संकल्पों को श्रेणियों (Tags) में वर्गीकृत करें और ड्रैग/ड्रॉप द्वारा प्राथमिकता तय करें।' 
+            : 'Categorize your spiritual goals with tags and prioritize them seamlessly using drag-and-drop or action controls.'}
         </p>
+      </div>
+
+      {/* Visual Summary: Count of Completed Tasks by Tag */}
+      <div className="p-4 bg-gradient-to-br from-amber-500/5 via-orange-500/5 to-transparent rounded-3xl border border-orange-500/15 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-orange-500/15 text-orange-600 dark:text-orange-400 rounded-xl">
+              <Sparkles size={16} />
+            </div>
+            <div>
+              <h4 className="text-xs font-black uppercase tracking-wider text-spiritual">
+                {language === 'hi' ? 'श्रेणी अनुसार पूर्ण साधना (Summary)' : 'Completed Sadhana Summary by Tag'}
+              </h4>
+              <p className="text-[10px] text-gray-400">
+                {language === 'hi' ? 'टैग अनुसार पूर्ण किए गए संकल्पों का विवरण' : 'Completed tasks breakdown per tag'}
+              </p>
+            </div>
+          </div>
+          <span className="px-2.5 py-1 bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-black rounded-full border border-green-500/20 font-mono">
+            {completedCount} / {totalCount} {language === 'hi' ? 'पूर्ण' : 'Done'}
+          </span>
+        </div>
+
+        {/* Simple List View of Tag Counts */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+          {TAG_OPTIONS.map((tag) => {
+            const tagCompletedCount = todos.filter((t: any) => t.completed && (t.tag || 'Daily') === tag.id).length;
+            const tagTotalCount = todos.filter((t: any) => (t.tag || 'Daily') === tag.id).length;
+            return (
+              <div
+                key={tag.id}
+                className="p-2.5 bg-white dark:bg-zinc-900/90 rounded-2xl border border-black/5 dark:border-zinc-800 flex items-center justify-between shadow-xs"
+              >
+                <div className="flex items-center gap-1.5 min-w-0 pr-1">
+                  <span className="text-sm">{tag.emoji}</span>
+                  <span className="text-xs font-bold text-gray-700 dark:text-gray-200 truncate">
+                    {language === 'hi' ? tag.label.hi : tag.label.en}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 shrink-0 font-mono text-xs font-black">
+                  <span className={tagCompletedCount > 0 ? "text-green-600 dark:text-green-400" : "text-gray-400"}>
+                    {tagCompletedCount}
+                  </span>
+                  <span className="text-gray-300 dark:text-zinc-600 text-[10px]">/ {tagTotalCount}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Auto-Archive & Restoration Drawer Trigger */}
+      <div className="flex items-center justify-between p-3.5 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/5 dark:border-white/5 text-xs">
+        <div className="flex items-center gap-2 text-gray-500">
+          <Clock size={14} className="text-amber-500 shrink-0" />
+          <span className="text-[11px] font-semibold">
+            {language === 'hi' 
+              ? 'पूर्ण संकल्प 24 घंटे बाद स्वचालित रूप से आर्काइव होते हैं' 
+              : 'Completed goals auto-archive after 24h'}
+          </span>
+        </div>
+        <button
+          onClick={() => setShowArchivedModal(true)}
+          className="px-2.5 py-1 bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 rounded-xl text-[11px] font-bold transition-colors cursor-pointer border border-orange-500/20 shrink-0"
+        >
+          {language === 'hi' ? `आर्काइव्ड (${archivedTodos.length})` : `Archived (${archivedTodos.length})`}
+        </button>
       </div>
 
       {/* Progress & Stats Card */}
@@ -3286,45 +3792,230 @@ const SadhanaGoalsSection = ({
         </div>
       </div>
 
-      {/* Goal Entry Input */}
-      <div className="space-y-2">
-        <label className="text-[10px] font-black uppercase tracking-wider text-gray-400 ml-1">
-          {language === 'hi' ? 'नया संकल्प जोड़ें' : 'Add Custom Sadhana Goal'}
+      {/* 6 PM Special Ritual Notification Status & Alert Banner */}
+      <div className="p-3.5 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 rounded-2xl border border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-xl shrink-0">
+            <BellRing size={16} className="animate-bounce" />
+          </div>
+          <div>
+            <p className="font-bold text-gray-800 dark:text-gray-150">
+              {language === 'hi' ? 'सायं 6 बजे विशेष अनुष्ठान ऑटो-रिमाइंडर' : '6:00 PM Special Ritual Auto-Notification'}
+            </p>
+            <p className="text-[11px] text-gray-500">
+              {language === 'hi'
+                ? 'यदि विशेष अनुष्ठान पूर्ण नहीं हैं तो सायं 6 बजे ऑटो-अलर्ट आएगा'
+                : 'Triggers a browser notification at 6 PM if Special Ritual tasks are incomplete'}
+            </p>
+          </div>
+        </div>
+
+        {typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted' && (
+          <button
+            onClick={() => {
+              Notification.requestPermission().then((perm) => {
+                if (perm === 'granted') {
+                  alert(language === 'hi' ? 'नोटिफिकेशन सक्षम हो गया है!' : 'Browser notifications enabled successfully!');
+                }
+              });
+            }}
+            className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-[11px] shrink-0 transition-colors cursor-pointer shadow-xs"
+          >
+            {language === 'hi' ? 'नोटिफिकेशन चालू करें' : 'Enable Notifications'}
+          </button>
+        )}
+      </div>
+
+      {/* Tag & Keyword Filtering Bar */}
+      <div className="space-y-3 p-4 bg-black/5 dark:bg-white/5 rounded-3xl border border-black/5 dark:border-white/5">
+        {/* Search Field Above Todo List */}
+        <div className="relative flex items-center">
+          <Search size={16} className="absolute left-3.5 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            placeholder={language === 'hi' ? 'कीवर्ड द्वारा संकल्प खोजें (Search by keyword)...' : 'Filter tasks by keyword...'}
+            className="w-full bg-white dark:bg-zinc-900 border border-black/10 dark:border-zinc-800 rounded-2xl pl-10 pr-10 py-2.5 text-xs text-gray-800 dark:text-gray-150 focus:outline-none focus:border-orange-500/50 shadow-xs"
+          />
+          {searchKeyword && (
+            <button
+              onClick={() => setSearchKeyword('')}
+              className="absolute right-3 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between pt-1">
+          <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 flex items-center gap-1.5 ml-1">
+            <Filter size={12} className="text-orange-500" />
+            {language === 'hi' ? 'श्रेणी अनुसार फ़िल्टर करें' : 'Filter by Category Tag'}
+          </span>
+          <span className="text-[10px] text-gray-400 font-bold">
+            {filteredTodos.length} {language === 'hi' ? 'लक्ष्य मिले' : 'tasks shown'}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          <button
+            onClick={() => setActiveTagFilter('All')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1 border ${
+              activeTagFilter === 'All'
+                ? 'bg-orange-500 text-white border-orange-500 shadow-sm'
+                : 'bg-white dark:bg-zinc-900 text-gray-600 dark:text-gray-300 border-black/10 dark:border-white/10 hover:bg-black/5'
+            }`}
+          >
+            <span>{language === 'hi' ? 'सभी' : 'All'}</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-md ${
+              activeTagFilter === 'All' ? 'bg-white/20 text-white' : 'bg-black/10 dark:bg-white/10 text-gray-500'
+            }`}>
+              {todos.length}
+            </span>
+          </button>
+
+          {TAG_OPTIONS.map((tag) => {
+            const count = todos.filter((t: any) => (t.tag || 'Daily') === tag.id).length;
+            const isActive = activeTagFilter === tag.id;
+            return (
+              <button
+                key={tag.id}
+                onClick={() => setActiveTagFilter(tag.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 border ${
+                  isActive
+                    ? 'bg-orange-500 text-white border-orange-500 shadow-sm'
+                    : 'bg-white dark:bg-zinc-900 text-gray-600 dark:text-gray-300 border-black/10 dark:border-white/10 hover:bg-black/5'
+                }`}
+              >
+                <span>{tag.emoji}</span>
+                <span>{language === 'hi' ? tag.label.hi : tag.label.en}</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-md ${
+                  isActive ? 'bg-white/20 text-white' : 'bg-black/10 dark:bg-white/10 text-gray-500'
+                }`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Goal Entry Input with Tag Selection, Impact Level & Optional Due Time */}
+      <div className="space-y-2.5 p-4 bg-black/5 dark:bg-white/5 rounded-3xl border border-black/5 dark:border-white/5">
+        <label className="text-[10px] font-black uppercase tracking-wider text-gray-400 ml-1 block">
+          {language === 'hi' ? 'नया संकल्प, श्रेणी, प्रभाव स्तर एवं समय जोड़ें' : 'Add Custom Goal with Tag, Impact & Due Time'}
         </label>
-        <div className="flex gap-2">
+
+        {/* Tag & Impact Level Selector for New Goal */}
+        <div className="flex flex-wrap items-center gap-2 justify-between">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            {TAG_OPTIONS.map((tag) => (
+              <button
+                key={tag.id}
+                type="button"
+                onClick={() => setNewGoalTag(tag.id)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all shrink-0 cursor-pointer border ${
+                  newGoalTag === tag.id
+                    ? 'bg-orange-500 text-white border-orange-500'
+                    : 'bg-white dark:bg-zinc-900 text-gray-600 dark:text-gray-400 border-black/10 dark:border-white/10'
+                }`}
+              >
+                {tag.emoji} {language === 'hi' ? tag.label.hi : tag.label.en}
+              </button>
+            ))}
+          </div>
+
+          {/* Impact Selector */}
+          <div className="flex items-center gap-1 bg-white dark:bg-zinc-900 p-1 rounded-xl border border-black/10 dark:border-zinc-800 text-[10px]">
+            <span className="text-gray-400 font-bold px-1">{language === 'hi' ? 'प्रभाव:' : 'Impact:'}</span>
+            <button
+              type="button"
+              onClick={() => setNewImpact('Low')}
+              className={`px-2 py-0.5 rounded-lg font-black transition-all cursor-pointer flex items-center gap-1 ${
+                newImpact === 'Low' ? 'bg-emerald-500 text-white' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <span>Low</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setNewImpact('Medium')}
+              className={`px-2 py-0.5 rounded-lg font-black transition-all cursor-pointer flex items-center gap-1 ${
+                newImpact === 'Medium' ? 'bg-amber-500 text-white' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              <span>Medium</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setNewImpact('High')}
+              className={`px-2 py-0.5 rounded-lg font-black transition-all cursor-pointer flex items-center gap-1 ${
+                newImpact === 'High' ? 'bg-red-500 text-white' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+              <span>High</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-2">
           <input
             type="text"
             value={todoInput}
             onChange={(e) => setTodoInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleAddTodo()}
-            placeholder={language === 'hi' ? 'जैसे: 15 मिनट मौन, स्वाध्याय...' : 'e.g. 15 minutes of silence, read Agam...'}
-            className="flex-1 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl px-4 py-3 text-sm text-gray-700 dark:text-gray-150 focus:outline-none focus:border-orange-500/50"
+            onKeyDown={(e) => e.key === 'Enter' && handleAddCustomTodo()}
+            placeholder={language === 'hi' ? 'जैसे: 15 मिनट ध्यान, मौन, स्वाध्याय...' : 'e.g. 15 minutes of silence, read Agam...'}
+            className="flex-1 bg-white dark:bg-zinc-900 border border-black/10 dark:border-zinc-800 rounded-2xl px-4 py-3 text-sm text-gray-800 dark:text-gray-150 focus:outline-none focus:border-orange-500/50"
           />
-          <button
-            onClick={handleAddTodo}
-            className="p-3 bg-orange-500 text-white rounded-2xl flex items-center justify-center hover:bg-orange-600 transition-colors focus:outline-none cursor-pointer"
-          >
-            <Plus size={20} />
-          </button>
+
+          <div className="flex gap-2">
+            {/* Optional Due Time Input */}
+            <div className="flex items-center gap-1 bg-white dark:bg-zinc-900 border border-black/10 dark:border-zinc-800 rounded-2xl px-3 py-2 text-xs">
+              <Clock size={14} className="text-gray-400 shrink-0" />
+              <input
+                type="time"
+                value={dueTimeInput}
+                onChange={(e) => setDueTimeInput(e.target.value)}
+                className="bg-transparent text-xs text-gray-700 dark:text-gray-200 focus:outline-none font-mono"
+                title={language === 'hi' ? 'समय चुनें' : 'Select due time'}
+              />
+            </div>
+
+            <button
+              onClick={handleAddCustomTodo}
+              className="px-4 py-3 bg-orange-500 text-white rounded-2xl flex items-center justify-center hover:bg-orange-600 transition-colors focus:outline-none cursor-pointer gap-1 text-xs font-bold shrink-0"
+            >
+              <Plus size={18} />
+              <span className="hidden sm:inline">{language === 'hi' ? 'जोड़ें' : 'Add'}</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* List Container */}
       <div className="space-y-3">
-        {totalCount === 0 ? (
-          <div className="p-8 border-2 border-dashed border-black/5 rounded-[2rem] text-center space-y-2">
+        {filteredTodos.length === 0 ? (
+          <div className="p-8 border-2 border-dashed border-black/5 dark:border-white/10 rounded-[2rem] text-center space-y-2">
             <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
-              {language === 'hi' ? 'कोई संकल्प नहीं मिला' : 'No goals found'}
+              {language === 'hi' ? 'इस श्रेणी में कोई लक्ष्य नहीं मिला' : 'No goals found in this tag'}
             </p>
             <p className="text-[10px] text-gray-400">
-              {language === 'hi' ? 'साधना शुरू करने के लिए ऊपर एक नया संकल्प जोड़ें।' : 'Add a new goal above to begin tracking.'}
+              {language === 'hi' ? 'ऊपर नया संकल्प जोड़ें या दूसरे टैग पर स्विच करें।' : 'Add a new goal above or switch to another filter tag.'}
             </p>
           </div>
         ) : (
           <div className="space-y-2.5">
-            {todos.map((todo, index) => {
+            {filteredTodos.map((todo, index) => {
               const isDragging = index === draggingIndex;
               const isDragOver = index === dragOverIndex;
+              const itemTag = todo.tag || 'Daily';
+              const isEditingThisTag = editingTagId === todo.id;
+              const dueTimeStatus = getDueTimeStatus(todo.dueTime, todo.completed);
+
               return (
                 <motion.div
                   key={todo.id}
@@ -3332,10 +4023,10 @@ const SadhanaGoalsSection = ({
                   animate={{ 
                     opacity: 1, 
                     y: 0,
-                    scale: todo.completed ? [1, 1.05, 1] : 1
+                    scale: todo.completed ? [1, 1.03, 1] : 1
                   }}
                   transition={{ 
-                    duration: 0.3,
+                    duration: 0.25,
                     scale: { type: "spring", stiffness: 300, damping: 15 }
                   }}
                   className="relative overflow-visible"
@@ -3345,7 +4036,7 @@ const SadhanaGoalsSection = ({
                     onDragStart={(e) => handleDragStart(e, index)}
                     onDragOver={(e) => handleDragOver(e, index)}
                     onDragEnd={handleDragEnd}
-                    className={`relative flex items-center justify-between p-4 bg-white dark:bg-zinc-900 hover:bg-orange-500/5 dark:hover:bg-orange-500/5 rounded-2xl border border-black/5 dark:border-zinc-800 shadow-sm transition-all duration-200 cursor-grab active:cursor-grabbing ${
+                    className={`relative flex items-center justify-between p-3.5 bg-white dark:bg-zinc-900 hover:bg-orange-500/5 dark:hover:bg-orange-500/5 rounded-2xl border border-black/5 dark:border-zinc-800 shadow-sm transition-all duration-200 cursor-grab active:cursor-grabbing ${
                       isDragging ? 'opacity-40 border-orange-500 border-dashed scale-[0.98]' : ''
                     } ${
                       isDragOver ? 'border-orange-500 border-dashed translate-y-1' : ''
@@ -3355,37 +4046,37 @@ const SadhanaGoalsSection = ({
                       <div className="absolute inset-0 pointer-events-none overflow-visible z-50">
                         {Array.from({ length: 15 }).map((_, i) => {
                           const angle = (i / 15) * 360 + Math.random() * 20;
-                           const distance = 40 + Math.random() * 60;
-                           const x = Math.cos((angle * Math.PI) / 180) * distance;
-                           const y = Math.sin((angle * Math.PI) / 180) * distance;
-                           const colors = ['#f97316', '#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6'];
-                           const randomColor = colors[i % colors.length];
-                           return (
-                             <motion.div
-                               key={i}
-                               className="absolute w-2.5 h-2.5 rounded-full left-1/2 top-1/2"
-                               style={{ backgroundColor: randomColor }}
-                               initial={{ x: 0, y: 0, scale: 1, opacity: 1 }}
-                               animate={{
-                                 x: x,
-                                 y: y,
-                                 scale: [1, 1.3, 0],
-                                 opacity: [1, 1, 0],
-                                 rotate: Math.random() * 360
-                               }}
-                               transition={{
-                                 duration: 0.8,
-                                 ease: "easeOut"
-                               }}
-                             />
-                           );
-                         })}
+                          const distance = 40 + Math.random() * 60;
+                          const x = Math.cos((angle * Math.PI) / 180) * distance;
+                          const y = Math.sin((angle * Math.PI) / 180) * distance;
+                          const colors = ['#f97316', '#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6'];
+                          const randomColor = colors[i % colors.length];
+                          return (
+                            <motion.div
+                              key={i}
+                              className="absolute w-2.5 h-2.5 rounded-full left-1/2 top-1/2"
+                              style={{ backgroundColor: randomColor }}
+                              initial={{ x: 0, y: 0, scale: 1, opacity: 1 }}
+                              animate={{
+                                x: x,
+                                y: y,
+                                scale: [1, 1.3, 0],
+                                opacity: [1, 1, 0],
+                                rotate: Math.random() * 360
+                              }}
+                              transition={{
+                                duration: 0.8,
+                                ease: "easeOut"
+                              }}
+                            />
+                          );
+                        })}
                       </div>
                     )}
 
-                    <div className="flex items-center gap-3.5 flex-1 min-w-0">
+                    <div className="flex items-center gap-2.5 flex-1 min-w-0 pr-2">
                       {/* Drag Handle */}
-                      <div className="text-gray-400 hover:text-gray-650 cursor-grab shrink-0 p-1">
+                      <div className="text-gray-400 hover:text-gray-650 cursor-grab shrink-0 p-0.5">
                         <GripVertical size={16} />
                       </div>
 
@@ -3401,25 +4092,114 @@ const SadhanaGoalsSection = ({
                         {todo.completed && <CheckCircle2 size={12} className="text-white fill-white" />}
                       </button>
 
-                      {/* Text */}
-                      <span 
-                        className={`text-sm font-semibold truncate select-none ${
-                          todo.completed 
-                            ? 'text-gray-400 line-through font-normal' 
-                            : 'text-gray-800 dark:text-gray-150'
-                        }`}
-                      >
-                        {todo.text}
-                      </span>
+                      {/* Impact Dot */}
+                      {(() => {
+                        const impactInfo = getImpactInfo(todo.impact || 'Medium');
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => toggleTaskImpact(todo.id, todo.impact || 'Medium')}
+                            className="shrink-0 p-1 cursor-pointer transition-transform hover:scale-125"
+                            title={language === 'hi' ? `प्रभाव: ${impactInfo.label} (बदलने के लिए क्लिक करें)` : `Impact: ${impactInfo.label} (Click to toggle)`}
+                          >
+                            <span className={`block w-2.5 h-2.5 rounded-full ${impactInfo.dot}`} />
+                          </button>
+                        );
+                      })()}
+
+                      {/* Text & Tag */}
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span 
+                          className={`text-sm font-semibold truncate select-none ${
+                            todo.completed 
+                              ? 'text-gray-400 line-through font-normal' 
+                              : 'text-gray-800 dark:text-gray-150'
+                          }`}
+                        >
+                          {todo.text}
+                        </span>
+
+                        {/* Tag Badge / Editor & Due Time Badge & Impact Badge */}
+                        <div className="mt-1 flex items-center gap-2 flex-wrap">
+                          {isEditingThisTag ? (
+                            <div className="flex items-center gap-1 overflow-x-auto max-w-full py-0.5 scrollbar-none z-10 bg-white dark:bg-zinc-900 border border-orange-500/30 p-1 rounded-lg shadow-md">
+                              {TAG_OPTIONS.map((t) => (
+                                <button
+                                  key={t.id}
+                                  onClick={() => handleChangeItemTag(todo.id, t.id)}
+                                  className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 cursor-pointer ${
+                                    itemTag === t.id
+                                      ? 'bg-orange-500 text-white'
+                                      : 'bg-black/5 dark:bg-white/10 text-gray-600 dark:text-gray-300'
+                                  }`}
+                                >
+                                  {t.emoji} {language === 'hi' ? t.label.hi : t.label.en}
+                                </button>
+                              ))}
+                              <button
+                                onClick={() => setEditingTagId(null)}
+                                className="p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-white shrink-0 ml-1"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setEditingTagId(todo.id)}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all cursor-pointer ${getTagBadgeStyle(itemTag)}`}
+                              title={language === 'hi' ? 'टैग बदलें' : 'Change tag'}
+                            >
+                              <Tag size={10} />
+                              <span>{getTagLabel(itemTag)}</span>
+                              <ChevronDown size={10} className="opacity-50" />
+                            </button>
+                          )}
+
+                          {/* Impact Level Badge */}
+                          {(() => {
+                            const impactInfo = getImpactInfo(todo.impact || 'Medium');
+                            return (
+                              <button
+                                type="button"
+                                onClick={() => toggleTaskImpact(todo.id, todo.impact || 'Medium')}
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all cursor-pointer ${impactInfo.badge}`}
+                                title={language === 'hi' ? 'प्रभाव स्तर बदलें' : 'Toggle impact level'}
+                              >
+                                <span className={`w-1.5 h-1.5 rounded-full ${impactInfo.dot}`} />
+                                <span>{impactInfo.label}</span>
+                              </button>
+                            );
+                          })()}
+
+                          {/* Approaching Due Time Badge for Special Ritual / Due Tasks */}
+                          {dueTimeStatus && (
+                            itemTag === 'Special Ritual' && dueTimeStatus.isApproaching ? (
+                              <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-700 dark:text-amber-300 text-[10px] font-black tracking-wide animate-pulse">
+                                <Flame size={12} className="text-amber-500 shrink-0" />
+                                <span>
+                                  {dueTimeStatus.isOverdue
+                                    ? (language === 'hi' ? '⚠️ अनुष्ठान समय समाप्त' : '⚠️ Ritual Overdue')
+                                    : (language === 'hi' ? `⚡ विशेष अनुष्ठान निकट (${dueTimeStatus.diffMins}m)` : `⚡ Special Ritual Due Soon (${dueTimeStatus.diffMins}m)`)}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-black/5 dark:bg-white/5 text-gray-500 border border-black/5 dark:border-white/5 font-mono">
+                                <Clock size={10} />
+                                <span>{todo.dueTime}</span>
+                              </span>
+                            )
+                          )}
+                        </div>
+                      </div>
                     </div>
 
                     {/* Reordering and Delete Actions */}
-                    <div className="flex items-center gap-1.5 shrink-0 pl-2">
+                    <div className="flex items-center gap-1 shrink-0">
                       {/* Move Up */}
                       <button
                         onClick={() => moveUp(index)}
                         disabled={index === 0}
-                        className="p-1.5 rounded-lg text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent transition-all cursor-pointer"
+                        className="p-1.5 rounded-lg text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:hover:bg-transparent transition-all cursor-pointer"
                         title={language === 'hi' ? 'ऊपर ले जाएं' : 'Move Up'}
                       >
                         <ArrowUp size={14} />
@@ -3428,8 +4208,8 @@ const SadhanaGoalsSection = ({
                       {/* Move Down */}
                       <button
                         onClick={() => moveDown(index)}
-                        disabled={index === totalCount - 1}
-                        className="p-1.5 rounded-lg text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 disabled:hover:bg-transparent transition-all cursor-pointer"
+                        disabled={index === filteredTodos.length - 1}
+                        className="p-1.5 rounded-lg text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:hover:bg-transparent transition-all cursor-pointer"
                         title={language === 'hi' ? 'नीचे ले जाएं' : 'Move Down'}
                       >
                         <ArrowDown size={14} />
@@ -3455,36 +4235,104 @@ const SadhanaGoalsSection = ({
       {/* Preset Recommendations */}
       <div className="space-y-3">
         <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
-          {language === 'hi' ? 'अनुशंसित साधना संकल्प' : 'Recommended Presets'}
+          {language === 'hi' ? 'अनुशंसित साधना संकल्प (Presets)' : 'Recommended Goal Presets'}
         </h4>
         <div className="flex flex-wrap gap-2">
-          {[
-            { hi: "15 मिनट ध्यान (Meditation)", en: "15 mins Meditation" },
-            { hi: "जाप माला (Jaap Chanting)", en: "Mantra Chanting" },
-            { hi: "अहिंसा व्रत अभ्यास (Ahimsa)", en: "Ahimsa Practice" },
-            { hi: "मौन साधना (Silence Practice)", en: "Silence Practice" },
-            { hi: "तप / उपवास (Tapa Observance)", en: "Tapa Observance" }
-          ].map((preset, idx) => {
+          {PRESET_GOALS.map((preset, idx) => {
             const label = language === 'hi' ? preset.hi : preset.en;
             const alreadyExists = todos.some(t => t.text.toLowerCase().includes(label.toLowerCase()));
             if (alreadyExists) return null;
             return (
               <button
                 key={idx}
-                onClick={() => {
-                  if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                    navigator.vibrate(30);
-                  }
-                  const newTodo = { id: Date.now().toString() + idx, text: label, completed: false };
-                  setTodos([...todos, newTodo]);
-                }}
-                className="px-3.5 py-2 text-xs font-bold rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 hover:bg-orange-500 hover:text-white transition-all cursor-pointer"
+                onClick={() => handleAddPreset(preset)}
+                className="px-3.5 py-2 text-xs font-bold rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 hover:bg-orange-500 hover:text-white transition-all cursor-pointer flex items-center gap-1.5"
               >
-                + {label}
+                <span>+ {label}</span>
+                <span className="text-[9px] font-mono opacity-60">({preset.tag})</span>
               </button>
             );
           })}
         </div>
+      </div>
+
+      {/* Archived Todos Modal */}
+      <AnimatePresence>
+        {showArchivedModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="relative w-full max-w-md bg-white dark:bg-zinc-900 border border-black/10 dark:border-zinc-800 rounded-3xl p-6 shadow-2xl space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-black/5 dark:border-white/5 pb-3">
+                <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
+                  <Clock size={18} />
+                  <h3 className="font-bold text-sm">
+                    {language === 'hi' ? 'आर्काइव्ड साधना संकल्प' : 'Archived Sadhana Goals'}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowArchivedModal(false)}
+                  className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-white rounded-lg"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <p className="text-xs text-gray-500">
+                {language === 'hi'
+                  ? '24 घंटे बाद स्वचालित रूप से आर्काइव किए गए पूर्ण संकल्प:'
+                  : 'Tasks marked completed >24 hours ago are archived to keep your active checklist clean.'}
+              </p>
+
+              <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
+                {archivedTodos.length === 0 ? (
+                  <p className="text-xs text-gray-400 italic text-center py-6">
+                    {language === 'hi' ? 'कोई आर्काइव्ड संकल्प नहीं है।' : 'No archived items yet.'}
+                  </p>
+                ) : (
+                  archivedTodos.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-3 bg-black/5 dark:bg-white/5 rounded-2xl flex items-center justify-between gap-2 text-xs"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-gray-700 dark:text-gray-200 truncate">{item.text}</p>
+                        <span className="text-[10px] text-gray-400 font-mono">Tag: {item.tag || 'Daily'}</span>
+                      </div>
+                      <button
+                        onClick={() => restoreArchivedItem(item.id)}
+                        className="px-2.5 py-1 bg-green-500/10 hover:bg-green-500/20 text-green-600 dark:text-green-400 rounded-lg text-[10px] font-bold shrink-0 transition-colors cursor-pointer border border-green-500/20"
+                      >
+                        {language === 'hi' ? 'पुनः सक्रिय करें' : 'Restore'}
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Floating 'Quick Prayer' Button */}
+      <div className="fixed bottom-24 right-5 z-40">
+        <button
+          type="button"
+          onClick={() => onQuickPrayer?.()}
+          className="flex items-center gap-2.5 bg-gradient-to-r from-orange-500 via-amber-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider px-4 py-3 rounded-full shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all cursor-pointer border border-white/20 group"
+          title="Start 5-Minute Quick Prayer & Meditation"
+        >
+          <div className="p-1 bg-white/20 rounded-full group-hover:rotate-12 transition-transform">
+            <Sparkles size={14} className="text-amber-100 animate-spin" style={{ animationDuration: '6s' }} />
+          </div>
+          <div className="text-left">
+            <span className="block text-[10px] font-black leading-tight text-amber-100">त्वरित प्रार्थना</span>
+            <span className="block text-[11px] font-black leading-tight">Quick Prayer (5m)</span>
+          </div>
+        </button>
       </div>
     </div>
   );

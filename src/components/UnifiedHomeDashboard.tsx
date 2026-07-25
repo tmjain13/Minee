@@ -28,6 +28,33 @@ const SUVICHAR_BANK: Quote[] = [
   { text: "संयम ही जीवन है, असंयम ही मृत्यु का कारण बनता है।", author: "आचार्य तुलसी", source: "अणुव्रत दर्शन" }
 ];
 
+const DEFAULT_AFFIRMATIONS = [
+  {
+    textHi: "आज मैं हर स्थिति में अपने मन को शांत, समभाव और राग-द्वेष से मुक्त रखूँगा।",
+    textEn: "Today I will maintain a calm, equanimous mind free from attachment and aversion in every situation.",
+    author: "अणुव्रत संकल्प (Anuvrat Resolution)",
+    theme: "समभाव (Samata)"
+  },
+  {
+    textHi: "मेरी आत्मा अनंत ज्ञान, दर्शन और आत्मिक ऊर्जा का पवित्र स्रोत है।",
+    textEn: "My soul is a pure source of infinite knowledge, vision, and divine energy.",
+    author: "आत्म-चिंतन (Self Reflection)",
+    theme: "आत्म-शुद्धि (Self-Purity)"
+  },
+  {
+    textHi: "मैं अपने विचारों, वाणी और कर्मों से सभी जीवों के प्रति अहिंसा और करुणा का प्रसार करता हूँ।",
+    textEn: "Through my thoughts, speech, and actions, I radiate non-violence and compassion toward all beings.",
+    author: "अहिंसा भावना (Ahimsa Thought)",
+    theme: "अहिंसा (Non-Violence)"
+  },
+  {
+    textHi: "क्षमा और नम्रता ही अंतरंग विजय का मार्ग है; क्रोध का उत्तर मैं विवेक और शांति से दूँगा।",
+    textEn: "Forgiveness and humility are the keys to inner victory; I will respond to anger with wisdom and peace.",
+    author: "क्षमावाणी उपदेश",
+    theme: "क्षमा (Forgiveness)"
+  }
+];
+
 interface HomeVachanType {
   textHi: string;
   textEn: string;
@@ -217,6 +244,28 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
   const [recommendationReason, setRecommendationReason] = useState<{hi: string, en: string} | null>(null);
   const [recommendedList, setRecommendedList] = useState<HomeVachanType[]>([]);
   const [recommendationIndex, setRecommendationIndex] = useState(0);
+
+  // --- Daily Spiritual Affirmation State & Firebase Integration ---
+  const [affirmationList, setAffirmationList] = useState(DEFAULT_AFFIRMATIONS);
+  const [affirmationIndex, setAffirmationIndex] = useState(() => new Date().getDate() % DEFAULT_AFFIRMATIONS.length);
+
+  useEffect(() => {
+    try {
+      const q = query(collection(db, 'affirmations'), limit(20));
+      const unsub = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          const fetched = snapshot.docs.map(doc => doc.data() as any);
+          setAffirmationList(fetched);
+          setAffirmationIndex(new Date().getDate() % fetched.length);
+        }
+      }, (err) => {
+        console.warn("[Affirmations Engine] Firebase fallback to defaults:", err);
+      });
+      return () => unsub();
+    } catch (e) {
+      console.warn("[Affirmations Engine] Listener setup error:", e);
+    }
+  }, []);
 
   const processRecommendations = (history: any[]) => {
     if (!history || history.length === 0) {
@@ -799,6 +848,72 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
           </div>
         </div>
       </motion.div>
+
+      {/* 🌟 DAILY SPIRITUAL AFFIRMATION CARD */}
+      {(() => {
+        const affirmation = affirmationList[affirmationIndex % affirmationList.length] || DEFAULT_AFFIRMATIONS[0];
+        
+        return (
+          <motion.div
+            variants={cardVariants}
+            whileHover={{ y: -3, transition: { duration: 0.2, ease: "easeOut" } }}
+            className={`w-full p-5 rounded-2xl border relative overflow-hidden backdrop-blur-sm transition-all shadow-sm ${
+              isDarkMode
+                ? 'bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-stone-900 border-amber-500/20 text-stone-100'
+                : 'bg-gradient-to-br from-amber-50 via-orange-50/50 to-white border-amber-200/80 text-stone-900'
+            }`}
+            id="daily-spiritual-affirmation-card"
+          >
+            <div className="flex items-center justify-between border-b pb-3 mb-3 border-amber-500/15">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-amber-500/15 text-amber-600 dark:text-amber-400 rounded-xl">
+                  <Sparkles size={16} className="animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 font-mono">
+                    {language === 'hi' ? 'आज का आध्यात्मिक संकल्प' : 'Daily Spiritual Affirmation'}
+                  </h3>
+                  <span className="text-[9px] font-bold text-stone-400 block">
+                    {affirmation.theme || "Spiritual Upliftment"} • {affirmation.author || "Jain Wisdom"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const textToCopy = `${affirmation.textHi}\n"${affirmation.textEn}" - ${affirmation.author}`;
+                    navigator.clipboard.writeText(textToCopy);
+                    if ('vibrate' in navigator) navigator.vibrate(20);
+                  }}
+                  className="p-1.5 rounded-lg text-stone-400 hover:text-amber-500 hover:bg-amber-500/10 transition-all cursor-pointer"
+                  title="Copy Affirmation"
+                >
+                  <Copy size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAffirmationIndex((prev) => (prev + 1) % affirmationList.length)}
+                  className="p-1.5 rounded-lg text-stone-400 hover:text-amber-500 hover:bg-amber-500/10 transition-all cursor-pointer"
+                  title="Next Affirmation"
+                >
+                  <RefreshCw size={13} />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-bold font-serif leading-relaxed text-amber-950 dark:text-amber-100">
+                "{affirmation.textHi}"
+              </p>
+              <p className="text-xs text-stone-500 dark:text-stone-400 font-medium italic leading-relaxed">
+                "{affirmation.textEn}"
+              </p>
+            </div>
+          </motion.div>
+        );
+      })()}
 
       {/* DYNAMIC CARD GRID (1 col mobile, 2 cols tablet, 3 cols desktop) with consistent card heights */}
       <motion.div 

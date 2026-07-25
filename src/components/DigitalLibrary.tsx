@@ -1143,7 +1143,7 @@ Guidelines:
               initial={{ scale: 0.95 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.95 }}
-              className={`bg-white dark:bg-zinc-900 rounded-2xl w-full ${distractionFreeMode ? 'max-w-2xl' : 'max-w-3xl'} overflow-hidden shadow-2xl flex flex-col md:flex-row relative max-h-[90vh] transition-all duration-300`}
+              className={distractionFreeMode ? 'fixed inset-0 z-[250] bg-white dark:bg-zinc-950 w-full h-full overflow-hidden flex flex-col' : 'bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row relative max-h-[90vh] transition-all duration-300'}
               onClick={(e) => e.stopPropagation()}
             >
               {distractionFreeMode ? (() => {
@@ -1190,7 +1190,7 @@ Guidelines:
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.35, ease: "easeOut" }}
                     style={bgThemeStyles}
-                    className="flex-1 flex flex-col h-[80vh] md:h-[600px] transition-colors relative"
+                    className="flex-1 flex flex-col h-full w-full transition-colors relative"
                     id="distraction-free-reader"
                   >
                     {/* Top Header - Controls Bar */}
