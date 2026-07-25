@@ -1,7 +1,7 @@
 import { memo, useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
-import { Clock, Play, Pause, RotateCcw, Sparkles, Volume2, VolumeX, ShieldCheck, Calendar, Plus, Trash2, CheckCircle2, ChevronRight, ChevronDown, Info, Coffee, Sun, Moon, BookOpen, TrendingUp, Download, FileText, Wind, Flame, Timer, RefreshCw, Mic, FlameKindling, CheckSquare, X, Loader2, Send, GripVertical, ArrowUp, ArrowDown, Tag, Filter, Bookmark, Search, BellRing } from 'lucide-react';
+import { Clock, Play, Pause, RotateCcw, Sparkles, Volume2, VolumeX, ShieldCheck, Calendar, Plus, Trash2, CheckCircle2, ChevronRight, ChevronDown, Info, Coffee, Sun, Moon, BookOpen, TrendingUp, Download, FileText, Wind, Flame, Timer, RefreshCw, Mic, FlameKindling, CheckSquare, X, Loader2, Send, GripVertical, ArrowUp, ArrowDown, Tag, Filter, Bookmark, Search, BellRing, ArrowUpDown, Award, Compass } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -3411,12 +3411,39 @@ const SadhanaGoalsSection = ({
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [activeConfettiId, setActiveConfettiId] = useState<string | null>(null);
   const [activeTagFilter, setActiveTagFilter] = useState<string>('All');
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('All');
   const [searchKeyword, setSearchKeyword] = useState<string>('');
+  const [sortBy, setSortBy] = useState<'date_desc' | 'date_asc' | 'impact_desc' | 'impact_asc'>('impact_desc');
   const [newGoalTag, setNewGoalTag] = useState<string>('Daily');
+  const [newGoalCategory, setNewGoalCategory] = useState<string>('Sadhana');
   const [newImpact, setNewImpact] = useState<'Low' | 'Medium' | 'High'>('Medium');
   const [dueTimeInput, setDueTimeInput] = useState<string>('');
+  const [activeMeditationId, setActiveMeditationId] = useState<string | null>(null);
+  const [activeDiscourseId, setActiveDiscourseId] = useState<string | null>(null);
   const [editingTagId, setEditingTagId] = useState<string | null>(null);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
   const [showArchivedModal, setShowArchivedModal] = useState<boolean>(false);
+  const [isDiscoursePlaying, setIsDiscoursePlaying] = useState<boolean>(false);
+
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
+
+  const toggleCategoryCollapse = (catId: string) => {
+    setCollapsedCategories(prev => ({
+      ...prev,
+      [catId]: !prev[catId]
+    }));
+  };
+
+  const SPIRITUAL_CATEGORIES = [
+    { id: 'All', label: { en: 'All Categories', hi: 'सभी श्रेणियां' }, emoji: '📑' },
+    { id: 'Samayik', label: { en: 'Samayik', hi: 'सामायिक' }, emoji: '🧘' },
+    { id: 'Swadhyaya', label: { en: 'Swadhyaya', hi: 'स्वाध्याय' }, emoji: '📖' },
+    { id: 'Japa', label: { en: 'Japa / Chanting', hi: 'जाप / मंत्र' }, emoji: '📿' },
+    { id: 'Tap', label: { en: 'Tap / Fasting', hi: 'तप / उपवास' }, emoji: '🔥' },
+    { id: 'Sadhana', label: { en: 'General Sadhana', hi: 'सामान्य साधना' }, emoji: '✨' },
+    { id: 'Other', label: { en: 'Other', hi: 'अन्य' }, emoji: '📌' },
+  ];
 
   const TAG_OPTIONS = [
     { id: 'Daily', label: { en: 'Daily', hi: 'दैनिक' }, emoji: '☀️' },
@@ -3427,13 +3454,13 @@ const SadhanaGoalsSection = ({
   ];
 
   const PRESET_GOALS = [
-    { hi: '15 मिनट ध्यान (Meditation)', en: '15 mins Meditation', tag: 'Daily', impact: 'Medium' as const },
-    { hi: 'नवकार जाप (Mantra Chanting)', en: 'Mantra Chanting', tag: 'Morning', impact: 'High' as const },
-    { hi: 'अहिंसा व्रत अभ्यास (Ahimsa)', en: 'Ahimsa Practice', tag: 'Weekly', impact: 'High' as const },
-    { hi: 'मौन साधना (Silence Practice)', en: 'Silence Practice', tag: 'Special Ritual', impact: 'High' as const },
-    { hi: 'तप / उपवास (Tapa Observance)', en: 'Tapa Observance', tag: 'Weekly', impact: 'High' as const },
-    { hi: 'चौविहार व्रत (Sunset Fasting)', en: 'Chauvihar Vrat', tag: 'Evening', impact: 'Medium' as const },
-    { hi: 'सायं प्रतिक्रमण (Evening Pratikraman)', en: 'Evening Pratikraman', tag: 'Evening', impact: 'High' as const },
+    { hi: '15 मिनट ध्यान (Meditation)', en: '15 mins Meditation', tag: 'Daily', category: 'Sadhana', impact: 'Medium' as const },
+    { hi: 'नवकार जाप (Mantra Chanting)', en: 'Mantra Chanting', tag: 'Morning', category: 'Japa', impact: 'High' as const },
+    { hi: 'अहिंसा व्रत अभ्यास (Ahimsa)', en: 'Ahimsa Practice', tag: 'Weekly', category: 'Sadhana', impact: 'High' as const },
+    { hi: 'मौन साधना (Silence Practice)', en: 'Silence Practice', tag: 'Special Ritual', category: 'Sadhana', impact: 'High' as const },
+    { hi: 'तप / उपवास (Tapa Observance)', en: 'Tapa Observance', tag: 'Weekly', category: 'Tap', impact: 'High' as const },
+    { hi: 'चौविहार व्रत (Sunset Fasting)', en: 'Chauvihar Vrat', tag: 'Evening', category: 'Tap', impact: 'Medium' as const },
+    { hi: 'सायं प्रतिक्रमण (Evening Pratikraman)', en: 'Evening Pratikraman', tag: 'Evening', category: 'Samayik', impact: 'High' as const },
   ];
 
   // --- 6:00 PM SPECIAL RITUAL BROWSER NOTIFICATION ENGINE ---
@@ -3470,6 +3497,163 @@ const SadhanaGoalsSection = ({
     const interval = setInterval(check6PMNotification, 60000);
     return () => clearInterval(interval);
   }, [todos, language]);
+
+  // --- SWADHYAYA & SAMAYIK CUSTOM TIME BROWSER NOTIFICATION ENGINE ---
+  const [swadhyayaReminderTime, setSwadhyayaReminderTime] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('terapanth_swadhyaya_reminder_time') || '20:00';
+    }
+    return '20:00';
+  });
+  const [swadhyayaReminderEnabled, setSwadhyayaReminderEnabled] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('terapanth_swadhyaya_reminder_enabled') !== 'false';
+    }
+    return true;
+  });
+
+  const handleUpdateSwadhyayaReminder = (timeStr: string, enabled: boolean) => {
+    setSwadhyayaReminderTime(timeStr);
+    setSwadhyayaReminderEnabled(enabled);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('terapanth_swadhyaya_reminder_time', timeStr);
+      localStorage.setItem('terapanth_swadhyaya_reminder_enabled', enabled ? 'true' : 'false');
+    }
+  };
+
+  const triggerTestNotification = () => {
+    if (typeof window === 'undefined') return;
+    if (!('Notification' in window)) {
+      alert(language === 'hi' ? 'इस ब्राउज़र में नोटिफिकेशन समर्थित नहीं है।' : 'Browser notifications are not supported in this browser.');
+      return;
+    }
+    if (Notification.permission !== 'granted') {
+      Notification.requestPermission().then((perm) => {
+        if (perm === 'granted') {
+          new Notification('🙏 स्वाध्याय एवं सामायिक अनुस्मारक | Swadhyaya Alert', {
+            body: language === 'hi'
+              ? 'अनुस्मारक सक्रिय है! अपनी दैनिक स्वाध्याय एवं सामायिक साधना का अभ्यास करें।'
+              : 'Test Notification: It is time for your daily Swadhyaya & Samayik practice!',
+            icon: '/media/logos/terapanth_logo.png'
+          });
+        }
+      });
+    } else {
+      new Notification('🙏 स्वाध्याय एवं सामायिक अनुस्मारक | Swadhyaya Alert', {
+        body: language === 'hi'
+          ? 'अनुस्मारक सक्रिय है! अपनी दैनिक स्वाध्याय एवं सामायिक साधना का अभ्यास करें।'
+          : 'Test Notification: It is time for your daily Swadhyaya & Samayik practice!',
+        icon: '/media/logos/terapanth_logo.png'
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (!swadhyayaReminderEnabled || typeof window === 'undefined') return;
+
+    const checkSwadhyayaReminder = () => {
+      const now = new Date();
+      const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+      if (currentHHMM === swadhyayaReminderTime) {
+        const todayStr = now.toISOString().split('T')[0];
+        const notifKey = `terapanth_swadhyaya_notified_${todayStr}_${swadhyayaReminderTime}`;
+        if (localStorage.getItem(notifKey)) return;
+
+        const pendingSwadhyayaOrSamayik = todos.filter((t: any) => {
+          if (t.completed) return false;
+          const text = (t.text || '').toLowerCase();
+          const category = (t.category || '').toLowerCase();
+          return text.includes('swadhyaya') || text.includes('स्वाध्याय') || text.includes('samayik') || text.includes('सामायिक') || category.includes('swadhyaya') || category.includes('samayik');
+        });
+
+        if (pendingSwadhyayaOrSamayik.length > 0) {
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('🙏 स्वाध्याय एवं सामायिक साधना अनुस्मारक', {
+              body: language === 'hi'
+                ? `आपकी दैनिक स्वाध्याय एवं सामायिक साधना का समय (${swadhyayaReminderTime}) हो गया है! आपके ${pendingSwadhyayaOrSamayik.length} संकल्प शेष हैं।`
+                : `Daily Swadhyaya & Samayik reminder (${swadhyayaReminderTime}): You have ${pendingSwadhyayaOrSamayik.length} task(s) remaining for practice!`,
+              icon: '/media/logos/terapanth_logo.png'
+            });
+            localStorage.setItem(notifKey, 'true');
+          }
+        }
+      }
+    };
+
+    checkSwadhyayaReminder();
+    const interval = setInterval(checkSwadhyayaReminder, 30000);
+    return () => clearInterval(interval);
+  }, [swadhyayaReminderTime, swadhyayaReminderEnabled, todos, language]);
+
+  // --- SADHANA EXPERIENCE POINTS (XP) SYSTEM ---
+  const sadhanaXP = useMemo(() => {
+    let xp = 0;
+    let samayikCount = 0;
+    let japaCount = 0;
+    let swadhyayaCount = 0;
+    let otherCount = 0;
+
+    const allCompleted = [...todos, ...(archivedTodos || [])].filter((t: any) => t.completed);
+
+    allCompleted.forEach((t: any) => {
+      const text = (t.text || '').toLowerCase();
+      const category = (t.category || '').toLowerCase();
+
+      if (text.includes('samayik') || text.includes('सामायिक') || category.includes('samayik')) {
+        xp += 50;
+        samayikCount++;
+      } else if (text.includes('japa') || text.includes('जाप') || text.includes('navkar') || text.includes('मंत्र') || category.includes('japa')) {
+        xp += 40;
+        japaCount++;
+      } else if (text.includes('swadhyaya') || text.includes('स्वाध्याय') || text.includes('tap') || text.includes('तप') || category.includes('swadhyaya') || category.includes('tap')) {
+        xp += 30;
+        swadhyayaCount++;
+      } else {
+        xp += 20;
+        otherCount++;
+      }
+    });
+
+    let level = 1;
+    let titleHi = 'साधक (Sadhak)';
+    let titleEn = 'Sadhak (Practitioner)';
+    let nextLevelXP = 100;
+
+    if (xp >= 1000) {
+      level = 5;
+      titleHi = 'परम साधक (Param Sadhak)';
+      titleEn = 'Param Sadhak (Master)';
+      nextLevelXP = 2000;
+    } else if (xp >= 600) {
+      level = 4;
+      titleHi = 'ज्ञानी (Gyani Sadhak)';
+      titleEn = 'Gyani (Wise Sadhak)';
+      nextLevelXP = 1000;
+    } else if (xp >= 300) {
+      level = 3;
+      titleHi = 'ध्यानी (Dhyani Sadhak)';
+      titleEn = 'Dhyani (Meditator)';
+      nextLevelXP = 600;
+    } else if (xp >= 100) {
+      level = 2;
+      titleHi = 'तपस्वी (Tapasvi Sadhak)';
+      titleEn = 'Tapasvi (Dedicated)';
+      nextLevelXP = 300;
+    }
+
+    return {
+      totalXP: xp,
+      samayikCount,
+      japaCount,
+      swadhyayaCount,
+      otherCount,
+      level,
+      titleHi,
+      titleEn,
+      nextLevelXP
+    };
+  }, [todos, archivedTodos]);
 
   const getTagBadgeStyle = (tag: string = 'Daily') => {
     switch (tag) {
@@ -3568,15 +3752,17 @@ const SadhanaGoalsSection = ({
       text: todoInput.trim(),
       completed: false,
       tag: newGoalTag || 'Daily',
+      category: newGoalCategory || 'Sadhana',
       dueTime: dueTimeInput.trim() ? dueTimeInput.trim() : undefined,
       impact: newImpact,
+      notes: '',
     };
     setTodos((prev: any[]) => [...prev, newTodo]);
     setTodoInput("");
     setDueTimeInput("");
   };
 
-  const handleAddPreset = (preset: { hi: string; en: string; tag: string; impact?: 'Low' | 'Medium' | 'High' }) => {
+  const handleAddPreset = (preset: { hi: string; en: string; tag: string; category?: string; impact?: 'Low' | 'Medium' | 'High' }) => {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate(30);
     }
@@ -3586,7 +3772,9 @@ const SadhanaGoalsSection = ({
       text: label,
       completed: false,
       tag: preset.tag,
-      impact: preset.impact || 'Medium'
+      category: preset.category || 'Sadhana',
+      impact: preset.impact || 'Medium',
+      notes: '',
     };
     setTodos((prev: any[]) => [...prev, newTodo]);
   };
@@ -3598,6 +3786,23 @@ const SadhanaGoalsSection = ({
     setEditingTagId(null);
   };
 
+  const handleChangeItemCategory = (todoId: string, newCat: string) => {
+    setTodos((prev: any[]) =>
+      prev.map(t => (t.id === todoId ? { ...t, category: newCat } : t))
+    );
+    setEditingCategoryId(null);
+  };
+
+  const handleUpdateNotes = (todoId: string, notes: string) => {
+    setTodos((prev: any[]) =>
+      prev.map(t => (t.id === todoId ? { ...t, notes } : t))
+    );
+  };
+
+  const toggleNotesExpanded = (todoId: string) => {
+    setExpandedNotes(prev => ({ ...prev, [todoId]: !prev[todoId] }));
+  };
+
   const restoreArchivedItem = (archivedId: string) => {
     const item = archivedTodos.find(a => a.id === archivedId);
     if (!item) return;
@@ -3607,13 +3812,109 @@ const SadhanaGoalsSection = ({
     setTodos((prev: any[]) => [...prev, { ...item, completed: false, completedAt: undefined }]);
   };
 
+  // --- 7-DAY CONSISTENCY TRACKER STATS ---
+  const sevenDayStats = useMemo(() => {
+    const days: { dateStr: string; label: string; count: number; dayName: string }[] = [];
+    const now = new Date();
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(now.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const dayName = d.toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-US', { weekday: 'short' });
+      const dayNum = d.getDate();
+
+      // Count tasks completed on this date from active + archived todos
+      let countOnDate = 0;
+
+      [...todos, ...archivedTodos].forEach((item: any) => {
+        if (item.completed) {
+          if (item.completedAt) {
+            const itemDateStr = new Date(item.completedAt).toISOString().split('T')[0];
+            if (itemDateStr === dateStr) {
+              countOnDate += 1;
+            }
+          } else {
+            // fallback if today
+            if (dateStr === now.toISOString().split('T')[0]) {
+              countOnDate += 1;
+            }
+          }
+        }
+      });
+
+      days.push({
+        dateStr,
+        label: `${dayName} ${dayNum}`,
+        dayName,
+        count: countOnDate,
+      });
+    }
+
+    const totalCompletedIn7Days = days.reduce((acc, curr) => acc + curr.count, 0);
+    const activeDaysCount = days.filter(d => d.count > 0).length;
+    const consistencyPercent = Math.round((activeDaysCount / 7) * 100);
+
+    return {
+      days,
+      totalCompletedIn7Days,
+      activeDaysCount,
+      consistencyPercent
+    };
+  }, [todos, archivedTodos, language]);
+
   const filteredTodos = useMemo(() => {
-    return todos.filter((t: any) => {
+    const result = todos.filter((t: any) => {
       const matchesTag = activeTagFilter === 'All' || (t.tag || 'Daily') === activeTagFilter;
+      const matchesCategory = activeCategoryFilter === 'All' || (t.category || 'Sadhana') === activeCategoryFilter;
       const matchesKeyword = !searchKeyword.trim() || t.text.toLowerCase().includes(searchKeyword.toLowerCase().trim());
-      return matchesTag && matchesKeyword;
+      return matchesTag && matchesCategory && matchesKeyword;
     });
-  }, [todos, activeTagFilter, searchKeyword]);
+
+    const getImpactVal = (impact?: string) => {
+      if (impact === 'High') return 3;
+      if (impact === 'Low') return 1;
+      return 2; // Medium
+    };
+
+    return [...result].sort((a: any, b: any) => {
+      if (sortBy === 'impact_desc') {
+        const valA = getImpactVal(a.impact);
+        const valB = getImpactVal(b.impact);
+        if (valB !== valA) return valB - valA;
+        return (Number(b.id) || 0) - (Number(a.id) || 0);
+      }
+      if (sortBy === 'impact_asc') {
+        const valA = getImpactVal(a.impact);
+        const valB = getImpactVal(b.impact);
+        if (valA !== valB) return valA - valB;
+        return (Number(b.id) || 0) - (Number(a.id) || 0);
+      }
+      if (sortBy === 'date_asc') {
+        return (Number(a.id) || 0) - (Number(b.id) || 0);
+      }
+      // date_desc
+      return (Number(b.id) || 0) - (Number(a.id) || 0);
+    });
+  }, [todos, activeTagFilter, activeCategoryFilter, searchKeyword, sortBy]);
+
+  const groupedTodos = useMemo(() => {
+    const groups: Record<string, typeof filteredTodos> = {};
+
+    SPIRITUAL_CATEGORIES.filter(c => c.id !== 'All').forEach((cat) => {
+      groups[cat.id] = [];
+    });
+
+    filteredTodos.forEach((todo) => {
+      const cat = todo.category || 'Sadhana';
+      if (!groups[cat]) {
+        groups[cat] = [];
+      }
+      groups[cat].push(todo);
+    });
+
+    return groups;
+  }, [filteredTodos, SPIRITUAL_CATEGORIES]);
 
   const completedCount = todos.filter(t => t.completed).length;
   const totalCount = todos.length;
@@ -3682,22 +3983,153 @@ const SadhanaGoalsSection = ({
 
   return (
     <div className="space-y-6 pb-6 text-left">
-      {/* Decorative Brand Header */}
-      <div className="p-6 bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-transparent rounded-[2rem] border border-orange-500/10 relative overflow-hidden text-left">
+      {/* Search Bar at Top of Sadhana Goals */}
+      <div className="relative flex items-center bg-white dark:bg-zinc-900 border-2 border-orange-500/30 rounded-2xl p-3 shadow-md hover:border-orange-500/60 transition-all">
+        <Search size={18} className="text-orange-500 ml-2 mr-3 shrink-0" />
+        <input
+          type="text"
+          value={searchKeyword}
+          onChange={(e) => setSearchKeyword(e.target.value)}
+          placeholder={
+            language === 'hi'
+              ? 'कीवर्ड द्वारा संकल्प खोजें (जैसे सामायिक, स्वाध्याय, जाप, मौन)...'
+              : 'Search spiritual goals & practices (e.g. Samayik, Swadhyaya, Japa)...'
+          }
+          className="w-full bg-transparent text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none"
+        />
+        {searchKeyword ? (
+          <button
+            type="button"
+            onClick={() => setSearchKeyword('')}
+            className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-white cursor-pointer mr-1"
+            title="Clear search"
+          >
+            <X size={16} />
+          </button>
+        ) : (
+          <span className="text-[10px] font-mono font-bold text-gray-400 bg-black/5 dark:bg-white/10 px-2.5 py-1 rounded-lg shrink-0 mr-1">
+            {filteredTodos.length} {language === 'hi' ? 'संकल्प' : 'tasks'}
+          </span>
+        )}
+      </div>
+
+      {/* Decorative Brand Header & Sadhana Experience (XP) Points Badge */}
+      <div className="p-6 bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-transparent rounded-[2rem] border border-orange-500/10 relative overflow-hidden text-left space-y-4">
         <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 rotate-12 opacity-5 pointer-events-none">
           <CheckSquare size={160} />
         </div>
-        <span className="text-[10px] bg-orange-500/10 text-orange-600 dark:text-orange-400 px-3 py-1 rounded-full font-black uppercase tracking-widest leading-none inline-block">
-          {language === 'hi' ? 'दैनिक साधना लक्ष्य' : 'DAILY SADHANA GOALS'}
-        </span>
-        <h3 className="serif-text text-2xl font-bold mt-3 text-spiritual">
-          {language === 'hi' ? 'आध्यात्मिक संकल्प सूची' : 'Spiritual Priority Checklist'}
-        </h3>
-        <p className="text-xs text-gray-500 mt-2 leading-relaxed">
-          {language === 'hi' 
-            ? 'अपने संकल्पों को श्रेणियों (Tags) में वर्गीकृत करें और ड्रैग/ड्रॉप द्वारा प्राथमिकता तय करें।' 
-            : 'Categorize your spiritual goals with tags and prioritize them seamlessly using drag-and-drop or action controls.'}
-        </p>
+
+        <div className="flex flex-wrap items-center justify-between gap-4 relative z-10">
+          <div>
+            <span className="text-[10px] bg-orange-500/10 text-orange-600 dark:text-orange-400 px-3 py-1 rounded-full font-black uppercase tracking-widest leading-none inline-block">
+              {language === 'hi' ? 'दैनिक साधना लक्ष्य' : 'DAILY SADHANA GOALS'}
+            </span>
+            <h3 className="serif-text text-2xl font-bold mt-2 text-spiritual">
+              {language === 'hi' ? 'आध्यात्मिक संकल्प सूची' : 'Spiritual Priority Checklist'}
+            </h3>
+            <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+              {language === 'hi' 
+                ? 'अपने संकल्पों को श्रेणियों में वर्गीकृत करें, स्वाध्याय एवं सामायिक बिंदु अर्जित करें।' 
+                : 'Categorize your goals, earn Sadhana XP for Samayik & Japa practices.'}
+            </p>
+          </div>
+
+          {/* SADHANA EXPERIENCE POINTS BADGE */}
+          <div className="p-3.5 bg-gradient-to-br from-amber-500/20 via-orange-500/15 to-yellow-500/10 rounded-2xl border border-amber-500/40 shadow-lg flex items-center gap-3 shrink-0">
+            <div className="p-2.5 bg-amber-500 text-white rounded-xl shadow-md animate-pulse">
+              <Award size={22} />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5 font-black text-base text-amber-800 dark:text-amber-200 font-mono">
+                <span>✨ {sadhanaXP.totalXP} XP</span>
+                <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-900 dark:text-amber-100 border border-amber-500/30">
+                  Lvl {sadhanaXP.level}
+                </span>
+              </div>
+              <p className="text-[11px] font-bold text-gray-700 dark:text-gray-300">
+                {language === 'hi' ? sadhanaXP.titleHi : sadhanaXP.titleEn}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* XP Progress Bar to Next Level */}
+        <div className="space-y-1.5 pt-2 border-t border-orange-500/10">
+          <div className="flex justify-between text-[10px] font-black text-gray-500 dark:text-gray-400">
+            <span>{language === 'hi' ? 'साधना अनुभव प्रगति (Sadhana XP)' : 'Sadhana XP Level Progress'}</span>
+            <span className="font-mono text-amber-600 dark:text-amber-400">
+              {sadhanaXP.totalXP} / {sadhanaXP.nextLevelXP} XP
+            </span>
+          </div>
+          <div className="w-full h-2 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500 rounded-full"
+              style={{ width: `${Math.min(100, Math.round((sadhanaXP.totalXP / sadhanaXP.nextLevelXP) * 100))}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Swadhyaya & Samayik Daily Local Reminder Settings Card */}
+      <div className="p-4 bg-gradient-to-br from-purple-500/10 via-amber-500/5 to-orange-500/10 rounded-2xl border border-purple-500/20 space-y-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-purple-500 text-white rounded-xl shadow-md shrink-0">
+              <BellRing size={18} className="animate-pulse" />
+            </div>
+            <div>
+              <h4 className="text-xs font-black uppercase tracking-wider text-spiritual">
+                {language === 'hi' ? 'स्वाध्याय एवं सामायिक अनुस्मारक (Daily Local Reminder)' : 'Swadhyaya & Samayik Daily Reminder'}
+              </h4>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                {language === 'hi'
+                  ? 'अपनी दैनिक स्वाध्याय एवं सामायिक साधना का समय निर्धारित करें। शेष रहने पर रिमाइंडर मिलेगा।'
+                  : 'Set custom daily reminder time for Swadhyaya & Samayik tasks.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Enable / Disable Toggle */}
+          <button
+            type="button"
+            onClick={() => handleUpdateSwadhyayaReminder(swadhyayaReminderTime, !swadhyayaReminderEnabled)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border shrink-0 ${
+              swadhyayaReminderEnabled
+                ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                : 'bg-black/5 dark:bg-white/5 text-gray-400 border-black/10'
+            }`}
+          >
+            {swadhyayaReminderEnabled
+              ? (language === 'hi' ? 'सक्रिय (ON)' : 'Reminder ON')
+              : (language === 'hi' ? 'निष्क्रिय (OFF)' : 'Reminder OFF')}
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-purple-500/15">
+          {/* Time Selector */}
+          <div className="flex items-center gap-2">
+            <Clock size={14} className="text-purple-500 shrink-0" />
+            <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
+              {language === 'hi' ? 'अनुस्मारक समय:' : 'Reminder Time:'}
+            </span>
+            <input
+              type="time"
+              value={swadhyayaReminderTime}
+              onChange={(e) => handleUpdateSwadhyayaReminder(e.target.value, swadhyayaReminderEnabled)}
+              className="bg-white dark:bg-zinc-900 border border-purple-500/30 rounded-xl px-2.5 py-1 text-xs font-mono font-black text-gray-800 dark:text-gray-100 focus:outline-none focus:border-purple-500"
+            />
+          </div>
+
+          {/* Test Notification Button */}
+          <button
+            type="button"
+            onClick={triggerTestNotification}
+            className="px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-700 dark:text-purple-300 rounded-xl text-xs font-bold transition-colors cursor-pointer border border-purple-500/30 flex items-center gap-1.5"
+          >
+            <Sparkles size={12} className="text-amber-500" />
+            <span>{language === 'hi' ? 'परीक्षण नोटिफिकेशन भेजें' : 'Send Test Alert'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Visual Summary: Count of Completed Tasks by Tag */}
@@ -3826,32 +4258,149 @@ const SadhanaGoalsSection = ({
         )}
       </div>
 
+      {/* 7-Day Long-Term Consistency Tracker */}
+      <div className="p-5 bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-transparent dark:from-orange-500/15 rounded-3xl border border-orange-500/20 space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2.5 bg-orange-500 text-white rounded-2xl shadow-md">
+              <TrendingUp size={20} />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <span>{language === 'hi' ? '7-दिवसीय साधना निरंतरता रिपोर्ट' : '7-Day Sadhana Consistency Tracker'}</span>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30">
+                  {sevenDayStats.consistencyPercent}% Consistency
+                </span>
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {language === 'hi'
+                  ? `पिछले 7 दिनों में कुल ${sevenDayStats.totalCompletedIn7Days} संकल्प पूर्ण | ${sevenDayStats.activeDaysCount}/7 दिन सक्रिय`
+                  : `${sevenDayStats.totalCompletedIn7Days} total goals completed in last 7 days | ${sevenDayStats.activeDaysCount}/7 active days`}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-2xl border border-black/10 dark:border-zinc-800 text-xs font-bold text-amber-600 dark:text-amber-400 shrink-0 shadow-xs">
+            <Sparkles size={14} className="text-amber-500 animate-spin" style={{ animationDuration: '8s' }} />
+            <span>
+              {sevenDayStats.consistencyPercent >= 80
+                ? (language === 'hi' ? 'उत्कृष्ट साधना' : 'Excellent Consistency')
+                : sevenDayStats.consistencyPercent >= 50
+                ? (language === 'hi' ? 'उत्तम प्रयास' : 'Steady Progress')
+                : (language === 'hi' ? 'साधना आरंभ करें' : 'Keep Practicing')}
+            </span>
+          </div>
+        </div>
+
+        {/* 7-Day Day-by-Day Visual Breakdown */}
+        <div className="grid grid-cols-7 gap-1.5 pt-1">
+          {sevenDayStats.days.map((day, idx) => {
+            const isToday = idx === 6;
+            const maxCount = Math.max(...sevenDayStats.days.map(d => d.count), 1);
+            const heightPercent = Math.min(100, Math.max(15, (day.count / maxCount) * 100));
+
+            return (
+              <div key={day.dateStr} className="flex flex-col items-center gap-1.5">
+                <div className="text-[10px] font-mono font-bold text-orange-600 dark:text-orange-400">
+                  {day.count}
+                </div>
+                <div className="w-full h-16 bg-black/5 dark:bg-white/5 rounded-xl p-1 flex items-end justify-center relative overflow-hidden">
+                  <motion.div
+                    initial={{ height: 0 }}
+                    animate={{ height: `${heightPercent}%` }}
+                    transition={{ duration: 0.5, delay: idx * 0.05 }}
+                    className={`w-full rounded-lg ${
+                      day.count > 0
+                        ? isToday
+                          ? 'bg-gradient-to-t from-orange-500 to-amber-400 shadow-sm'
+                          : 'bg-orange-500/60 dark:bg-orange-400/60'
+                        : 'bg-gray-200 dark:bg-zinc-800'
+                    }`}
+                  />
+                </div>
+                <span className={`text-[10px] font-bold ${isToday ? 'text-orange-600 dark:text-orange-400 font-black underline' : 'text-gray-400'}`}>
+                  {day.dayName}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Tag & Keyword Filtering Bar */}
       <div className="space-y-3 p-4 bg-black/5 dark:bg-white/5 rounded-3xl border border-black/5 dark:border-white/5">
-        {/* Search Field Above Todo List */}
-        <div className="relative flex items-center">
-          <Search size={16} className="absolute left-3.5 text-gray-400 pointer-events-none" />
-          <input
-            type="text"
-            value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
-            placeholder={language === 'hi' ? 'कीवर्ड द्वारा संकल्प खोजें (Search by keyword)...' : 'Filter tasks by keyword...'}
-            className="w-full bg-white dark:bg-zinc-900 border border-black/10 dark:border-zinc-800 rounded-2xl pl-10 pr-10 py-2.5 text-xs text-gray-800 dark:text-gray-150 focus:outline-none focus:border-orange-500/50 shadow-xs"
-          />
-          {searchKeyword && (
-            <button
-              onClick={() => setSearchKeyword('')}
-              className="absolute right-3 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
+        {/* Search Field, Sort Dropdown & Category Filter Dropdown */}
+        <div className="flex flex-col sm:flex-row gap-2.5">
+          {/* Keyword Search */}
+          <div className="relative flex-1 flex items-center">
+            <Search size={16} className="absolute left-3.5 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              placeholder={language === 'hi' ? 'कीवर्ड द्वारा संकल्प खोजें (Search by keyword)...' : 'Filter tasks by keyword...'}
+              className="w-full bg-white dark:bg-zinc-900 border border-black/10 dark:border-zinc-800 rounded-2xl pl-10 pr-10 py-2.5 text-xs text-gray-800 dark:text-gray-150 focus:outline-none focus:border-orange-500/50 shadow-xs"
+            />
+            {searchKeyword && (
+              <button
+                onClick={() => setSearchKeyword('')}
+                className="absolute right-3 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* Category Filter Dropdown */}
+          <div className="flex items-center gap-1.5 bg-white dark:bg-zinc-900 border border-black/10 dark:border-zinc-800 rounded-2xl px-3 py-2 text-xs shrink-0 shadow-xs">
+            <Tag size={14} className="text-orange-500 shrink-0" />
+            <span className="text-[11px] font-bold text-gray-400 hidden sm:inline">
+              {language === 'hi' ? 'श्रेणी:' : 'Category:'}
+            </span>
+            <select
+              value={activeCategoryFilter}
+              onChange={(e) => setActiveCategoryFilter(e.target.value)}
+              className="bg-transparent text-xs font-bold text-gray-700 dark:text-gray-200 focus:outline-none cursor-pointer pr-1"
             >
-              <X size={14} />
-            </button>
-          )}
+              {SPIRITUAL_CATEGORIES.map((cat) => (
+                <option key={cat.id} value={cat.id} className="dark:bg-zinc-900 text-gray-800 dark:text-gray-200">
+                  {cat.emoji} {language === 'hi' ? cat.label.hi : cat.label.en}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sort By Dropdown */}
+          <div className="flex items-center gap-1.5 bg-white dark:bg-zinc-900 border border-black/10 dark:border-zinc-800 rounded-2xl px-3 py-2 text-xs shrink-0 shadow-xs">
+            <ArrowUpDown size={14} className="text-orange-500 shrink-0" />
+            <span className="text-[11px] font-bold text-gray-400 hidden sm:inline">
+              {language === 'hi' ? 'क्रम:' : 'Sort:'}
+            </span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="bg-transparent text-xs font-bold text-gray-700 dark:text-gray-200 focus:outline-none cursor-pointer pr-1"
+            >
+              <option value="impact_desc" className="dark:bg-zinc-900 text-gray-800 dark:text-gray-200">
+                {language === 'hi' ? 'महत्व: उच्च से निम्न' : 'Importance: High → Low'}
+              </option>
+              <option value="impact_asc" className="dark:bg-zinc-900 text-gray-800 dark:text-gray-200">
+                {language === 'hi' ? 'महत्व: निम्न से उच्च' : 'Importance: Low → High'}
+              </option>
+              <option value="date_desc" className="dark:bg-zinc-900 text-gray-800 dark:text-gray-200">
+                {language === 'hi' ? 'तिथि: नवीन पहले' : 'Date: Newest First'}
+              </option>
+              <option value="date_asc" className="dark:bg-zinc-900 text-gray-800 dark:text-gray-200">
+                {language === 'hi' ? 'तिथि: पुराना पहले' : 'Date: Oldest First'}
+              </option>
+            </select>
+          </div>
         </div>
 
         <div className="flex items-center justify-between pt-1">
           <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 flex items-center gap-1.5 ml-1">
             <Filter size={12} className="text-orange-500" />
-            {language === 'hi' ? 'श्रेणी अनुसार फ़िल्टर करें' : 'Filter by Category Tag'}
+            {language === 'hi' ? 'समय अवधि फ़िल्टर' : 'Filter by Time Period'}
           </span>
           <span className="text-[10px] text-gray-400 font-bold">
             {filteredTodos.length} {language === 'hi' ? 'लक्ष्य मिले' : 'tasks shown'}
@@ -3901,15 +4450,16 @@ const SadhanaGoalsSection = ({
         </div>
       </div>
 
-      {/* Goal Entry Input with Tag Selection, Impact Level & Optional Due Time */}
+      {/* Goal Entry Input with Tag, Category, Impact Level & Optional Due Time */}
       <div className="space-y-2.5 p-4 bg-black/5 dark:bg-white/5 rounded-3xl border border-black/5 dark:border-white/5">
         <label className="text-[10px] font-black uppercase tracking-wider text-gray-400 ml-1 block">
-          {language === 'hi' ? 'नया संकल्प, श्रेणी, प्रभाव स्तर एवं समय जोड़ें' : 'Add Custom Goal with Tag, Impact & Due Time'}
+          {language === 'hi' ? 'नया संकल्प, श्रेणी, प्रभाव स्तर एवं समय जोड़ें' : 'Add Custom Goal with Tag, Category, Impact & Due Time'}
         </label>
 
-        {/* Tag & Impact Level Selector for New Goal */}
-        <div className="flex flex-wrap items-center gap-2 justify-between">
+        {/* Tag, Category & Impact Level Selector for New Goal */}
+        <div className="flex flex-col gap-2">
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            <span className="text-[10px] font-bold text-gray-400 mr-1 shrink-0">{language === 'hi' ? 'समय:' : 'Period:'}</span>
             {TAG_OPTIONS.map((tag) => (
               <button
                 key={tag.id}
@@ -3926,39 +4476,60 @@ const SadhanaGoalsSection = ({
             ))}
           </div>
 
-          {/* Impact Selector */}
-          <div className="flex items-center gap-1 bg-white dark:bg-zinc-900 p-1 rounded-xl border border-black/10 dark:border-zinc-800 text-[10px]">
-            <span className="text-gray-400 font-bold px-1">{language === 'hi' ? 'प्रभाव:' : 'Impact:'}</span>
-            <button
-              type="button"
-              onClick={() => setNewImpact('Low')}
-              className={`px-2 py-0.5 rounded-lg font-black transition-all cursor-pointer flex items-center gap-1 ${
-                newImpact === 'Low' ? 'bg-emerald-500 text-white' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              <span>Low</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setNewImpact('Medium')}
-              className={`px-2 py-0.5 rounded-lg font-black transition-all cursor-pointer flex items-center gap-1 ${
-                newImpact === 'Medium' ? 'bg-amber-500 text-white' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-              <span>Medium</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setNewImpact('High')}
-              className={`px-2 py-0.5 rounded-lg font-black transition-all cursor-pointer flex items-center gap-1 ${
-                newImpact === 'High' ? 'bg-red-500 text-white' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
-              <span>High</span>
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-black/5 dark:border-white/5">
+            {/* Category Pills for New Goal */}
+            <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none max-w-full">
+              <span className="text-[10px] font-bold text-gray-400 mr-1 shrink-0">{language === 'hi' ? 'श्रेणी:' : 'Area:'}</span>
+              {SPIRITUAL_CATEGORIES.filter(c => c.id !== 'All').map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setNewGoalCategory(cat.id)}
+                  className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all shrink-0 cursor-pointer border ${
+                    newGoalCategory === cat.id
+                      ? 'bg-orange-500 text-white border-orange-500 shadow-xs'
+                      : 'bg-white dark:bg-zinc-900 text-gray-600 dark:text-gray-400 border-black/10 dark:border-zinc-800'
+                  }`}
+                >
+                  {cat.emoji} {language === 'hi' ? cat.label.hi : cat.label.en}
+                </button>
+              ))}
+            </div>
+
+            {/* Impact Selector */}
+            <div className="flex items-center gap-1 bg-white dark:bg-zinc-900 p-1 rounded-xl border border-black/10 dark:border-zinc-800 text-[10px]">
+              <span className="text-gray-400 font-bold px-1">{language === 'hi' ? 'प्रभाव:' : 'Impact:'}</span>
+              <button
+                type="button"
+                onClick={() => setNewImpact('Low')}
+                className={`px-2 py-0.5 rounded-lg font-black transition-all cursor-pointer flex items-center gap-1 ${
+                  newImpact === 'Low' ? 'bg-emerald-500 text-white' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <span>Low</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setNewImpact('Medium')}
+                className={`px-2 py-0.5 rounded-lg font-black transition-all cursor-pointer flex items-center gap-1 ${
+                  newImpact === 'Medium' ? 'bg-amber-500 text-white' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                <span>Medium</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setNewImpact('High')}
+                className={`px-2 py-0.5 rounded-lg font-black transition-all cursor-pointer flex items-center gap-1 ${
+                  newImpact === 'High' ? 'bg-red-500 text-white' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                <span>High</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -3996,8 +4567,8 @@ const SadhanaGoalsSection = ({
         </div>
       </div>
 
-      {/* List Container */}
-      <div className="space-y-3">
+      {/* List Container grouped by Categories with Collapsible Sections */}
+      <div className="space-y-4">
         {filteredTodos.length === 0 ? (
           <div className="p-8 border-2 border-dashed border-black/5 dark:border-white/10 rounded-[2rem] text-center space-y-2">
             <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
@@ -4008,228 +4579,667 @@ const SadhanaGoalsSection = ({
             </p>
           </div>
         ) : (
-          <div className="space-y-2.5">
-            {filteredTodos.map((todo, index) => {
-              const isDragging = index === draggingIndex;
-              const isDragOver = index === dragOverIndex;
-              const itemTag = todo.tag || 'Daily';
-              const isEditingThisTag = editingTagId === todo.id;
-              const dueTimeStatus = getDueTimeStatus(todo.dueTime, todo.completed);
+          <div className="space-y-4">
+            {Object.entries(groupedTodos)
+              .filter(([_, items]) => items.length > 0)
+              .map(([catId, items]) => {
+                const categoryInfo = SPIRITUAL_CATEGORIES.find(c => c.id === catId) || {
+                  id: catId,
+                  label: { hi: catId, en: catId },
+                  emoji: '✨'
+                };
+                const isCollapsed = !!collapsedCategories[catId];
+                const completedInCat = items.filter(i => i.completed).length;
 
-              return (
-                <motion.div
-                  key={todo.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ 
-                    opacity: 1, 
-                    y: 0,
-                    scale: todo.completed ? [1, 1.03, 1] : 1
-                  }}
-                  transition={{ 
-                    duration: 0.25,
-                    scale: { type: "spring", stiffness: 300, damping: 15 }
-                  }}
-                  className="relative overflow-visible"
-                >
-                  <div
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, index)}
-                    onDragOver={(e) => handleDragOver(e, index)}
-                    onDragEnd={handleDragEnd}
-                    className={`relative flex items-center justify-between p-3.5 bg-white dark:bg-zinc-900 hover:bg-orange-500/5 dark:hover:bg-orange-500/5 rounded-2xl border border-black/5 dark:border-zinc-800 shadow-sm transition-all duration-200 cursor-grab active:cursor-grabbing ${
-                      isDragging ? 'opacity-40 border-orange-500 border-dashed scale-[0.98]' : ''
-                    } ${
-                      isDragOver ? 'border-orange-500 border-dashed translate-y-1' : ''
-                    }`}
-                  >
-                    {activeConfettiId === todo.id && (
-                      <div className="absolute inset-0 pointer-events-none overflow-visible z-50">
-                        {Array.from({ length: 15 }).map((_, i) => {
-                          const angle = (i / 15) * 360 + Math.random() * 20;
-                          const distance = 40 + Math.random() * 60;
-                          const x = Math.cos((angle * Math.PI) / 180) * distance;
-                          const y = Math.sin((angle * Math.PI) / 180) * distance;
-                          const colors = ['#f97316', '#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6'];
-                          const randomColor = colors[i % colors.length];
-                          return (
-                            <motion.div
-                              key={i}
-                              className="absolute w-2.5 h-2.5 rounded-full left-1/2 top-1/2"
-                              style={{ backgroundColor: randomColor }}
-                              initial={{ x: 0, y: 0, scale: 1, opacity: 1 }}
-                              animate={{
-                                x: x,
-                                y: y,
-                                scale: [1, 1.3, 0],
-                                opacity: [1, 1, 0],
-                                rotate: Math.random() * 360
-                              }}
-                              transition={{
-                                duration: 0.8,
-                                ease: "easeOut"
-                              }}
-                            />
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-2.5 flex-1 min-w-0 pr-2">
-                      {/* Drag Handle */}
-                      <div className="text-gray-400 hover:text-gray-650 cursor-grab shrink-0 p-0.5">
-                        <GripVertical size={16} />
-                      </div>
-
-                      {/* Completion Toggle */}
-                      <button
-                        onClick={() => onToggle(todo.id)}
-                        className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
-                          todo.completed 
-                            ? 'bg-green-500 border-green-500 text-white' 
-                            : 'border-gray-300 dark:border-zinc-700 hover:border-orange-500'
-                        }`}
-                      >
-                        {todo.completed && <CheckCircle2 size={12} className="text-white fill-white" />}
-                      </button>
-
-                      {/* Impact Dot */}
-                      {(() => {
-                        const impactInfo = getImpactInfo(todo.impact || 'Medium');
-                        return (
-                          <button
-                            type="button"
-                            onClick={() => toggleTaskImpact(todo.id, todo.impact || 'Medium')}
-                            className="shrink-0 p-1 cursor-pointer transition-transform hover:scale-125"
-                            title={language === 'hi' ? `प्रभाव: ${impactInfo.label} (बदलने के लिए क्लिक करें)` : `Impact: ${impactInfo.label} (Click to toggle)`}
-                          >
-                            <span className={`block w-2.5 h-2.5 rounded-full ${impactInfo.dot}`} />
-                          </button>
-                        );
-                      })()}
-
-                      {/* Text & Tag */}
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <span 
-                          className={`text-sm font-semibold truncate select-none ${
-                            todo.completed 
-                              ? 'text-gray-400 line-through font-normal' 
-                              : 'text-gray-800 dark:text-gray-150'
-                          }`}
-                        >
-                          {todo.text}
+                return (
+                  <div key={catId} className="space-y-2.5 border border-black/5 dark:border-zinc-800/80 rounded-2xl bg-black/[0.01] dark:bg-white/[0.01] p-3 shadow-xs">
+                    {/* Collapsible Category Header */}
+                    <button
+                      type="button"
+                      onClick={() => toggleCategoryCollapse(catId)}
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-black/5 dark:border-zinc-800 shadow-2xs hover:border-orange-500/30 transition-all cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">{categoryInfo.emoji}</span>
+                        <span className="text-xs font-black text-spiritual">
+                          {language === 'hi' ? categoryInfo.label.hi : categoryInfo.label.en}
                         </span>
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
+                          {completedInCat}/{items.length} {language === 'hi' ? 'पूर्ण' : 'done'}
+                        </span>
+                      </div>
 
-                        {/* Tag Badge / Editor & Due Time Badge & Impact Badge */}
-                        <div className="mt-1 flex items-center gap-2 flex-wrap">
-                          {isEditingThisTag ? (
-                            <div className="flex items-center gap-1 overflow-x-auto max-w-full py-0.5 scrollbar-none z-10 bg-white dark:bg-zinc-900 border border-orange-500/30 p-1 rounded-lg shadow-md">
-                              {TAG_OPTIONS.map((t) => (
-                                <button
-                                  key={t.id}
-                                  onClick={() => handleChangeItemTag(todo.id, t.id)}
-                                  className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 cursor-pointer ${
-                                    itemTag === t.id
-                                      ? 'bg-orange-500 text-white'
-                                      : 'bg-black/5 dark:bg-white/10 text-gray-600 dark:text-gray-300'
+                      <div className="flex items-center gap-1.5 text-gray-400">
+                        <span className="text-[10px] font-bold">
+                          {isCollapsed ? (language === 'hi' ? 'विस्तार करें' : 'Expand') : (language === 'hi' ? 'समेटें' : 'Collapse')}
+                        </span>
+                        <ChevronDown size={14} className={`transition-transform duration-200 ${isCollapsed ? '-rotate-90' : 'rotate-0'}`} />
+                      </div>
+                    </button>
+
+                    {/* Collapsible Tasks List */}
+                    <AnimatePresence>
+                      {!isCollapsed && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="space-y-2.5 pt-1"
+                        >
+                          {items.map((todo) => {
+                            const index = filteredTodos.findIndex(t => t.id === todo.id);
+                            const isDragging = index === draggingIndex;
+                            const isDragOver = index === dragOverIndex;
+                            const itemTag = todo.tag || 'Daily';
+                            const isEditingThisTag = editingTagId === todo.id;
+                            const dueTimeStatus = getDueTimeStatus(todo.dueTime, todo.completed);
+
+                            return (
+                              <motion.div
+                                key={todo.id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ 
+                                  opacity: 1, 
+                                  y: 0,
+                                  scale: todo.completed ? [1, 1.03, 1] : 1
+                                }}
+                                transition={{ 
+                                  duration: 0.25,
+                                  scale: { type: "spring", stiffness: 300, damping: 15 }
+                                }}
+                                className="relative overflow-visible"
+                              >
+                                <div
+                                  draggable
+                                  onDragStart={(e) => handleDragStart(e, index)}
+                                  onDragOver={(e) => handleDragOver(e, index)}
+                                  onDragEnd={handleDragEnd}
+                                  className={`relative flex items-center justify-between p-3.5 bg-white dark:bg-zinc-900 hover:bg-orange-500/5 dark:hover:bg-orange-500/5 rounded-2xl border border-black/5 dark:border-zinc-800 shadow-sm transition-all duration-200 cursor-grab active:cursor-grabbing ${
+                                    isDragging ? 'opacity-40 border-orange-500 border-dashed scale-[0.98]' : ''
+                                  } ${
+                                    isDragOver ? 'border-orange-500 border-dashed translate-y-1' : ''
                                   }`}
                                 >
-                                  {t.emoji} {language === 'hi' ? t.label.hi : t.label.en}
-                                </button>
-                              ))}
-                              <button
-                                onClick={() => setEditingTagId(null)}
-                                className="p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-white shrink-0 ml-1"
-                              >
-                                <X size={12} />
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => setEditingTagId(todo.id)}
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all cursor-pointer ${getTagBadgeStyle(itemTag)}`}
-                              title={language === 'hi' ? 'टैग बदलें' : 'Change tag'}
-                            >
-                              <Tag size={10} />
-                              <span>{getTagLabel(itemTag)}</span>
-                              <ChevronDown size={10} className="opacity-50" />
-                            </button>
-                          )}
+                                  {activeConfettiId === todo.id && (
+                                    <div className="absolute inset-0 pointer-events-none overflow-visible z-50">
+                                      {Array.from({ length: 15 }).map((_, i) => {
+                                        const angle = (i / 15) * 360 + Math.random() * 20;
+                                        const distance = 40 + Math.random() * 60;
+                                        const x = Math.cos((angle * Math.PI) / 180) * distance;
+                                        const y = Math.sin((angle * Math.PI) / 180) * distance;
+                                        const colors = ['#f97316', '#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6'];
+                                        const randomColor = colors[i % colors.length];
+                                        return (
+                                          <motion.div
+                                            key={i}
+                                            className="absolute w-2.5 h-2.5 rounded-full left-1/2 top-1/2"
+                                            style={{ backgroundColor: randomColor }}
+                                            initial={{ x: 0, y: 0, scale: 1, opacity: 1 }}
+                                            animate={{
+                                              x: x,
+                                              y: y,
+                                              scale: [1, 1.3, 0],
+                                              opacity: [1, 1, 0],
+                                              rotate: Math.random() * 360
+                                            }}
+                                            transition={{
+                                              duration: 0.8,
+                                              ease: "easeOut"
+                                            }}
+                                          />
+                                        );
+                                      })}
+                                    </div>
+                                  )}
 
-                          {/* Impact Level Badge */}
-                          {(() => {
-                            const impactInfo = getImpactInfo(todo.impact || 'Medium');
-                            return (
-                              <button
-                                type="button"
-                                onClick={() => toggleTaskImpact(todo.id, todo.impact || 'Medium')}
-                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all cursor-pointer ${impactInfo.badge}`}
-                                title={language === 'hi' ? 'प्रभाव स्तर बदलें' : 'Toggle impact level'}
-                              >
-                                <span className={`w-1.5 h-1.5 rounded-full ${impactInfo.dot}`} />
-                                <span>{impactInfo.label}</span>
-                              </button>
+                                  <div className="flex items-center gap-2.5 flex-1 min-w-0 pr-2">
+                                    {/* Drag Handle */}
+                                    <div className="text-gray-400 hover:text-gray-650 cursor-grab shrink-0 p-0.5">
+                                      <GripVertical size={16} />
+                                    </div>
+
+                                    {/* Completion Toggle */}
+                                    <button
+                                      onClick={() => onToggle(todo.id)}
+                                      className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                                        todo.completed 
+                                          ? 'bg-green-500 border-green-500 text-white' 
+                                          : 'border-gray-300 dark:border-zinc-700 hover:border-orange-500'
+                                      }`}
+                                    >
+                                      {todo.completed && <CheckCircle2 size={12} className="text-white fill-white" />}
+                                    </button>
+
+                                    {/* Impact Dot */}
+                                    {(() => {
+                                      const impactInfo = getImpactInfo(todo.impact || 'Medium');
+                                      return (
+                                        <button
+                                          type="button"
+                                          onClick={() => toggleTaskImpact(todo.id, todo.impact || 'Medium')}
+                                          className="shrink-0 p-1 cursor-pointer transition-transform hover:scale-125"
+                                          title={language === 'hi' ? `प्रभाव: ${impactInfo.label} (बदलने के लिए क्लिक करें)` : `Impact: ${impactInfo.label} (Click to toggle)`}
+                                        >
+                                          <span className={`block w-2.5 h-2.5 rounded-full ${impactInfo.dot}`} />
+                                        </button>
+                                      );
+                                    })()}
+
+                                    {/* Text & Tag */}
+                                    <div className="flex flex-col min-w-0 flex-1">
+                                      <span 
+                                        className={`text-sm font-semibold truncate select-none ${
+                                          todo.completed 
+                                            ? 'text-gray-400 line-through font-normal' 
+                                            : 'text-gray-800 dark:text-gray-150'
+                                        }`}
+                                      >
+                                        {todo.text}
+                                      </span>
+
+                                      {/* Tag Badge / Editor & Due Time Badge & Impact Badge */}
+                                      <div className="mt-1 flex items-center gap-2 flex-wrap">
+                                        {isEditingThisTag ? (
+                                          <div className="flex items-center gap-1 overflow-x-auto max-w-full py-0.5 scrollbar-none z-10 bg-white dark:bg-zinc-900 border border-orange-500/30 p-1 rounded-lg shadow-md">
+                                            {TAG_OPTIONS.map((t) => (
+                                              <button
+                                                key={t.id}
+                                                onClick={() => handleChangeItemTag(todo.id, t.id)}
+                                                className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 cursor-pointer ${
+                                                  itemTag === t.id
+                                                    ? 'bg-orange-500 text-white'
+                                                    : 'bg-black/5 dark:bg-white/10 text-gray-600 dark:text-gray-300'
+                                                }`}
+                                              >
+                                                {t.emoji} {language === 'hi' ? t.label.hi : t.label.en}
+                                              </button>
+                                            ))}
+                                            <button
+                                              onClick={() => setEditingTagId(null)}
+                                              className="p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-white shrink-0 ml-1"
+                                            >
+                                              <X size={12} />
+                                            </button>
+                                          </div>
+                                        ) : (
+                                          <button
+                                            onClick={() => setEditingTagId(todo.id)}
+                                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all cursor-pointer ${getTagBadgeStyle(itemTag)}`}
+                                            title={language === 'hi' ? 'टैग बदलें' : 'Change tag'}
+                                          >
+                                            <Tag size={10} />
+                                            <span>{getTagLabel(itemTag)}</span>
+                                            <ChevronDown size={10} className="opacity-50" />
+                                          </button>
+                                        )}
+
+                                        {/* Category Badge Selector */}
+                                        {editingCategoryId === todo.id ? (
+                                          <div className="flex items-center gap-1 overflow-x-auto max-w-full py-0.5 scrollbar-none z-10 bg-white dark:bg-zinc-900 border border-orange-500/30 p-1 rounded-lg shadow-md">
+                                            {SPIRITUAL_CATEGORIES.filter(c => c.id !== 'All').map((cat) => (
+                                              <button
+                                                key={cat.id}
+                                                onClick={() => handleChangeItemCategory(todo.id, cat.id)}
+                                                className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 cursor-pointer ${
+                                                  (todo.category || 'Sadhana') === cat.id
+                                                    ? 'bg-orange-500 text-white'
+                                                    : 'bg-black/5 dark:bg-white/10 text-gray-600 dark:text-gray-300'
+                                                }`}
+                                              >
+                                                {cat.emoji} {language === 'hi' ? cat.label.hi : cat.label.en}
+                                              </button>
+                                            ))}
+                                            <button
+                                              onClick={() => setEditingCategoryId(null)}
+                                              className="p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-white shrink-0 ml-1"
+                                            >
+                                              <X size={12} />
+                                            </button>
+                                          </div>
+                                        ) : (
+                                          <button
+                                            onClick={() => setEditingCategoryId(todo.id)}
+                                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border border-orange-500/20 bg-orange-500/10 text-orange-700 dark:text-orange-300 transition-all cursor-pointer"
+                                            title={language === 'hi' ? 'श्रेणी बदलें' : 'Change spiritual category'}
+                                          >
+                                            <span>{SPIRITUAL_CATEGORIES.find(c => c.id === (todo.category || 'Sadhana'))?.emoji || '✨'}</span>
+                                            <span>{SPIRITUAL_CATEGORIES.find(c => c.id === (todo.category || 'Sadhana'))?.label[language === 'hi' ? 'hi' : 'en'] || (todo.category || 'Sadhana')}</span>
+                                            <ChevronDown size={10} className="opacity-50" />
+                                          </button>
+                                        )}
+
+                                        {/* Impact Level Badge */}
+                                        {(() => {
+                                          const impactInfo = getImpactInfo(todo.impact || 'Medium');
+                                          return (
+                                            <button
+                                              type="button"
+                                              onClick={() => toggleTaskImpact(todo.id, todo.impact || 'Medium')}
+                                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all cursor-pointer ${impactInfo.badge}`}
+                                              title={language === 'hi' ? 'प्रभाव स्तर बदलें' : 'Toggle impact level'}
+                                            >
+                                              <span className={`w-1.5 h-1.5 rounded-full ${impactInfo.dot}`} />
+                                              <span>{impactInfo.label}</span>
+                                            </button>
+                                          );
+                                        })()}
+
+                                        {/* Approaching Due Time Badge for Special Ritual / Due Tasks */}
+                                        {dueTimeStatus && (
+                                          itemTag === 'Special Ritual' && dueTimeStatus.isApproaching ? (
+                                            <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-700 dark:text-amber-300 text-[10px] font-black tracking-wide animate-pulse">
+                                              <Flame size={12} className="text-amber-500 shrink-0" />
+                                              <span>
+                                                {dueTimeStatus.isOverdue
+                                                  ? (language === 'hi' ? '⚠️ अनुष्ठान समय समाप्त' : '⚠️ Ritual Overdue')
+                                                  : (language === 'hi' ? `⚡ विशेष अनुष्ठान निकट (${dueTimeStatus.diffMins}m)` : `⚡ Special Ritual Due Soon (${dueTimeStatus.diffMins}m)`)}
+                                              </span>
+                                            </div>
+                                          ) : (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-black/5 dark:bg-white/5 text-gray-500 border border-black/5 dark:border-white/5 font-mono">
+                                              <Clock size={10} />
+                                              <span>{todo.dueTime}</span>
+                                            </span>
+                                          )
+                                        )}
+                                      </div>
+
+                                      {/* Per-Task Quick Reflection / Notes Section */}
+                                      <div className="mt-2 pt-2 border-t border-black/5 dark:border-white/5 flex flex-col gap-1.5">
+                                        <div className="flex items-center justify-between">
+                                          <button
+                                            type="button"
+                                            onClick={() => toggleNotesExpanded(todo.id)}
+                                            className="text-[10px] font-bold text-gray-500 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 flex items-center gap-1 cursor-pointer transition-colors"
+                                          >
+                                            <FileText size={12} className={todo.notes ? "text-orange-500" : "text-gray-400"} />
+                                            <span>
+                                              {todo.notes
+                                                ? (language === 'hi' ? 'आध्यात्मिक चिंतन / टिप्पणी' : 'Spiritual Reflection')
+                                                : (language === 'hi' ? '+ टिप्पणी / अनुभव जोड़ें' : '+ Add Quick Reflection Note')}
+                                            </span>
+                                            {todo.notes && <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />}
+                                          </button>
+
+                                          {todo.notes && (
+                                            <span className="text-[9px] font-mono text-gray-400 italic">
+                                              {language === 'hi' ? 'सहेजा गया' : 'Saved to localStorage'}
+                                            </span>
+                                          )}
+                                        </div>
+
+                                        {(expandedNotes[todo.id] || todo.notes) && (
+                                          <textarea
+                                            rows={2}
+                                            value={todo.notes || ''}
+                                            onChange={(e) => handleUpdateNotes(todo.id, e.target.value)}
+                                            placeholder={
+                                              language === 'hi'
+                                                ? 'इस साधना संकल्प से जुड़ा आध्यात्मिक अनुभव या मन की शांति का चिंतन लिखें...'
+                                                : 'Record your spiritual reflections, insights, or inner peace for this task...'
+                                            }
+                                            className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-zinc-800 rounded-xl p-2 text-xs text-gray-800 dark:text-gray-200 focus:outline-none focus:border-orange-500/50 resize-none font-sans"
+                                          />
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Reordering and Delete Actions */}
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    {/* Move Up */}
+                                    <button
+                                      onClick={() => moveUp(index)}
+                                      disabled={index === 0}
+                                      className="p-1.5 rounded-lg text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:hover:bg-transparent transition-all cursor-pointer"
+                                      title={language === 'hi' ? 'ऊपर ले जाएं' : 'Move Up'}
+                                    >
+                                      <ArrowUp size={14} />
+                                    </button>
+
+                                    {/* Move Down */}
+                                    <button
+                                      onClick={() => moveDown(index)}
+                                      disabled={index === filteredTodos.length - 1}
+                                      className="p-1.5 rounded-lg text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:hover:bg-transparent transition-all cursor-pointer"
+                                      title={language === 'hi' ? 'नीचे ले जाएं' : 'Move Down'}
+                                    >
+                                      <ArrowDown size={14} />
+                                    </button>
+
+                                    {/* Delete */}
+                                    <button
+                                      onClick={() => handleDeleteTodo(todo.id)}
+                                      className="p-1.5 rounded-lg text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
+                                      title={language === 'hi' ? 'हटाएं' : 'Delete'}
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
+                                </div>
+                              </motion.div>
                             );
-                          })()}
-
-                          {/* Approaching Due Time Badge for Special Ritual / Due Tasks */}
-                          {dueTimeStatus && (
-                            itemTag === 'Special Ritual' && dueTimeStatus.isApproaching ? (
-                              <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-700 dark:text-amber-300 text-[10px] font-black tracking-wide animate-pulse">
-                                <Flame size={12} className="text-amber-500 shrink-0" />
-                                <span>
-                                  {dueTimeStatus.isOverdue
-                                    ? (language === 'hi' ? '⚠️ अनुष्ठान समय समाप्त' : '⚠️ Ritual Overdue')
-                                    : (language === 'hi' ? `⚡ विशेष अनुष्ठान निकट (${dueTimeStatus.diffMins}m)` : `⚡ Special Ritual Due Soon (${dueTimeStatus.diffMins}m)`)}
-                                </span>
-                              </div>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-black/5 dark:bg-white/5 text-gray-500 border border-black/5 dark:border-white/5 font-mono">
-                                <Clock size={10} />
-                                <span>{todo.dueTime}</span>
-                              </span>
-                            )
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Reordering and Delete Actions */}
-                    <div className="flex items-center gap-1 shrink-0">
-                      {/* Move Up */}
-                      <button
-                        onClick={() => moveUp(index)}
-                        disabled={index === 0}
-                        className="p-1.5 rounded-lg text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:hover:bg-transparent transition-all cursor-pointer"
-                        title={language === 'hi' ? 'ऊपर ले जाएं' : 'Move Up'}
-                      >
-                        <ArrowUp size={14} />
-                      </button>
-
-                      {/* Move Down */}
-                      <button
-                        onClick={() => moveDown(index)}
-                        disabled={index === filteredTodos.length - 1}
-                        className="p-1.5 rounded-lg text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:hover:bg-transparent transition-all cursor-pointer"
-                        title={language === 'hi' ? 'नीचे ले जाएं' : 'Move Down'}
-                      >
-                        <ArrowDown size={14} />
-                      </button>
-
-                      {/* Delete */}
-                      <button
-                        onClick={() => handleDeleteTodo(todo.id)}
-                        className="p-1.5 rounded-lg text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
-                        title={language === 'hi' ? 'हटाएं' : 'Delete'}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
+                          })}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
-                </motion.div>
+                );
+              })}
+          </div>
+        )}
+      </div>
+
+      {/* Guided Meditations & Spiritual Discourses (Pravachans) Portal */}
+      <div className="p-6 bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-amber-500/10 rounded-[2rem] border border-orange-500/20 space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-gradient-to-br from-orange-500 to-amber-500 text-white rounded-2xl shadow-lg">
+              <Compass size={22} className="animate-spin-slow" />
+            </div>
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-orange-600 dark:text-orange-400">
+                {language === 'hi' ? 'जैन तेरापंथ एआई अध्यात्म' : 'JAIN TERAPANTH AI SPIRITUALITY'}
+              </span>
+              <h3 className="serif-text text-xl font-bold text-spiritual">
+                {language === 'hi' ? 'प्रेक्षा ध्यान एवं आचार्य प्रवचन केंद्र' : 'Guided Meditations & Authentic Pravachans'}
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {language === 'hi'
+                  ? 'प्रामाणिक जैन तेरापंथ परंपराओं से निर्देशित प्रेक्षा ध्यान एवं पूज्य आचार्यों के अमृतवचन।'
+                  : 'Sourced from authentic Jain Terapanth traditions, Acharya Amritvani & Preksha Dhyan practice.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-zinc-900 rounded-2xl border border-black/10 dark:border-zinc-800 text-xs font-bold text-orange-600 dark:text-orange-400 shrink-0 shadow-xs">
+            <Sparkles size={14} className="text-amber-500 animate-pulse" />
+            <span>{language === 'hi' ? 'प्रामाणिक वाणि' : 'Authentic Canon'}</span>
+          </div>
+        </div>
+
+        {/* Section 1: Guided Preksha Meditations */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-black uppercase tracking-wider text-spiritual flex items-center gap-2">
+              <Wind size={16} className="text-orange-500" />
+              <span>{language === 'hi' ? 'प्रेक्षा ध्यान योग (Guided Preksha Meditations)' : 'Guided Preksha Meditation Practices'}</span>
+            </h4>
+            <span className="text-[10px] text-gray-400 font-mono font-bold">
+              {language === 'hi' ? '4 सत्र उपलब्ध' : '4 Sessions Available'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {[
+              {
+                id: 'kayotsarga',
+                titleHi: 'कायोत्सर्ग (Kayotsarga)',
+                titleEn: 'Kayotsarga - Complete Physical & Mental Relaxation',
+                durationHi: '10 मिनट',
+                durationEn: '10 Mins',
+                descHi: 'शरीर के प्रति अनासक्ति और गहन तनावमुक्ति की प्रेक्षा साधना।',
+                descEn: 'Deep relaxation practice releasing physical body tension and mental anxiety.',
+                stepsHi: ['सुखासन में बैठें', 'सांसों को मंद करें', 'शरीर को ढीला छोड़ें'],
+                stepsEn: ['Sit comfortably', 'Slow down breathing', 'Relax muscle groups']
+              },
+              {
+                id: 'shvas_preksha',
+                titleHi: 'श्वास प्रेक्षा (Shvas Preksha)',
+                titleEn: 'Shvas Preksha - Mindful Breath Perception',
+                durationHi: '15 मिनट',
+                durationEn: '15 Mins',
+                descHi: 'प्रत्येक आती-जाती सांस के प्रति सजगता और प्राणधारा की लयबद्धता।',
+                descEn: 'Cultivate deep mindfulness by observing natural breath rhythm without interference.',
+                stepsHi: ['नासाग्र पर ध्यान', 'प्राणधारा का अनुभव', 'मन शांत करें'],
+                stepsEn: ['Focus on nostrils', 'Feel energy flow', 'Stabilize mind']
+              },
+              {
+                id: 'leshya_dhyan',
+                titleHi: 'लेश्या ध्यान (Leshya Dhyan)',
+                titleEn: 'Leshya Dhyan - Bright Color & Aura Meditation',
+                durationHi: '12 मिनट',
+                durationEn: '12 Mins',
+                descHi: 'तेजोलेश्या (उगता सूरज) और पद्मलेश्या से आभामंडल एवं विचारों की शुद्धि।',
+                descEn: 'Visualize glowing golden-pink light at the center of enlightenment to purify emotions.',
+                stepsHi: ['उगते सूर्य का ध्यान', 'आभामंडल विशुद्धि', 'आनंद का अनुभव'],
+                stepsEn: ['Visualize rising sun', 'Purify aura', 'Experience bliss']
+              },
+              {
+                id: 'mantra_preksha',
+                titleHi: 'मंत्र एवं ध्वनि प्रेक्षा (Arham Chant)',
+                titleEn: 'Mantra & Sound Vibration - Arham Chanting',
+                durationHi: '8 मिनट',
+                durationEn: '8 Mins',
+                descHi: 'अर्हम् ध्वनि के कंपन से अंतःस्रावी ग्रंथियों (Chakras) का संतुलन।',
+                descEn: 'Harmonize endocrine centers using resonant Arham sound vibrations.',
+                stepsHi: ['रीढ़ की हड्डी सीधी', 'नाभि से ध्वनि उच्चारण', 'कंपन महसूस करें'],
+                stepsEn: ['Keep spine erect', 'Chant from naval', 'Feel vibration']
+              }
+            ].map((med) => {
+              const isActive = activeMeditationId === med.id;
+              return (
+                <div
+                  key={med.id}
+                  className={`p-4 rounded-2xl border transition-all space-y-3 ${
+                    isActive
+                      ? 'bg-gradient-to-br from-orange-500/15 via-amber-500/10 to-white dark:to-zinc-900 border-orange-500 shadow-md'
+                      : 'bg-white dark:bg-zinc-900/90 border-black/5 dark:border-zinc-800 hover:border-orange-500/30'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h5 className="font-bold text-xs text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
+                        <span>{language === 'hi' ? med.titleHi : med.titleEn}</span>
+                      </h5>
+                      <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-orange-600 dark:text-orange-400 mt-0.5">
+                        <Clock size={10} />
+                        <span>{language === 'hi' ? med.durationHi : med.durationEn}</span>
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        if (isActive) {
+                          setActiveMeditationId(null);
+                        } else {
+                          setActiveMeditationId(med.id);
+                        }
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-xs ${
+                        isActive
+                          ? 'bg-orange-500 text-white hover:bg-orange-600'
+                          : 'bg-orange-500/10 text-orange-600 dark:text-orange-400 hover:bg-orange-500 hover:text-white'
+                      }`}
+                    >
+                      {isActive ? <Pause size={14} /> : <Play size={14} />}
+                      <span>{isActive ? (language === 'hi' ? 'रोकें' : 'Pause') : (language === 'hi' ? 'आरंभ करें' : 'Start Session')}</span>
+                    </button>
+                  </div>
+
+                  <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-relaxed">
+                    {language === 'hi' ? med.descHi : med.descEn}
+                  </p>
+
+                  {/* Guided Steps Pill */}
+                  <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-black/5 dark:border-white/5">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-gray-400 mr-1">
+                      {language === 'hi' ? 'मुख्य चरण:' : 'Steps:'}
+                    </span>
+                    {(language === 'hi' ? med.stepsHi : med.stepsEn).map((step, idx) => (
+                      <span
+                        key={idx}
+                        className="px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/5 text-[10px] text-gray-600 dark:text-gray-300 font-medium"
+                      >
+                        {idx + 1}. {step}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Active Guided Meditation Playing Bar */}
+                  {isActive && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="p-3 bg-orange-500/10 rounded-xl border border-orange-500/30 space-y-2 text-xs"
+                    >
+                      <div className="flex items-center justify-between font-bold text-orange-700 dark:text-orange-300 text-[11px]">
+                        <span className="flex items-center gap-1.5 animate-pulse">
+                          <Sparkles size={12} className="text-orange-500" />
+                          <span>{language === 'hi' ? 'ध्यान सत्र प्रगति में है...' : 'Meditation Session Active...'}</span>
+                        </span>
+                        <span className="font-mono">12:30 / 15:00</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-orange-500/20 rounded-full overflow-hidden">
+                        <div className="h-full bg-orange-500 rounded-full w-2/3 animate-pulse" />
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
               );
             })}
           </div>
-        )}
+        </div>
+
+        {/* Section 2: Authentic Terapanth Acharya Pravachans */}
+        <div className="space-y-3 pt-2">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-black uppercase tracking-wider text-spiritual flex items-center gap-2">
+              <BookOpen size={16} className="text-orange-500" />
+              <span>{language === 'hi' ? 'आचार्य परंपरा अमृतवाणी व प्रवचन (Pravachans)' : 'Authentic Acharya Pravachans & Discourses'}</span>
+            </h4>
+            <span className="text-[10px] text-gray-400 font-mono font-bold">
+              {language === 'hi' ? 'आचार्य परंपरा से प्रेरित' : 'Acharya Lineage Sourced'}
+            </span>
+          </div>
+
+          <div className="space-y-2.5">
+            {[
+              {
+                id: 'bhikshu_maryada',
+                acharya: 'आचार्य भिक्षु (Acharya Bhikshu)',
+                titleHi: 'सिद्धान्त वाणी - धर्म और संघ मर्यादा',
+                titleEn: 'Siddhant Vani - Truth, Purity & Order of Sangh',
+                duration: '18:45',
+                keyIdeaHi: 'शुद्ध धर्म का आचरण और संघ की मर्यादा ही मोक्ष का मार्ग है।',
+                keyIdeaEn: 'Purity of conduct and absolute adherence to spiritual discipline form the essence of Jain Dharma.',
+                promptQuery: 'आचार्य भिक्षु के विचार और संघ मर्यादा के मुख्य नियम क्या हैं?'
+              },
+              {
+                id: 'tulsi_anuvrat',
+                acharya: 'आचार्य तुलसी (Acharya Tulsi)',
+                titleHi: 'अणुव्रत दर्शन - जीवन परिवर्तन की कुंजी',
+                titleEn: 'Anuvrat Philosophy - Key to Moral Regeneration',
+                duration: '22:10',
+                keyIdeaHi: 'सुधरे व्यक्ति, समाज सुधरेगा। अणुव्रत से दैनिक जीवन में नैतिकता का समावेश करें।',
+                keyIdeaEn: 'Self-reform leads to societal reform. Incorporate small vows into everyday professional life.',
+                promptQuery: 'आचार्य तुलसी के अणुव्रत आंदोलन के मूल सिद्धांत क्या हैं?'
+              },
+              {
+                id: 'mahapragya_preksha',
+                acharya: 'आचार्य महाप्रज्ञ (Acharya Mahapragya)',
+                titleHi: 'जीवन विज्ञान और प्रेक्षा ध्यान की वैज्ञानिकता',
+                titleEn: 'Science of Living & Spiritual Neuro-biology',
+                duration: '25:30',
+                keyIdeaHi: 'ध्यान से अंतःस्रावी ग्रंथियों (Glands) का परिवर्तन और कषायों का शमन।',
+                keyIdeaEn: 'Meditation alters endocrine secretions and calms passion through neuro-biological harmony.',
+                promptQuery: 'आचार्य महाप्रज्ञ जी द्वारा प्रतिपादित जीवन विज्ञान के मुख्य स्तंभ बताएं।'
+              },
+              {
+                id: 'mahashraman_ahimsa',
+                acharya: 'आचार्य महाश्रमण (Acharya Mahashraman)',
+                titleHi: 'अहिंसा यात्रा - सद्भावना, नैतिकता एवं नशामुक्त जीवन',
+                titleEn: 'Ahimsa Yatra - Goodwill, Morality & De-addiction',
+                duration: '20:15',
+                keyIdeaHi: 'अहिंसा केवल सिद्धांत नहीं, सर्व-मैत्री का व्यावहारिक आचरण है।',
+                keyIdeaEn: 'Non-violence is practical universal fellowship and moral integrity across humanity.',
+                promptQuery: 'पूज्य आचार्य महाश्रमण जी की अहिंसा यात्रा के क्या उद्देश्य हैं?'
+              }
+            ].map((disc) => {
+              const isPlaying = activeDiscourseId === disc.id;
+              return (
+                <div
+                  key={disc.id}
+                  className={`p-4 rounded-2xl border transition-all ${
+                    isPlaying
+                      ? 'bg-gradient-to-r from-orange-500/15 via-amber-500/10 to-white dark:to-zinc-900 border-orange-500 shadow-md'
+                      : 'bg-white dark:bg-zinc-900/90 border-black/5 dark:border-zinc-800 hover:border-orange-500/30'
+                  }`}
+                >
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      <button
+                        onClick={() => {
+                          if (isPlaying) {
+                            setActiveDiscourseId(null);
+                          } else {
+                            setActiveDiscourseId(disc.id);
+                          }
+                        }}
+                        className={`p-3 rounded-2xl transition-all cursor-pointer shrink-0 shadow-md ${
+                          isPlaying
+                            ? 'bg-orange-500 text-white animate-pulse'
+                            : 'bg-orange-500/10 text-orange-600 dark:text-orange-400 hover:bg-orange-500 hover:text-white'
+                        }`}
+                        title={isPlaying ? 'Pause Pravachan' : 'Play Pravachan'}
+                      >
+                        {isPlaying ? <Pause size={18} /> : <Play size={18} />}
+                      </button>
+
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-orange-600 dark:text-orange-400 block">
+                          {disc.acharya}
+                        </span>
+                        <h5 className="font-bold text-sm text-gray-900 dark:text-gray-100 truncate mt-0.5">
+                          {language === 'hi' ? disc.titleHi : disc.titleEn}
+                        </h5>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
+                          {language === 'hi' ? disc.keyIdeaHi : disc.keyIdeaEn}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                      <span className="text-[11px] font-mono font-bold text-gray-400 bg-black/5 dark:bg-white/5 px-2.5 py-1 rounded-xl">
+                        {disc.duration}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => onQuickPrayer?.()}
+                        className="px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 rounded-xl text-xs font-bold transition-all cursor-pointer border border-orange-500/20 flex items-center gap-1 shrink-0"
+                        title="Ask Terapanth AI Agent about this discourse"
+                      >
+                        <Sparkles size={12} className="text-amber-500" />
+                        <span>{language === 'hi' ? 'एआई से पूछें' : 'Ask AI Agent'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Audio Player Bar when Active */}
+                  {isPlaying && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="mt-3 pt-3 border-t border-orange-500/20 flex flex-col gap-2"
+                    >
+                      <div className="flex items-center justify-between text-xs font-bold text-orange-700 dark:text-orange-300">
+                        <span className="flex items-center gap-1.5">
+                          <Volume2 size={14} className="animate-bounce" />
+                          <span>{language === 'hi' ? 'प्रवचन प्रसारित हो रहा है...' : 'Pravachan Audio Playing...'}</span>
+                        </span>
+                        <span className="font-mono text-[11px]">06:12 / {disc.duration}</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-orange-500/20 rounded-full overflow-hidden cursor-pointer">
+                        <div className="h-full bg-orange-500 rounded-full w-1/3" />
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* Preset Recommendations */}

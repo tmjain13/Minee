@@ -154,9 +154,9 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({
         isPaginationVisible ? 'translate-y-0 opacity-100' : 'translate-y-16 opacity-0'
       }`}
     >
-      {/* Grounded Outer Container anchored to viewport bottom */}
+      {/* Floating Capsule Outer Container */}
       <nav
-        className="max-w-md mx-auto pointer-events-auto relative shadow-[0_-8px_30px_rgba(0,0,0,0.4)] rounded-t-3xl sm:rounded-t-full"
+        className="max-w-[440px] mx-auto px-4 pb-3 pointer-events-auto relative"
         aria-label="Primary Navigation"
       >
         {/* Subtle Offline Sync Badge */}
@@ -167,11 +167,11 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({
           </div>
         )}
 
-        {/* Main Maroon Bar Grounded at Screen Bottom */}
-        <div className="relative bg-gradient-to-b from-[#8B2232] via-[#7B1B28] to-[#5C101A] border-t border-x border-[#C59B27]/60 rounded-t-3xl sm:rounded-t-full px-4 py-2.5 pb-safe pb-2.5 flex items-center justify-between text-[#F3E5C8]">
+        {/* Main Maroon Pill Bar */}
+        <div className="relative bg-gradient-to-r from-[#7A1F2B] via-[#8B2232] to-[#5A1620] border border-[#C59B27]/80 rounded-full px-4 py-2.5 flex items-center justify-between text-[#F3E5C8] shadow-[0_12px_36px_rgba(0,0,0,0.5)]">
           
           {/* Central Raised Arch/Bridge Ring for AI Circle */}
-          <div className="absolute left-1/2 -top-5 -translate-x-1/2 w-[72px] h-[72px] rounded-full bg-gradient-to-b from-[#8B2232] to-[#6E1F2A] border border-[#C59B27]/70 p-1 flex items-center justify-center shadow-[0_4px_18px_rgba(0,0,0,0.25)]">
+          <div className="absolute left-1/2 -top-5 -translate-x-1/2 w-[68px] h-[68px] rounded-full bg-gradient-to-b from-[#8B2232] to-[#6E1F2A] border border-[#C59B27]/80 p-1 flex items-center justify-center shadow-[0_4px_20px_rgba(0,0,0,0.35)]">
             {/* Inner AI White Button */}
             <button
               id="tp-nav-tab-chat"
@@ -181,13 +181,13 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({
                 }
                 setActiveTab('chat');
               }}
-              className={`w-full h-full rounded-full bg-[#FFFDF9] flex flex-col items-center justify-center transition-transform active:scale-95 cursor-pointer shadow-[0_0_12px_rgba(255,255,255,0.7)] ${
+              className={`w-full h-full rounded-full bg-[#FFFDF8] flex flex-col items-center justify-center transition-transform active:scale-95 cursor-pointer shadow-[0_0_14px_rgba(255,255,255,0.8)] ${
                 activeTab === 'chat' ? 'ring-2 ring-[#C59B27] scale-102' : 'hover:bg-white'
               }`}
               aria-label="AI Assistant"
             >
               <AISparkleIcon size={22} />
-              <span className="text-[10px] font-bold text-[#6E1F2A] leading-tight flex items-center gap-0.5 mt-0.5">
+              <span className="text-[10px] font-extrabold text-[#6E1F2A] leading-none flex items-center gap-0.5 mt-0.5">
                 <span className="text-[8px] text-[#C59B27]">✨</span>
                 {language === 'hi' ? 'AI' : 'AI'}
               </span>
@@ -210,7 +210,7 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({
                     }
                     setActiveTab(item.id);
                   }}
-                  className="flex flex-col items-center justify-center py-1 cursor-pointer group focus:outline-none transition-colors"
+                  className="flex flex-col items-center justify-center py-0.5 cursor-pointer group focus:outline-none transition-colors"
                   aria-label={language === 'hi' ? item.labelHi : item.labelEn}
                   aria-current={Active ? 'page' : undefined}
                 >
@@ -240,7 +240,7 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({
           </div>
 
           {/* Spacer for Middle Elevated AI Circle */}
-          <div className="w-[60px] shrink-0" />
+          <div className="w-[56px] shrink-0" />
 
           {/* Right Side: Sadhana & Profile */}
           <div className="flex items-center justify-around w-[40%] pl-2">
@@ -258,7 +258,7 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({
                     }
                     setActiveTab(item.id);
                   }}
-                  className="flex flex-col items-center justify-center py-1 cursor-pointer group focus:outline-none transition-colors relative"
+                  className="flex flex-col items-center justify-center py-0.5 cursor-pointer group focus:outline-none transition-colors relative"
                   aria-label={language === 'hi' ? item.labelHi : item.labelEn}
                   aria-current={Active ? 'page' : undefined}
                 >

@@ -178,6 +178,8 @@ interface Todo {
   text: string;
   completed: boolean;
   tag?: string;
+  category?: string; // 'Samayik' | 'Swadhyaya' | 'Japa' | 'Tap' | 'Sadhana' | 'Other'
+  notes?: string;
   completedAt?: number;
   dueTime?: string;
   impact?: 'Low' | 'Medium' | 'High';
