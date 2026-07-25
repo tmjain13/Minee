@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, AlertTriangle, LogOut, Trash2 } from "lucide-react";
+import { X, AlertTriangle, LogOut, Trash2, RotateCcw, RefreshCw } from "lucide-react";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 
 interface ConfirmationModalProps {
@@ -12,7 +12,7 @@ interface ConfirmationModalProps {
   confirmLabel?: string;
   cancelLabel?: string;
   type?: "danger" | "warning" | "info";
-  iconType?: "logout" | "trash" | "warning";
+  iconType?: "logout" | "trash" | "warning" | "reset" | "refresh";
 }
 
 export default function ConfirmationModal({
@@ -47,6 +47,9 @@ export default function ConfirmationModal({
         return <LogOut size={24} className="text-red-500" />;
       case "trash":
         return <Trash2 size={24} className="text-red-500" />;
+      case "reset":
+      case "refresh":
+        return <RotateCcw size={24} className="text-amber-500" />;
       default:
         return <AlertTriangle size={24} className="text-amber-500" />;
     }

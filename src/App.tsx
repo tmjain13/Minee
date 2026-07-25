@@ -58,6 +58,7 @@ import TerapanthHeader from "./components/TerapanthHeader";
 import TerapanthFooterNav from "./components/TerapanthFooterNav";
 import { GlobalSearchModal } from "./components/GlobalSearchModal";
 import { GlobalAudioPlayer } from "./components/GlobalAudioPlayer";
+import ConfirmationModal from "./components/ConfirmationModal";
 import QuickActions from "./components/QuickActions";
 import { AdminGuard } from "./components/AdminGuard";
 import UnifiedPermissionsModal from "./components/UnifiedPermissionsModal";
@@ -599,6 +600,8 @@ export default function App() {
   const [summaryDuration, setSummaryDuration] = useState(0);
   const [summaryCompletedTasks, setSummaryCompletedTasks] = useState<Todo[]>([]);
   const [sadhanaObservation, setSadhanaObservation] = useState('');
+  const [showResetTabOrderConfirm, setShowResetTabOrderConfirm] = useState(false);
+  const [todoToDeleteId, setTodoToDeleteId] = useState<string | null>(null);
   const [savedObservations, setSavedObservations] = useState<{date: string, observation: string, duration: number}[]>(() => {
     try {
       const saved = localStorage.getItem('preksha_meditation_observations');
@@ -1419,11 +1422,17 @@ export default function App() {
   }, []);
 
   const handleDeleteTodo = useCallback((id: string) => {
+    setTodoToDeleteId(id);
+  }, []);
+
+  const confirmDeleteTodo = useCallback(() => {
+    if (!todoToDeleteId) return;
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate(35);
     }
-    setTodos((prev) => prev.filter((t) => t.id !== id));
-  }, []);
+    setTodos((prev) => prev.filter((t) => t.id !== todoToDeleteId));
+    setTodoToDeleteId(null);
+  }, [todoToDeleteId]);
 
   if (loading && !forceProceed) {
     devLog("[App] Auth loading is true. Rendering full-screen LoadingScreen as initial experience gate.");
@@ -1450,8 +1459,6 @@ export default function App() {
         highContrast ? "contrast-125 saturate-150" : ""
       } ${theme}`}
     >
-      {/* If dark mode is active, apply a subtle dark glass layer above the texture */}
-      {isDarkActive && <div className="absolute inset-0 bg-stone-950/85 pointer-events-none z-0" />}
 
       {/* HEADER SECTION */}
       {activeTab !== "chat" && (
@@ -1473,6 +1480,7 @@ export default function App() {
           zenElapsed={zenElapsed}
           activeTab={activeTab}
           onSearchClick={() => setIsSearchModalOpen(true)}
+          onLogoClick={() => setActiveTab('home')}
         />
       )}
 
@@ -2042,13 +2050,6 @@ export default function App() {
       />
       {!zenMode && (
         <>
-          <GlobalAudioPlayer
-            ambientSoundEnabled={ambientSoundEnabled}
-            setAmbientSoundEnabled={setAmbientSoundEnabled}
-            spiritualSoundscape={spiritualSoundscape}
-            setSpiritualSoundscape={setSpiritualSoundscape}
-            language={language}
-          />
 
 
           {/* Reorder Modal Overlay */}
@@ -2126,7 +2127,7 @@ export default function App() {
 
                   <div className="flex gap-2.5 pt-2">
                     <button
-                      onClick={resetTabOrder}
+                      onClick={() => setShowResetTabOrderConfirm(true)}
                       className="flex-1 py-2.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-bold rounded-xl transition-all cursor-pointer"
                     >
                       {language === 'hi' ? 'मूल क्रम (Reset)' : 'Reset Default'}
@@ -2623,6 +2624,32 @@ export default function App() {
 
       {/* Daily Sadhana Streak Celebration Animation Overlay */}
       <StreakCelebration />
+
+      {/* Universal Confirmation Modal for Tab Order Reset */}
+      <ConfirmationModal
+        isOpen={showResetTabOrderConfirm}
+        onClose={() => setShowResetTabOrderConfirm(false)}
+        onConfirm={resetTabOrder}
+        title={language === 'hi' ? "टैब क्रम रीसेट की पुष्टि" : "Confirm Reset Tab Order"}
+        message={language === 'hi' ? "क्या आप सचमुच टैब के क्रम को मूल डिफ़ॉल्ट व्यवस्था में रीसेट करना चाहते हैं?" : "Are you sure you want to reset the bottom navigation tabs to their default layout?"}
+        confirmLabel={language === 'hi' ? "हाँ, रीसेट करें (Reset)" : "Reset Default"}
+        cancelLabel={language === 'hi' ? "रद्द करें (Cancel)" : "Cancel"}
+        type="warning"
+        iconType="reset"
+      />
+
+      {/* Universal Confirmation Modal for Todo / Sadhana Task Deletion */}
+      <ConfirmationModal
+        isOpen={todoToDeleteId !== null}
+        onClose={() => setTodoToDeleteId(null)}
+        onConfirm={confirmDeleteTodo}
+        title={language === 'hi' ? "साधना संकल्प हटाने की पुष्टि" : "Confirm Delete Resolution"}
+        message={language === 'hi' ? "क्या आप सचमुच इस साधना संकल्प को अपनी सूची से हटाना चाहते हैं?" : "Are you sure you want to remove this Sadhana goal or task from your list?"}
+        confirmLabel={language === 'hi' ? "हाँ, हटाएं (Delete)" : "Delete Goal"}
+        cancelLabel={language === 'hi' ? "रद्द करें (Cancel)" : "Cancel"}
+        type="danger"
+        iconType="trash"
+      />
     </div>
   );
 }

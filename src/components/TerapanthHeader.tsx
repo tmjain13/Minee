@@ -33,6 +33,9 @@ export interface TerapanthHeaderProps {
   zenElapsed?: number;
   activeTab?: string;
   onSearchClick?: () => void;
+  onLogoClick?: () => void;
+  hasSignificantEvent?: boolean;
+  unreadCount?: number;
 
   onRefresh?: () => void;
   onOpenCustomizer?: () => void;
@@ -56,6 +59,9 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
   zenElapsed = 0,
   activeTab,
   onSearchClick,
+  onLogoClick,
+  hasSignificantEvent = true,
+  unreadCount = 3,
 
   onRefresh,
   onOpenCustomizer,
@@ -142,8 +148,24 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
     }
   }, [activeLanguage]);
 
+  const [isLogoLoaded, setIsLogoLoaded] = useState(false);
   const auth = getAuth();
   const currentUser = auth.currentUser;
+
+  const handleLogoTap = useCallback(() => {
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      try {
+        navigator.vibrate(35);
+      } catch {
+        // Fallback for restricted contexts
+      }
+    }
+    if (onLogoClick) {
+      onLogoClick();
+    } else {
+      window.dispatchEvent(new CustomEvent('switch-tab', { detail: 'home' }));
+    }
+  }, [onLogoClick]);
 
   return (
     <>
@@ -159,28 +181,103 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
         }`}
       >
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
-          {/* Logo & Greeting Section */}
+          {/* Logo & Branding Section */}
           <div className="flex items-center gap-3">
-            <div className="relative w-10 h-10 shrink-0 flex items-center justify-center">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: -2 }}
+              animate={
+                hasSignificantEvent
+                  ? {
+                      opacity: 1,
+                      scale: [1, 1.05, 1],
+                      boxShadow: [
+                        "0 0 0 0px rgba(212, 175, 100, 0)",
+                        "0 0 0 6px rgba(212, 175, 100, 0.35)",
+                        "0 0 0 0px rgba(212, 175, 100, 0)",
+                      ],
+                    }
+                  : { opacity: 1, scale: 1 }
+              }
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.92 }}
+              transition={
+                hasSignificantEvent
+                  ? {
+                      duration: 3,
+                      repeat: Infinity,
+                      repeatType: "reverse",
+                      ease: "easeInOut",
+                    }
+                  : { duration: 0.2, ease: "easeOut" }
+              }
+              onClick={handleLogoTap}
+              className="relative w-10 h-10 shrink-0 flex items-center justify-center cursor-pointer group rounded-full transition-shadow duration-300"
+              aria-label={activeLanguage === "hi" ? "मुख्य पृष्ठ पर लौटें" : "Return to Home"}
+              aria-describedby="logo-tooltip"
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleLogoTap();
+                }
+              }}
+            >
+              {/* Skeleton Loader while loading */}
+              {!isLogoLoaded && (
+                <div className="absolute inset-0 bg-stone-200/80 dark:bg-stone-800/80 rounded-full animate-pulse border border-stone-300/40 dark:border-stone-700/40" />
+              )}
+
               <img
                 src="https://i.postimg.cc/rp8MS1YG/Untitled-design-20260719-150333-0000.png"
-                alt="Terapanth Logo"
-                className="w-full h-full object-contain drop-shadow-xs"
-                loading="lazy"
+                alt="Terapanth Official Logo"
+                className={`w-full h-full object-contain drop-shadow-xs group-hover:scale-105 transition-all duration-200 ${
+                  isLogoLoaded ? "opacity-100" : "opacity-0"
+                }`}
+                loading="eager"
                 referrerPolicy="no-referrer"
+                onLoad={() => setIsLogoLoaded(true)}
+                onError={() => setIsLogoLoaded(true)}
               />
+
+              {/* Online/Offline Status Indicator */}
               <span
                 className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-white dark:ring-[#12090B] ${
                   isOnline ? "bg-emerald-500" : "bg-amber-500"
                 }`}
               />
-            </div>
 
-            <div className="flex flex-col">
-              <span className="font-serif font-bold text-lg leading-none text-[#6E1F2A] dark:text-[#D4AF64]">
+              {/* Unread Spiritual Updates / Announcements Notification Badge */}
+              {unreadCount > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center border-2 border-white dark:border-[#12090B] shadow-xs z-20 pointer-events-none"
+                  title={`${unreadCount} ${activeLanguage === "hi" ? "नवीनतम आध्यात्मिक अद्यतन" : "Unread Spiritual Updates"}`}
+                >
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </motion.span>
+              )}
+
+              {/* Accessible Hover Tooltip */}
+              <div
+                role="tooltip"
+                id="logo-tooltip"
+                className="absolute left-0 top-full mt-2 px-2.5 py-1 bg-stone-900/95 dark:bg-stone-800/95 text-stone-100 dark:text-stone-100 text-[11px] font-medium rounded-md whitespace-nowrap shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 border border-stone-700/50 scale-95 group-hover:scale-100 origin-top-left"
+              >
+                {activeLanguage === "hi" ? "मुख्य पृष्ठ पर लौटें (Return to Home)" : "Return to Home"}
+              </div>
+            </motion.div>
+
+            <button
+              onClick={handleLogoTap}
+              className="flex flex-col text-left cursor-pointer group focus:outline-hidden"
+              title={activeLanguage === "hi" ? "मुख्य पृष्ठ (Home)" : "Go to Home"}
+            >
+              <span className="font-serif font-bold text-lg leading-none text-[#6E1F2A] dark:text-[#D4AF64] group-hover:opacity-80 transition-opacity">
                 Terapanth AI
               </span>
-            </div>
+            </button>
           </div>
 
           {/* Primary Action Buttons: Search, Profile & Overflow Menu */}

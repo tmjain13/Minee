@@ -14,6 +14,7 @@ import {
 } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { handleFirestoreError, OperationType } from '../lib/firebase-utils';
+import ConfirmationModal from './ConfirmationModal';
 
 interface GratitudeEntry {
   id: string;
