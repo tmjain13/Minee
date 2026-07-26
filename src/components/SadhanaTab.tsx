@@ -3426,15 +3426,6 @@ const SadhanaGoalsSection = ({
   const [showArchivedModal, setShowArchivedModal] = useState<boolean>(false);
   const [isDiscoursePlaying, setIsDiscoursePlaying] = useState<boolean>(false);
 
-  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
-
-  const toggleCategoryCollapse = (catId: string) => {
-    setCollapsedCategories(prev => ({
-      ...prev,
-      [catId]: !prev[catId]
-    }));
-  };
-
   const SPIRITUAL_CATEGORIES = [
     { id: 'All', label: { en: 'All Categories', hi: 'सभी श्रेणियां' }, emoji: '📑' },
     { id: 'Samayik', label: { en: 'Samayik', hi: 'सामायिक' }, emoji: '🧘' },
@@ -3897,24 +3888,6 @@ const SadhanaGoalsSection = ({
       return (Number(b.id) || 0) - (Number(a.id) || 0);
     });
   }, [todos, activeTagFilter, activeCategoryFilter, searchKeyword, sortBy]);
-
-  const groupedTodos = useMemo(() => {
-    const groups: Record<string, typeof filteredTodos> = {};
-
-    SPIRITUAL_CATEGORIES.filter(c => c.id !== 'All').forEach((cat) => {
-      groups[cat.id] = [];
-    });
-
-    filteredTodos.forEach((todo) => {
-      const cat = todo.category || 'Sadhana';
-      if (!groups[cat]) {
-        groups[cat] = [];
-      }
-      groups[cat].push(todo);
-    });
-
-    return groups;
-  }, [filteredTodos, SPIRITUAL_CATEGORIES]);
 
   const completedCount = todos.filter(t => t.completed).length;
   const totalCount = todos.length;
@@ -4567,8 +4540,8 @@ const SadhanaGoalsSection = ({
         </div>
       </div>
 
-      {/* List Container grouped by Categories with Collapsible Sections */}
-      <div className="space-y-4">
+      {/* List Container */}
+      <div className="space-y-3">
         {filteredTodos.length === 0 ? (
           <div className="p-8 border-2 border-dashed border-black/5 dark:border-white/10 rounded-[2rem] text-center space-y-2">
             <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
@@ -4579,353 +4552,300 @@ const SadhanaGoalsSection = ({
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {Object.entries(groupedTodos)
-              .filter(([_, items]) => items.length > 0)
-              .map(([catId, items]) => {
-                const categoryInfo = SPIRITUAL_CATEGORIES.find(c => c.id === catId) || {
-                  id: catId,
-                  label: { hi: catId, en: catId },
-                  emoji: '✨'
-                };
-                const isCollapsed = !!collapsedCategories[catId];
-                const completedInCat = items.filter(i => i.completed).length;
+          <div className="space-y-2.5">
+            {filteredTodos.map((todo, index) => {
+              const isDragging = index === draggingIndex;
+              const isDragOver = index === dragOverIndex;
+              const itemTag = todo.tag || 'Daily';
+              const isEditingThisTag = editingTagId === todo.id;
+              const dueTimeStatus = getDueTimeStatus(todo.dueTime, todo.completed);
 
-                return (
-                  <div key={catId} className="space-y-2.5 border border-black/5 dark:border-zinc-800/80 rounded-2xl bg-black/[0.01] dark:bg-white/[0.01] p-3 shadow-xs">
-                    {/* Collapsible Category Header */}
-                    <button
-                      type="button"
-                      onClick={() => toggleCategoryCollapse(catId)}
-                      className="w-full flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-black/5 dark:border-zinc-800 shadow-2xs hover:border-orange-500/30 transition-all cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-base">{categoryInfo.emoji}</span>
-                        <span className="text-xs font-black text-spiritual">
-                          {language === 'hi' ? categoryInfo.label.hi : categoryInfo.label.en}
-                        </span>
-                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
-                          {completedInCat}/{items.length} {language === 'hi' ? 'पूर्ण' : 'done'}
-                        </span>
+              return (
+                <motion.div
+                  key={todo.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ 
+                    opacity: 1, 
+                    y: 0,
+                    scale: todo.completed ? [1, 1.03, 1] : 1
+                  }}
+                  transition={{ 
+                    duration: 0.25,
+                    scale: { type: "spring", stiffness: 300, damping: 15 }
+                  }}
+                  className="relative overflow-visible"
+                >
+                  <div
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDragEnd={handleDragEnd}
+                    className={`relative flex items-center justify-between p-3.5 bg-white dark:bg-zinc-900 hover:bg-orange-500/5 dark:hover:bg-orange-500/5 rounded-2xl border border-black/5 dark:border-zinc-800 shadow-sm transition-all duration-200 cursor-grab active:cursor-grabbing ${
+                      isDragging ? 'opacity-40 border-orange-500 border-dashed scale-[0.98]' : ''
+                    } ${
+                      isDragOver ? 'border-orange-500 border-dashed translate-y-1' : ''
+                    }`}
+                  >
+                    {activeConfettiId === todo.id && (
+                      <div className="absolute inset-0 pointer-events-none overflow-visible z-50">
+                        {Array.from({ length: 15 }).map((_, i) => {
+                          const angle = (i / 15) * 360 + Math.random() * 20;
+                          const distance = 40 + Math.random() * 60;
+                          const x = Math.cos((angle * Math.PI) / 180) * distance;
+                          const y = Math.sin((angle * Math.PI) / 180) * distance;
+                          const colors = ['#f97316', '#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6'];
+                          const randomColor = colors[i % colors.length];
+                          return (
+                            <motion.div
+                              key={i}
+                              className="absolute w-2.5 h-2.5 rounded-full left-1/2 top-1/2"
+                              style={{ backgroundColor: randomColor }}
+                              initial={{ x: 0, y: 0, scale: 1, opacity: 1 }}
+                              animate={{
+                                x: x,
+                                y: y,
+                                scale: [1, 1.3, 0],
+                                opacity: [1, 1, 0],
+                                rotate: Math.random() * 360
+                              }}
+                              transition={{
+                                duration: 0.8,
+                                ease: "easeOut"
+                              }}
+                            />
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-2.5 flex-1 min-w-0 pr-2">
+                      {/* Drag Handle */}
+                      <div className="text-gray-400 hover:text-gray-650 cursor-grab shrink-0 p-0.5">
+                        <GripVertical size={16} />
                       </div>
 
-                      <div className="flex items-center gap-1.5 text-gray-400">
-                        <span className="text-[10px] font-bold">
-                          {isCollapsed ? (language === 'hi' ? 'विस्तार करें' : 'Expand') : (language === 'hi' ? 'समेटें' : 'Collapse')}
-                        </span>
-                        <ChevronDown size={14} className={`transition-transform duration-200 ${isCollapsed ? '-rotate-90' : 'rotate-0'}`} />
-                      </div>
-                    </button>
+                      {/* Completion Toggle */}
+                      <button
+                        onClick={() => onToggle(todo.id)}
+                        className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                          todo.completed 
+                            ? 'bg-green-500 border-green-500 text-white' 
+                            : 'border-gray-300 dark:border-zinc-700 hover:border-orange-500'
+                        }`}
+                      >
+                        {todo.completed && <CheckCircle2 size={12} className="text-white fill-white" />}
+                      </button>
 
-                    {/* Collapsible Tasks List */}
-                    <AnimatePresence>
-                      {!isCollapsed && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="space-y-2.5 pt-1"
+                      {/* Impact Dot */}
+                      {(() => {
+                        const impactInfo = getImpactInfo(todo.impact || 'Medium');
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => toggleTaskImpact(todo.id, todo.impact || 'Medium')}
+                            className="shrink-0 p-1 cursor-pointer transition-transform hover:scale-125"
+                            title={language === 'hi' ? `प्रभाव: ${impactInfo.label} (बदलने के लिए क्लिक करें)` : `Impact: ${impactInfo.label} (Click to toggle)`}
+                          >
+                            <span className={`block w-2.5 h-2.5 rounded-full ${impactInfo.dot}`} />
+                          </button>
+                        );
+                      })()}
+
+                      {/* Text & Tag */}
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span 
+                          className={`text-sm font-semibold truncate select-none ${
+                            todo.completed 
+                              ? 'text-gray-400 line-through font-normal' 
+                              : 'text-gray-800 dark:text-gray-150'
+                          }`}
                         >
-                          {items.map((todo) => {
-                            const index = filteredTodos.findIndex(t => t.id === todo.id);
-                            const isDragging = index === draggingIndex;
-                            const isDragOver = index === dragOverIndex;
-                            const itemTag = todo.tag || 'Daily';
-                            const isEditingThisTag = editingTagId === todo.id;
-                            const dueTimeStatus = getDueTimeStatus(todo.dueTime, todo.completed);
+                          {todo.text}
+                        </span>
 
-                            return (
-                              <motion.div
-                                key={todo.id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ 
-                                  opacity: 1, 
-                                  y: 0,
-                                  scale: todo.completed ? [1, 1.03, 1] : 1
-                                }}
-                                transition={{ 
-                                  duration: 0.25,
-                                  scale: { type: "spring", stiffness: 300, damping: 15 }
-                                }}
-                                className="relative overflow-visible"
-                              >
-                                <div
-                                  draggable
-                                  onDragStart={(e) => handleDragStart(e, index)}
-                                  onDragOver={(e) => handleDragOver(e, index)}
-                                  onDragEnd={handleDragEnd}
-                                  className={`relative flex items-center justify-between p-3.5 bg-white dark:bg-zinc-900 hover:bg-orange-500/5 dark:hover:bg-orange-500/5 rounded-2xl border border-black/5 dark:border-zinc-800 shadow-sm transition-all duration-200 cursor-grab active:cursor-grabbing ${
-                                    isDragging ? 'opacity-40 border-orange-500 border-dashed scale-[0.98]' : ''
-                                  } ${
-                                    isDragOver ? 'border-orange-500 border-dashed translate-y-1' : ''
+                        {/* Tag Badge / Editor & Due Time Badge & Impact Badge */}
+                        <div className="mt-1 flex items-center gap-2 flex-wrap">
+                          {isEditingThisTag ? (
+                            <div className="flex items-center gap-1 overflow-x-auto max-w-full py-0.5 scrollbar-none z-10 bg-white dark:bg-zinc-900 border border-orange-500/30 p-1 rounded-lg shadow-md">
+                              {TAG_OPTIONS.map((t) => (
+                                <button
+                                  key={t.id}
+                                  onClick={() => handleChangeItemTag(todo.id, t.id)}
+                                  className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 cursor-pointer ${
+                                    itemTag === t.id
+                                      ? 'bg-orange-500 text-white'
+                                      : 'bg-black/5 dark:bg-white/10 text-gray-600 dark:text-gray-300'
                                   }`}
                                 >
-                                  {activeConfettiId === todo.id && (
-                                    <div className="absolute inset-0 pointer-events-none overflow-visible z-50">
-                                      {Array.from({ length: 15 }).map((_, i) => {
-                                        const angle = (i / 15) * 360 + Math.random() * 20;
-                                        const distance = 40 + Math.random() * 60;
-                                        const x = Math.cos((angle * Math.PI) / 180) * distance;
-                                        const y = Math.sin((angle * Math.PI) / 180) * distance;
-                                        const colors = ['#f97316', '#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6'];
-                                        const randomColor = colors[i % colors.length];
-                                        return (
-                                          <motion.div
-                                            key={i}
-                                            className="absolute w-2.5 h-2.5 rounded-full left-1/2 top-1/2"
-                                            style={{ backgroundColor: randomColor }}
-                                            initial={{ x: 0, y: 0, scale: 1, opacity: 1 }}
-                                            animate={{
-                                              x: x,
-                                              y: y,
-                                              scale: [1, 1.3, 0],
-                                              opacity: [1, 1, 0],
-                                              rotate: Math.random() * 360
-                                            }}
-                                            transition={{
-                                              duration: 0.8,
-                                              ease: "easeOut"
-                                            }}
-                                          />
-                                        );
-                                      })}
-                                    </div>
-                                  )}
+                                  {t.emoji} {language === 'hi' ? t.label.hi : t.label.en}
+                                </button>
+                              ))}
+                              <button
+                                onClick={() => setEditingTagId(null)}
+                                className="p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-white shrink-0 ml-1"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setEditingTagId(todo.id)}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all cursor-pointer ${getTagBadgeStyle(itemTag)}`}
+                              title={language === 'hi' ? 'टैग बदलें' : 'Change tag'}
+                            >
+                              <Tag size={10} />
+                              <span>{getTagLabel(itemTag)}</span>
+                              <ChevronDown size={10} className="opacity-50" />
+                            </button>
+                          )}
 
-                                  <div className="flex items-center gap-2.5 flex-1 min-w-0 pr-2">
-                                    {/* Drag Handle */}
-                                    <div className="text-gray-400 hover:text-gray-650 cursor-grab shrink-0 p-0.5">
-                                      <GripVertical size={16} />
-                                    </div>
+                          {/* Category Badge Selector */}
+                          {editingCategoryId === todo.id ? (
+                            <div className="flex items-center gap-1 overflow-x-auto max-w-full py-0.5 scrollbar-none z-10 bg-white dark:bg-zinc-900 border border-orange-500/30 p-1 rounded-lg shadow-md">
+                              {SPIRITUAL_CATEGORIES.filter(c => c.id !== 'All').map((cat) => (
+                                <button
+                                  key={cat.id}
+                                  onClick={() => handleChangeItemCategory(todo.id, cat.id)}
+                                  className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 cursor-pointer ${
+                                    (todo.category || 'Sadhana') === cat.id
+                                      ? 'bg-orange-500 text-white'
+                                      : 'bg-black/5 dark:bg-white/10 text-gray-600 dark:text-gray-300'
+                                  }`}
+                                >
+                                  {cat.emoji} {language === 'hi' ? cat.label.hi : cat.label.en}
+                                </button>
+                              ))}
+                              <button
+                                onClick={() => setEditingCategoryId(null)}
+                                className="p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-white shrink-0 ml-1"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setEditingCategoryId(todo.id)}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border border-orange-500/20 bg-orange-500/10 text-orange-700 dark:text-orange-300 transition-all cursor-pointer"
+                              title={language === 'hi' ? 'श्रेणी बदलें' : 'Change spiritual category'}
+                            >
+                              <span>{SPIRITUAL_CATEGORIES.find(c => c.id === (todo.category || 'Sadhana'))?.emoji || '✨'}</span>
+                              <span>{SPIRITUAL_CATEGORIES.find(c => c.id === (todo.category || 'Sadhana'))?.label[language === 'hi' ? 'hi' : 'en'] || (todo.category || 'Sadhana')}</span>
+                              <ChevronDown size={10} className="opacity-50" />
+                            </button>
+                          )}
 
-                                    {/* Completion Toggle */}
-                                    <button
-                                      onClick={() => onToggle(todo.id)}
-                                      className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
-                                        todo.completed 
-                                          ? 'bg-green-500 border-green-500 text-white' 
-                                          : 'border-gray-300 dark:border-zinc-700 hover:border-orange-500'
-                                      }`}
-                                    >
-                                      {todo.completed && <CheckCircle2 size={12} className="text-white fill-white" />}
-                                    </button>
-
-                                    {/* Impact Dot */}
-                                    {(() => {
-                                      const impactInfo = getImpactInfo(todo.impact || 'Medium');
-                                      return (
-                                        <button
-                                          type="button"
-                                          onClick={() => toggleTaskImpact(todo.id, todo.impact || 'Medium')}
-                                          className="shrink-0 p-1 cursor-pointer transition-transform hover:scale-125"
-                                          title={language === 'hi' ? `प्रभाव: ${impactInfo.label} (बदलने के लिए क्लिक करें)` : `Impact: ${impactInfo.label} (Click to toggle)`}
-                                        >
-                                          <span className={`block w-2.5 h-2.5 rounded-full ${impactInfo.dot}`} />
-                                        </button>
-                                      );
-                                    })()}
-
-                                    {/* Text & Tag */}
-                                    <div className="flex flex-col min-w-0 flex-1">
-                                      <span 
-                                        className={`text-sm font-semibold truncate select-none ${
-                                          todo.completed 
-                                            ? 'text-gray-400 line-through font-normal' 
-                                            : 'text-gray-800 dark:text-gray-150'
-                                        }`}
-                                      >
-                                        {todo.text}
-                                      </span>
-
-                                      {/* Tag Badge / Editor & Due Time Badge & Impact Badge */}
-                                      <div className="mt-1 flex items-center gap-2 flex-wrap">
-                                        {isEditingThisTag ? (
-                                          <div className="flex items-center gap-1 overflow-x-auto max-w-full py-0.5 scrollbar-none z-10 bg-white dark:bg-zinc-900 border border-orange-500/30 p-1 rounded-lg shadow-md">
-                                            {TAG_OPTIONS.map((t) => (
-                                              <button
-                                                key={t.id}
-                                                onClick={() => handleChangeItemTag(todo.id, t.id)}
-                                                className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 cursor-pointer ${
-                                                  itemTag === t.id
-                                                    ? 'bg-orange-500 text-white'
-                                                    : 'bg-black/5 dark:bg-white/10 text-gray-600 dark:text-gray-300'
-                                                }`}
-                                              >
-                                                {t.emoji} {language === 'hi' ? t.label.hi : t.label.en}
-                                              </button>
-                                            ))}
-                                            <button
-                                              onClick={() => setEditingTagId(null)}
-                                              className="p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-white shrink-0 ml-1"
-                                            >
-                                              <X size={12} />
-                                            </button>
-                                          </div>
-                                        ) : (
-                                          <button
-                                            onClick={() => setEditingTagId(todo.id)}
-                                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all cursor-pointer ${getTagBadgeStyle(itemTag)}`}
-                                            title={language === 'hi' ? 'टैग बदलें' : 'Change tag'}
-                                          >
-                                            <Tag size={10} />
-                                            <span>{getTagLabel(itemTag)}</span>
-                                            <ChevronDown size={10} className="opacity-50" />
-                                          </button>
-                                        )}
-
-                                        {/* Category Badge Selector */}
-                                        {editingCategoryId === todo.id ? (
-                                          <div className="flex items-center gap-1 overflow-x-auto max-w-full py-0.5 scrollbar-none z-10 bg-white dark:bg-zinc-900 border border-orange-500/30 p-1 rounded-lg shadow-md">
-                                            {SPIRITUAL_CATEGORIES.filter(c => c.id !== 'All').map((cat) => (
-                                              <button
-                                                key={cat.id}
-                                                onClick={() => handleChangeItemCategory(todo.id, cat.id)}
-                                                className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 cursor-pointer ${
-                                                  (todo.category || 'Sadhana') === cat.id
-                                                    ? 'bg-orange-500 text-white'
-                                                    : 'bg-black/5 dark:bg-white/10 text-gray-600 dark:text-gray-300'
-                                                }`}
-                                              >
-                                                {cat.emoji} {language === 'hi' ? cat.label.hi : cat.label.en}
-                                              </button>
-                                            ))}
-                                            <button
-                                              onClick={() => setEditingCategoryId(null)}
-                                              className="p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-white shrink-0 ml-1"
-                                            >
-                                              <X size={12} />
-                                            </button>
-                                          </div>
-                                        ) : (
-                                          <button
-                                            onClick={() => setEditingCategoryId(todo.id)}
-                                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border border-orange-500/20 bg-orange-500/10 text-orange-700 dark:text-orange-300 transition-all cursor-pointer"
-                                            title={language === 'hi' ? 'श्रेणी बदलें' : 'Change spiritual category'}
-                                          >
-                                            <span>{SPIRITUAL_CATEGORIES.find(c => c.id === (todo.category || 'Sadhana'))?.emoji || '✨'}</span>
-                                            <span>{SPIRITUAL_CATEGORIES.find(c => c.id === (todo.category || 'Sadhana'))?.label[language === 'hi' ? 'hi' : 'en'] || (todo.category || 'Sadhana')}</span>
-                                            <ChevronDown size={10} className="opacity-50" />
-                                          </button>
-                                        )}
-
-                                        {/* Impact Level Badge */}
-                                        {(() => {
-                                          const impactInfo = getImpactInfo(todo.impact || 'Medium');
-                                          return (
-                                            <button
-                                              type="button"
-                                              onClick={() => toggleTaskImpact(todo.id, todo.impact || 'Medium')}
-                                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all cursor-pointer ${impactInfo.badge}`}
-                                              title={language === 'hi' ? 'प्रभाव स्तर बदलें' : 'Toggle impact level'}
-                                            >
-                                              <span className={`w-1.5 h-1.5 rounded-full ${impactInfo.dot}`} />
-                                              <span>{impactInfo.label}</span>
-                                            </button>
-                                          );
-                                        })()}
-
-                                        {/* Approaching Due Time Badge for Special Ritual / Due Tasks */}
-                                        {dueTimeStatus && (
-                                          itemTag === 'Special Ritual' && dueTimeStatus.isApproaching ? (
-                                            <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-700 dark:text-amber-300 text-[10px] font-black tracking-wide animate-pulse">
-                                              <Flame size={12} className="text-amber-500 shrink-0" />
-                                              <span>
-                                                {dueTimeStatus.isOverdue
-                                                  ? (language === 'hi' ? '⚠️ अनुष्ठान समय समाप्त' : '⚠️ Ritual Overdue')
-                                                  : (language === 'hi' ? `⚡ विशेष अनुष्ठान निकट (${dueTimeStatus.diffMins}m)` : `⚡ Special Ritual Due Soon (${dueTimeStatus.diffMins}m)`)}
-                                              </span>
-                                            </div>
-                                          ) : (
-                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-black/5 dark:bg-white/5 text-gray-500 border border-black/5 dark:border-white/5 font-mono">
-                                              <Clock size={10} />
-                                              <span>{todo.dueTime}</span>
-                                            </span>
-                                          )
-                                        )}
-                                      </div>
-
-                                      {/* Per-Task Quick Reflection / Notes Section */}
-                                      <div className="mt-2 pt-2 border-t border-black/5 dark:border-white/5 flex flex-col gap-1.5">
-                                        <div className="flex items-center justify-between">
-                                          <button
-                                            type="button"
-                                            onClick={() => toggleNotesExpanded(todo.id)}
-                                            className="text-[10px] font-bold text-gray-500 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 flex items-center gap-1 cursor-pointer transition-colors"
-                                          >
-                                            <FileText size={12} className={todo.notes ? "text-orange-500" : "text-gray-400"} />
-                                            <span>
-                                              {todo.notes
-                                                ? (language === 'hi' ? 'आध्यात्मिक चिंतन / टिप्पणी' : 'Spiritual Reflection')
-                                                : (language === 'hi' ? '+ टिप्पणी / अनुभव जोड़ें' : '+ Add Quick Reflection Note')}
-                                            </span>
-                                            {todo.notes && <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />}
-                                          </button>
-
-                                          {todo.notes && (
-                                            <span className="text-[9px] font-mono text-gray-400 italic">
-                                              {language === 'hi' ? 'सहेजा गया' : 'Saved to localStorage'}
-                                            </span>
-                                          )}
-                                        </div>
-
-                                        {(expandedNotes[todo.id] || todo.notes) && (
-                                          <textarea
-                                            rows={2}
-                                            value={todo.notes || ''}
-                                            onChange={(e) => handleUpdateNotes(todo.id, e.target.value)}
-                                            placeholder={
-                                              language === 'hi'
-                                                ? 'इस साधना संकल्प से जुड़ा आध्यात्मिक अनुभव या मन की शांति का चिंतन लिखें...'
-                                                : 'Record your spiritual reflections, insights, or inner peace for this task...'
-                                            }
-                                            className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-zinc-800 rounded-xl p-2 text-xs text-gray-800 dark:text-gray-200 focus:outline-none focus:border-orange-500/50 resize-none font-sans"
-                                          />
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Reordering and Delete Actions */}
-                                  <div className="flex items-center gap-1 shrink-0">
-                                    {/* Move Up */}
-                                    <button
-                                      onClick={() => moveUp(index)}
-                                      disabled={index === 0}
-                                      className="p-1.5 rounded-lg text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:hover:bg-transparent transition-all cursor-pointer"
-                                      title={language === 'hi' ? 'ऊपर ले जाएं' : 'Move Up'}
-                                    >
-                                      <ArrowUp size={14} />
-                                    </button>
-
-                                    {/* Move Down */}
-                                    <button
-                                      onClick={() => moveDown(index)}
-                                      disabled={index === filteredTodos.length - 1}
-                                      className="p-1.5 rounded-lg text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:hover:bg-transparent transition-all cursor-pointer"
-                                      title={language === 'hi' ? 'नीचे ले जाएं' : 'Move Down'}
-                                    >
-                                      <ArrowDown size={14} />
-                                    </button>
-
-                                    {/* Delete */}
-                                    <button
-                                      onClick={() => handleDeleteTodo(todo.id)}
-                                      className="p-1.5 rounded-lg text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
-                                      title={language === 'hi' ? 'हटाएं' : 'Delete'}
-                                    >
-                                      <Trash2 size={14} />
-                                    </button>
-                                  </div>
-                                </div>
-                              </motion.div>
+                          {/* Impact Level Badge */}
+                          {(() => {
+                            const impactInfo = getImpactInfo(todo.impact || 'Medium');
+                            return (
+                              <button
+                                type="button"
+                                onClick={() => toggleTaskImpact(todo.id, todo.impact || 'Medium')}
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all cursor-pointer ${impactInfo.badge}`}
+                                title={language === 'hi' ? 'प्रभाव स्तर बदलें' : 'Toggle impact level'}
+                              >
+                                <span className={`w-1.5 h-1.5 rounded-full ${impactInfo.dot}`} />
+                                <span>{impactInfo.label}</span>
+                              </button>
                             );
-                          })}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                          })()}
+
+                          {/* Approaching Due Time Badge for Special Ritual / Due Tasks */}
+                          {dueTimeStatus && (
+                            itemTag === 'Special Ritual' && dueTimeStatus.isApproaching ? (
+                              <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-700 dark:text-amber-300 text-[10px] font-black tracking-wide animate-pulse">
+                                <Flame size={12} className="text-amber-500 shrink-0" />
+                                <span>
+                                  {dueTimeStatus.isOverdue
+                                    ? (language === 'hi' ? '⚠️ अनुष्ठान समय समाप्त' : '⚠️ Ritual Overdue')
+                                    : (language === 'hi' ? `⚡ विशेष अनुष्ठान निकट (${dueTimeStatus.diffMins}m)` : `⚡ Special Ritual Due Soon (${dueTimeStatus.diffMins}m)`)}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-black/5 dark:bg-white/5 text-gray-500 border border-black/5 dark:border-white/5 font-mono">
+                                <Clock size={10} />
+                                <span>{todo.dueTime}</span>
+                              </span>
+                            )
+                          )}
+                        </div>
+
+                        {/* Per-Task Quick Reflection / Notes Section */}
+                        <div className="mt-2 pt-2 border-t border-black/5 dark:border-white/5 flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between">
+                            <button
+                              type="button"
+                              onClick={() => toggleNotesExpanded(todo.id)}
+                              className="text-[10px] font-bold text-gray-500 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 flex items-center gap-1 cursor-pointer transition-colors"
+                            >
+                              <FileText size={12} className={todo.notes ? "text-orange-500" : "text-gray-400"} />
+                              <span>
+                                {todo.notes
+                                  ? (language === 'hi' ? 'आध्यात्मिक चिंतन / टिप्पणी' : 'Spiritual Reflection')
+                                  : (language === 'hi' ? '+ टिप्पणी / अनुभव जोड़ें' : '+ Add Quick Reflection Note')}
+                              </span>
+                              {todo.notes && <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />}
+                            </button>
+
+                            {todo.notes && (
+                              <span className="text-[9px] font-mono text-gray-400 italic">
+                                {language === 'hi' ? 'सहेजा गया' : 'Saved to localStorage'}
+                              </span>
+                            )}
+                          </div>
+
+                          {(expandedNotes[todo.id] || todo.notes) && (
+                            <textarea
+                              rows={2}
+                              value={todo.notes || ''}
+                              onChange={(e) => handleUpdateNotes(todo.id, e.target.value)}
+                              placeholder={
+                                language === 'hi'
+                                  ? 'इस साधना संकल्प से जुड़ा आध्यात्मिक अनुभव या मन की शांति का चिंतन लिखें...'
+                                  : 'Record your spiritual reflections, insights, or inner peace for this task...'
+                              }
+                              className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-zinc-800 rounded-xl p-2 text-xs text-gray-800 dark:text-gray-200 focus:outline-none focus:border-orange-500/50 resize-none font-sans"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Reordering and Delete Actions */}
+                    <div className="flex items-center gap-1 shrink-0">
+                      {/* Move Up */}
+                      <button
+                        onClick={() => moveUp(index)}
+                        disabled={index === 0}
+                        className="p-1.5 rounded-lg text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:hover:bg-transparent transition-all cursor-pointer"
+                        title={language === 'hi' ? 'ऊपर ले जाएं' : 'Move Up'}
+                      >
+                        <ArrowUp size={14} />
+                      </button>
+
+                      {/* Move Down */}
+                      <button
+                        onClick={() => moveDown(index)}
+                        disabled={index === filteredTodos.length - 1}
+                        className="p-1.5 rounded-lg text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-20 disabled:hover:bg-transparent transition-all cursor-pointer"
+                        title={language === 'hi' ? 'नीचे ले जाएं' : 'Move Down'}
+                      >
+                        <ArrowDown size={14} />
+                      </button>
+
+                      {/* Delete */}
+                      <button
+                        onClick={() => handleDeleteTodo(todo.id)}
+                        className="p-1.5 rounded-lg text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
+                        title={language === 'hi' ? 'हटाएं' : 'Delete'}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
-                );
-              })}
+                </motion.div>
+              );
+            })}
           </div>
         )}
       </div>

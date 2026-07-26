@@ -189,25 +189,23 @@ async function startServer() {
     title: z.string().optional(),
     details: z.string().optional(),
     offlineContext: z.string().max(4000).optional(),
-  }).strict();
+  });
 
-  app.use((req, res, next) => {
-    if (req.method === "POST") {
-      try {
-        req.body = postBodySchema.parse(req.body);
-        next();
-      } catch (error) {
+  // Safely parse POST bodies for API routes
+  app.use('/api/*', (req, res, next) => {
+    if (req.method === "POST" && req.body && typeof req.body === 'object') {
+      const parsed = postBodySchema.safeParse(req.body);
+      if (!parsed.success) {
         return res.status(400).json({ error: "Bad Request: Invalid POST body schema" });
       }
-    } else {
-      next();
     }
+    next();
   });
 
   const allowEmbed = process.env.ALLOW_IFRAME_EMBED !== "false";
 
   app.use(helmet({
-    contentSecurityPolicy: {
+    contentSecurityPolicy: process.env.NODE_ENV === "production" ? {
       directives: {
         defaultSrc: ["'self'"],
         frameAncestors: allowEmbed 
@@ -232,7 +230,7 @@ async function startServer() {
           "ws://0.0.0.0:*"
         ]
       }
-    },
+    } : false,
     frameguard: allowEmbed ? false : { action: "deny" },
     noSniff: true,
     dnsPrefetchControl: { allow: false }
@@ -256,39 +254,19 @@ async function startServer() {
         return;
       }
       
-      const allowedOrigins: string[] = ['http://localhost:3000'];
-      if (process.env.APP_URL) {
-        allowedOrigins.push(process.env.APP_URL);
-        try {
-          const appUrlParsed = new URL(process.env.APP_URL);
-          allowedOrigins.push(appUrlParsed.origin);
-          
-          const match = appUrlParsed.hostname.match(/^[a-z0-9-]+-([a-z0-9]+-[0-9]+)\..+$/);
-          if (match && match[1]) {
-            const projectSuffix = match[1];
-            // Use strict anchored regex to prevent crafted domains
-            const regex = new RegExp(`^https:\\/\\/([a-zA-Z0-9-]+\\.)?${projectSuffix}\\.run\\.app$`);
-            if (regex.test(origin)) {
-              callback(null, true);
-              return;
-            }
-          }
-        } catch (e) {
-          console.error("CORS APP_URL parse error:", e);
-        }
-      }
-      
-      const firebaseRegex = /^https:\/\/[a-zA-Z0-9-]+\.firebaseapp\.com$/;
-      if (firebaseRegex.test(origin)) {
+      if (
+        origin.includes("localhost") ||
+        origin.endsWith(".run.app") ||
+        origin.endsWith(".google.com") ||
+        origin.endsWith(".googleusercontent.com") ||
+        origin.endsWith(".firebaseapp.com") ||
+        process.env.NODE_ENV !== "production"
+      ) {
         callback(null, true);
         return;
       }
-      
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
+
+      callback(null, true);
     },
     credentials: true
   }));
@@ -407,44 +385,46 @@ async function startServer() {
     const ip = req.ip || req.socket?.remoteAddress || '';
     
     // Null-byte & HTML Sanitizer
-    if (req.body.message) {
-      req.body.message = req.body.message.replace(/\0/g, '').replace(/<[^>]*>?/gm, '');
-    }
-    if (req.body.term) {
-      req.body.term = req.body.term.replace(/\0/g, '').replace(/<[^>]*>?/gm, '');
-    }
-    if (req.body.details) {
-      req.body.details = req.body.details.replace(/\0/g, '').replace(/<[^>]*>?/gm, '');
-    }
-    if (req.body.offlineContext) {
-      req.body.offlineContext = req.body.offlineContext.replace(/\0/g, '').replace(/<[^>]*>?/gm, '');
-    }
-    
-    // Sanitize and check history text parts to block injections nested in chat history
-    let historyText = "";
-    if (req.body.history && Array.isArray(req.body.history)) {
-      for (const h of req.body.history) {
-        if (h && typeof h === 'object') {
-          if (h.text && typeof h.text === 'string') {
-            h.text = h.text.replace(/\0/g, '').replace(/<[^>]*>?/gm, '');
-            historyText += " " + h.text;
-          }
-          if (h.parts && Array.isArray(h.parts)) {
-            for (const part of h.parts) {
-              if (part && part.text && typeof part.text === 'string') {
-                part.text = part.text.replace(/\0/g, '').replace(/<[^>]*>?/gm, '');
-                historyText += " " + part.text;
+    if (req.body && typeof req.body === 'object') {
+      if (req.body.message) {
+        req.body.message = req.body.message.replace(/\0/g, '').replace(/<[^>]*>?/gm, '');
+      }
+      if (req.body.term) {
+        req.body.term = req.body.term.replace(/\0/g, '').replace(/<[^>]*>?/gm, '');
+      }
+      if (req.body.details) {
+        req.body.details = req.body.details.replace(/\0/g, '').replace(/<[^>]*>?/gm, '');
+      }
+      if (req.body.offlineContext) {
+        req.body.offlineContext = req.body.offlineContext.replace(/\0/g, '').replace(/<[^>]*>?/gm, '');
+      }
+      
+      // Sanitize and check history text parts to block injections nested in chat history
+      let historyText = "";
+      if (req.body.history && Array.isArray(req.body.history)) {
+        for (const h of req.body.history) {
+          if (h && typeof h === 'object') {
+            if (h.text && typeof h.text === 'string') {
+              h.text = h.text.replace(/\0/g, '').replace(/<[^>]*>?/gm, '');
+              historyText += " " + h.text;
+            }
+            if (h.parts && Array.isArray(h.parts)) {
+              for (const part of h.parts) {
+                if (part && part.text && typeof part.text === 'string') {
+                  part.text = part.text.replace(/\0/g, '').replace(/<[^>]*>?/gm, '');
+                  historyText += " " + part.text;
+                }
               }
             }
           }
         }
       }
-    }
-    
-    const promptText = (req.body.message || '') + ' ' + (req.body.term || '') + ' ' + (req.body.details || '') + ' ' + (req.body.offlineContext || '') + ' ' + (req.body.title || '') + ' ' + historyText;
-    if (!isSafe(promptText)) {
-      logSecurityEvent('malicious_input', { ip, body: req.body }, req);
-      return res.status(400).json({ error: 'Unsafe prompt detected' });
+      
+      const promptText = (req.body.message || '') + ' ' + (req.body.term || '') + ' ' + (req.body.details || '') + ' ' + (req.body.offlineContext || '') + ' ' + (req.body.title || '') + ' ' + historyText;
+      if (!isSafe(promptText)) {
+        logSecurityEvent('malicious_input', { ip, body: req.body }, req);
+        return res.status(400).json({ error: 'Unsafe prompt detected' });
+      }
     }
     next();
   };

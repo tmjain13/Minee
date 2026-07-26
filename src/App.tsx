@@ -1511,9 +1511,9 @@ export default function App() {
         backgroundPosition: '0 0, 0 0, 0 0, 10px 10px',
         backgroundAttachment: 'fixed',
       }}
-      className={`${activeTab === "chat" ? "h-[100dvh] overflow-hidden" : "min-h-[100dvh] h-[100dvh] overflow-y-auto"} w-full flex flex-col relative antialiased select-none p-0 m-0 border-none outline-none transition-colors duration-300 ${
+      className={`h-[100dvh] overflow-hidden w-full flex flex-col relative antialiased select-none p-0 m-0 border-none outline-none transition-colors duration-300 ${
         highContrast ? "contrast-125 saturate-150" : ""
-      } ${theme}`}
+      } ${theme} ${activeTab === "chat" ? "is-chat-tab" : ""}`}
     >
 
       {/* HEADER SECTION */}

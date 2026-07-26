@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
+import { devLog } from '../lib/devLog';
 
 export const SadhanaTracker: React.FC = () => {
   const { user } = useAuth();
@@ -11,14 +12,25 @@ export const SadhanaTracker: React.FC = () => {
   useEffect(() => {
     const fetchSadhana = async () => {
       if (!user?.uid) return;
+      // First check local storage for instant offline availability
+      const localData = localStorage.getItem(`sadhana_diary_${user.uid}`);
+      if (localData) {
+        setDiary(localData);
+      }
       try {
         const docRef = doc(db, 'sadhana', user.uid);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-          setDiary(docSnap.data().diary || '');
+          const remoteDiary = docSnap.data().diary || '';
+          setDiary(remoteDiary);
+          localStorage.setItem(`sadhana_diary_${user.uid}`, remoteDiary);
         }
-      } catch (error) {
-        console.error("Error fetching sadhana:", error);
+      } catch (error: any) {
+        if (error?.code === 'unavailable' || error?.message?.includes('offline')) {
+          devLog("SadhanaTracker: Operating in offline mode using local cache");
+        } else {
+          devLog("SadhanaTracker: Unable to fetch remote sadhana document", error?.message || error);
+        }
       }
     };
     fetchSadhana();
@@ -27,11 +39,14 @@ export const SadhanaTracker: React.FC = () => {
   const saveSadhana = async () => {
     if (!user?.uid) return;
     setLoading(true);
+    localStorage.setItem(`sadhana_diary_${user.uid}`, diary);
     try {
       await setDoc(doc(db, 'sadhana', user.uid), {
         diary,
         updatedAt: new Date().toISOString()
       }, { merge: true });
+    } catch (err: any) {
+      devLog("Sadhana saved locally in offline mode:", err?.message || err);
     } finally {
       setLoading(false);
     }

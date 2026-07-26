@@ -12,7 +12,7 @@ const PRECACHE_NAME = `terapanth-precache-${CACHE_VERSION}`;
 const RUNTIME_CACHE_NAME = `terapanth-spiritual-${CACHE_VERSION}`;
 
 // Precache resources
-precacheAndRoute(self.__WB_MANIFEST || []);
+precacheAndRoute((self as any).__WB_MANIFEST || []);
 
 // Runtime caching routes
 registerRoute(

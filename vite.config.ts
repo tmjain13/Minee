@@ -3,10 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { defineConfig, loadEnv } from 'vite';
-import { VitePWA } from 'vite-plugin-pwa';
 import { visualizer } from 'rollup-plugin-visualizer';
-import { sentryVitePlugin } from "@sentry/vite-plugin";
-// ViteImageOptimizer removed to prevent native sharp compilation issues in CI/CD environments
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -18,7 +15,6 @@ export default defineConfig(({mode}) => {
     plugins: [
       react(), 
       tailwindcss(),
-      // 🛡️ OBFUSCATION: Removed to troubleshoot build artifact issues
       ...(process.env.ANALYZE === 'true' ? [
         visualizer({
           open: false,
@@ -27,42 +23,6 @@ export default defineConfig(({mode}) => {
           brotliSize: true,
         })
       ] : []),
-      // Build-time Sentry plugin removed to prevent container upload and authorization failures during deployment
-      VitePWA({
-        registerType: 'autoUpdate',
-        strategies: 'injectManifest',
-        srcDir: 'src',
-        filename: 'sw.ts',
-        includeAssets: ['assets/logos/icon-192x192.png', 'assets/logos/icon-512x512.png', 'media/logos/tpf_logo.png'],
-        manifest: {
-          name: 'Terapanth AI Hub',
-          short_name: 'TerapanthAI',
-          description: 'Unified Knowledge and Community Hub',
-          theme_color: '#f97316',
-          background_color: '#ffffff',
-          display: 'standalone',
-          orientation: 'portrait',
-          icons: [
-            {
-              src: '/assets/logos/icon-192x192.png',
-              sizes: '192x192',
-              type: 'image/png'
-            },
-            {
-              src: '/assets/logos/icon-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'any maskable'
-            }
-          ]
-        },
-        injectManifest: {
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}']
-        },
-        devOptions: {
-          enabled: true
-        }
-      })
     ],
     resolve: {
       alias: {
