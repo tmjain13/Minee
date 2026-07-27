@@ -30,12 +30,15 @@ import {
   Sparkles,
   LogOut,
   LogIn,
+  Share2,
 } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, Legend, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { handleFirestoreError, OperationType } from "../lib/firestoreErrors";
 import KnowledgeInsights from "./KnowledgeInsights";
 import HabitsCalendar from "./HabitsCalendar";
 import ConfirmationModal from "./ConfirmationModal";
+import SecureDataExporterModal from "./SecureDataExporterModal";
+import { getUserProfile, saveUserProfile, getPersonalizedGreeting, UserProfileData } from "../utils/userProfile";
 
 interface PermissionState {
   location: string;
@@ -137,9 +140,23 @@ export default function ProfileTab({
 
   const [isUpdating, setIsUpdating] = useState(false);
   const [isUpdatingName, setIsUpdatingName] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [localProfile, setLocalProfile] = useState<UserProfileData>(getUserProfile());
   const [displayNameInput, setDisplayNameInput] = useState(
-    user?.displayName || "",
+    user?.displayName || localProfile.name || "",
   );
+
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      const p = getUserProfile();
+      setLocalProfile(p);
+      if (p.name && !displayNameInput) {
+        setDisplayNameInput(p.name);
+      }
+    };
+    window.addEventListener('terapanth_profile_updated', handleProfileUpdate);
+    return () => window.removeEventListener('terapanth_profile_updated', handleProfileUpdate);
+  }, [displayNameInput]);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showExportConfirmation, setShowExportConfirmation] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -1276,6 +1293,35 @@ export default function ProfileTab({
               </motion.div>
             );
           })()}
+
+          {/* 🔒 SAFE & SECURE DATA SHARING & EXPORT CARD */}
+          <div className="p-5 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-600/10 rounded-2xl border border-amber-500/30 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center text-white shadow-md shrink-0">
+                <ShieldCheck size={22} />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-amber-500 text-slate-950 px-2 py-0.5 rounded-full font-mono">
+                    🔒 100% Safe Client-Side Export
+                  </span>
+                </div>
+                <h3 className="font-serif font-bold text-sm sm:text-base text-zinc-900 dark:text-zinc-100 mt-0.5">
+                  Share My Sadhana Data (डेटा शेयर एवं रिपोर्ट)
+                </h3>
+                <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                  WhatsApp, PDF रिपोर्ट कार्ड, CSV एक्सेल या JSON बैकअप के रूप में अपनी साधना सुरक्षित रूप से शेयर करें।
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsShareModalOpen(true)}
+              className="w-full sm:w-auto px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 shrink-0"
+            >
+              <Share2 size={15} />
+              <span>शेयर/एक्सपोर्ट खोलें</span>
+            </button>
+          </div>
 
           {/* Visual Weekly Sadhana Consistency Progress Bar Card */}
           {(() => {
@@ -3079,6 +3125,12 @@ export default function ProfileTab({
         cancelLabel="रद्द करें (Cancel)"
         type="danger"
         iconType="logout"
+      />
+      {/* Secure Data Exporter & Sharing Modal */}
+      <SecureDataExporterModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        language={privacyLang}
       />
     </div>
   );

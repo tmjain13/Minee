@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, Variants } from 'motion/react';
-import { Share2, Bookmark, ArrowRight, MapPin, Flame, Clock, Calendar, Sun, Moon, Sunrise, BarChart3, RefreshCw, Plus, Mic, Send, Copy, Star, Phone, Trash2, Sparkles, Sliders, Quote, BookOpen, Loader2, X, Search } from 'lucide-react';
+import { Share2, Bookmark, ArrowRight, MapPin, Flame, Clock, Calendar, Sun, Moon, Sunrise, BarChart3, RefreshCw, Plus, Mic, Send, Copy, Star, Phone, Trash2, Sparkles, Sliders, Quote, BookOpen, Loader2, X, Search, Award } from 'lucide-react';
 import DashboardCustomizerModal, { DashboardPreferences, DEFAULT_PREFERENCES } from './DashboardCustomizerModal';
+import MukhyamuniPortal from './MukhyamuniPortal';
+import SecureDataExporterModal from './SecureDataExporterModal';
+import { getUserProfile, getPersonalizedGreeting } from '../utils/userProfile';
 import { useAuth } from '../context/AuthContext';
 import CommunityPolls from './CommunityPolls';
 import { ACHARYAS } from '../data/acharyas';
@@ -234,9 +237,20 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
 
   // --- Real-time Local Digital Clock Engine ---
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [showYuvacharyaPortal, setShowYuvacharyaPortal] = useState(false);
+  const [userProfileData, setUserProfileData] = useState(getUserProfile());
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
+    const handleProfileUpdate = () => {
+      setUserProfileData(getUserProfile());
+    };
+    window.addEventListener('terapanth_profile_updated', handleProfileUpdate);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('terapanth_profile_updated', handleProfileUpdate);
+    };
   }, []);
   
   // --- Swadhyay-Based Recommendation Engine for Daily Vachan ---
@@ -784,71 +798,47 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
         )}
       </motion.div>
       
-      {/* 1. PATH OF NON-VIOLENCE MOUNTAIN BANNER */}
-      <motion.div 
+      {/* 👑 HISTORIC BREAKING ANNOUNCEMENT: YUVACHARYA APPOINTMENT CARD */}
+      <motion.div
         variants={cardVariants}
-        whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
-        whileTap={{ scale: 0.98 }} 
-        className={`relative w-full h-36 rounded-2xl overflow-hidden shadow-xs border shrink-0 transition-all ${isDarkMode ? 'border-stone-800' : 'border-stone-200'}`}
+        whileHover={{ scale: 1.01 }}
+        onClick={() => setShowYuvacharyaPortal(true)}
+        className="w-full p-4 sm:p-5 rounded-2xl border border-amber-500/60 bg-gradient-to-r from-[#4A0E17] via-[#5C131E] to-[#360910] text-white shadow-xl relative overflow-hidden cursor-pointer group transition-all"
       >
-        <img 
-          src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=80" 
-          alt="Path of Non-Violence" 
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-900/10 to-transparent flex flex-col justify-end p-4">
-          <h3 className="font-serif italic text-lg text-white tracking-wide">
-            {language === 'hi' ? 'अहिंसा का मार्ग' : 'Path of Non-Violence'}
-          </h3>
-          <p className="text-[9px] uppercase tracking-widest text-stone-300 font-semibold mt-0.5">
-            {language === 'hi' ? 'अहिंसा परमो धर्मः' : 'Ahimsa Paramo Dharma'}
-          </p>
-        </div>
-      </motion.div>
-
-      {/* 2. PERSONALIZED GREETING LAYER */}
-      <motion.div 
-        variants={cardVariants}
-        whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
-        whileTap={{ scale: 0.98 }} 
-        className={`w-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 shrink-0 flex justify-between items-center ${
-        isDarkMode 
-          ? 'bg-stone-900/80 border-stone-800/80 text-stone-100 shadow-none' 
-          : 'bg-white/80 border-stone-200/50 text-stone-800 shadow-xs'
-      }`}>
-        <div>
-          <h2 className={`font-serif text-xl font-bold ${isDarkMode ? 'text-stone-50' : 'text-stone-950'}`}>
-            {language === 'hi' ? 'जय जिनेन्द्र! 🙏' : 'Jai Jinendra! 🙏'}
-          </h2>
-          <p className={`text-xs mt-0.5 ${isDarkMode ? 'text-stone-400' : 'text-stone-500'}`}>
-            {language === 'hi' ? 'आज का दिन मंगलमय हो' : 'Have a blessed day ahead'}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={() => setIsCustomizerOpen(true)}
-            className={`p-2 rounded-xl border transition-all active:scale-95 cursor-pointer ${
-              isDarkMode 
-                ? 'bg-stone-850 border-stone-700 text-stone-300 hover:text-stone-100 hover:bg-stone-800' 
-                : 'bg-stone-50 border-stone-200 text-stone-600 hover:bg-stone-100'
-            }`}
-            title="Customize Dashboard"
-          >
-            <Sliders size={15} />
-          </button>
-          
-          <div className="bg-gradient-to-br from-orange-500 to-amber-500 text-white px-3 py-1.5 rounded-xl text-center shadow-xs flex items-center gap-1.5">
-            <Flame className="w-4 h-4 text-amber-200 fill-current" />
-            <div>
-              <span className="text-base font-mono font-bold block leading-none">{streakCount}</span>
-              <span className="text-[9px] uppercase tracking-wider font-bold opacity-90">
-                {language === 'hi' ? 'दिन' : 'Days'}
-              </span>
+        <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-500/25 rounded-full blur-2xl pointer-events-none" />
+        <div className="flex items-center justify-between gap-3 relative z-10">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-slate-950 shadow-md shadow-amber-500/30 shrink-0 group-hover:scale-110 transition-transform font-bold">
+              <Award size={22} className="animate-pulse text-slate-950" />
             </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[9px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full font-mono shadow-sm">
+                  🎉 {language === 'hi' ? 'ऐतिहासिक महाघोषणा' : 'Historic Announcement'}
+                </span>
+                <span className="text-[10px] text-amber-300 font-bold">
+                  27.07.2026 (लाडनूँ)
+                </span>
+              </div>
+              <h3 className="serif-text font-black text-sm sm:text-base text-amber-100 mt-1 leading-snug drop-shadow-xs">
+                {language === 'hi' 
+                  ? 'मुख्यमुनि श्री महावीर कुमार जी बने तेरापंथ के युवाचार्य' 
+                  : 'Mukhya Muni Shree Mahavir Kumar Ji Appointed as Yuvacharya'}
+              </h3>
+              <p className="text-[11px] text-stone-200 line-clamp-1 mt-0.5 font-medium">
+                {language === 'hi'
+                  ? 'परम पूज्य आचार्य श्री महाश्रमण जी द्वारा हस्तलिखित नियुक्ति पत्र द्वारा उत्तराधिकारी घोषित। दर्शन व संपूर्ण जानकारी देखें ›'
+                  : 'Declared as official successor by 11th Acharya Mahashraman Ji at JVBI Ladnun. Tap to view details ›'}
+              </p>
+            </div>
+          </div>
+          <div className="hidden sm:flex items-center text-amber-300 font-bold text-xs gap-1 shrink-0 group-hover:translate-x-1 transition-transform">
+            <span>{language === 'hi' ? 'पोर्टल खोलें' : 'Open Portal'}</span>
+            <ArrowRight size={16} />
           </div>
         </div>
       </motion.div>
-
+      
       {/* 🌟 DAILY SPIRITUAL AFFIRMATION CARD */}
       {(() => {
         const affirmation = affirmationList[affirmationIndex % affirmationList.length] || DEFAULT_AFFIRMATIONS[0];
@@ -914,6 +904,81 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
           </motion.div>
         );
       })()}
+
+      {/* 1. PATH OF NON-VIOLENCE MOUNTAIN BANNER */}
+      <motion.div 
+        variants={cardVariants}
+        whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
+        whileTap={{ scale: 0.98 }} 
+        className={`relative w-full h-36 rounded-2xl overflow-hidden shadow-xs border shrink-0 transition-all ${isDarkMode ? 'border-stone-800' : 'border-stone-200'}`}
+      >
+        <img 
+          src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=80" 
+          alt="Path of Non-Violence" 
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-900/10 to-transparent flex flex-col justify-end p-4">
+          <h3 className="font-serif italic text-lg text-white tracking-wide">
+            {language === 'hi' ? 'अहिंसा का मार्ग' : 'Path of Non-Violence'}
+          </h3>
+          <p className="text-[9px] uppercase tracking-widest text-stone-300 font-semibold mt-0.5">
+            {language === 'hi' ? 'अहिंसा परमो धर्मः' : 'Ahimsa Paramo Dharma'}
+          </p>
+        </div>
+      </motion.div>
+
+      {/* 2. PERSONALIZED GREETING LAYER */}
+      <motion.div 
+        variants={cardVariants}
+        whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }} 
+        whileTap={{ scale: 0.98 }} 
+        className={`w-full p-4 rounded-2xl border backdrop-blur-sm transition-all duration-200 shrink-0 flex justify-between items-center ${
+        isDarkMode 
+          ? 'bg-stone-900/80 border-stone-800/80 text-stone-100 shadow-none' 
+          : 'bg-white/80 border-stone-200/50 text-stone-800 shadow-xs'
+      }`}>
+        <div>
+          <h2 className={`font-serif text-xl font-bold ${isDarkMode ? 'text-stone-50' : 'text-stone-950'}`}>
+            {getPersonalizedGreeting(language, userProfileData.name)}
+          </h2>
+          <p className={`text-xs mt-0.5 ${isDarkMode ? 'text-stone-400' : 'text-stone-500'}`}>
+            {language === 'hi' ? 'आज का दिन मंगलमय हो' : 'Have a blessed day ahead'}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Share My Sadhana Data Button */}
+          <button
+            onClick={() => setIsShareModalOpen(true)}
+            className="px-2.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-extrabold text-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-xs"
+            title={language === 'hi' ? 'साधना डेटा शेयर करें' : 'Share My Sadhana Data'}
+          >
+            <Share2 size={15} />
+            <span className="hidden sm:inline">{language === 'hi' ? 'डेटा शेयर' : 'Share Data'}</span>
+          </button>
+
+          <button 
+            onClick={() => setIsCustomizerOpen(true)}
+            className={`p-2 rounded-xl border transition-all active:scale-95 cursor-pointer ${
+              isDarkMode 
+                ? 'bg-stone-850 border-stone-700 text-stone-300 hover:text-stone-100 hover:bg-stone-800' 
+                : 'bg-stone-50 border-stone-200 text-stone-600 hover:bg-stone-100'
+            }`}
+            title="Customize Dashboard"
+          >
+            <Sliders size={15} />
+          </button>
+          
+          <div className="bg-gradient-to-br from-orange-500 to-amber-500 text-white px-3 py-1.5 rounded-xl text-center shadow-xs flex items-center gap-1.5">
+            <Flame className="w-4 h-4 text-amber-200 fill-current" />
+            <div>
+              <span className="text-base font-mono font-bold block leading-none">{streakCount}</span>
+              <span className="text-[9px] uppercase tracking-wider font-bold opacity-90">
+                {language === 'hi' ? 'दिन' : 'Days'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </motion.div>
 
       {/* DYNAMIC CARD GRID (1 col mobile, 2 cols tablet, 3 cols desktop) with consistent card heights */}
       <motion.div 
@@ -2080,6 +2145,36 @@ const UnifiedHomeDashboardComponent = function UnifiedHomeDashboard({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* YUVACHARYA PORTAL MODAL */}
+      <AnimatePresence>
+        {showYuvacharyaPortal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6"
+            onClick={() => setShowYuvacharyaPortal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-[2.5rem]"
+            >
+              <MukhyamuniPortal onClose={() => setShowYuvacharyaPortal(false)} />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* SECURE DATA EXPORTER & SHARING MODAL */}
+      <SecureDataExporterModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        language={language}
+      />
 
     </motion.div>
   );

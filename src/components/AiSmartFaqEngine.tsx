@@ -115,11 +115,11 @@ export const AiSmartFaqEngine: React.FC<AiSmartFaqEngineProps> = ({ onBack }) =>
       topicId: "LEADERSHIP",
       subTopicId: "ADMIN",
       topicLabel: "संघीय संगठन व नेतृत्व",
-      subTopicLabel: "प्रशासनिक स्तंभ व बहुरूपी परिषद (Consultative Assembly)",
-      q: "What is the history and responsibility of the Chief Monk (Mukhya Muni) and Sadhvi Varya?",
-      hindiQ: "मुख्यमुनि स्वामी और साध्वी वर्या जी के आधिकारिक पदों का क्या इतिहास है?",
-      a: "These administrative leadership posts were created by Acharya Shri Mahashraman Ji to reinforce sangh governance. Mukhya Muni Muni Shri Mahavir Kumar Ji Swami (appointed in 2017, Assam) is the administrative head of the monks. Sadhvi Varya Sambuddhaysha Ji (appointed in 2016, Assam) is the historic first-ever coordinator and educator-in-chief of the sisters. Both are key members of the supreme consultative 'Bahushrut Parishad' (7-in-1 elite matrix).",
-      hindiA: "आचार्य श्री महाश्रमण जी द्वारा संघ प्रबंधन को सुदृढ़ करने हेतु इन पदों का सृजन किया गया। मुख्यमुनि मुनि श्री महावीर कुमार जी स्वामी मुनि संघ के मुख्य स्तंभ हैं (स्थापना: २०१७, असम)। साध्वी वर्या संबुद्धयशा जी इस पद पर प्रतिष्ठित होने वाली इतिहास की प्रथम साध्वी हैं (स्थापना: २०१६, असम)। दोनों ही संत 'बहुश्रुत परिषद' के गौरवशाली अंग हैं।",
+      subTopicLabel: "प्रशासनिक स्तंभ व उत्तराधिकारी (Yuvacharya & Monastic Leadership)",
+      q: "Who is the present Yuvacharya (Designated Successor) of Terapanth Dharmasangh?",
+      hindiQ: "तेरापंथ धर्मसंघ के वर्तमान युवाचार्य (भावी उत्तराधिकारी) कौन हैं?",
+      a: "Pujya Yuvacharya Shree Mahavir Kumar Ji Swami is the present Yuvacharya of Terapanth. On 27 July 2026 (VS 2083 Ashadha Shukla Trayodashi), at JVBI Ladnun during the conclusion of Acharya Bhikshu Tercentenary Celebration, 11th Acharya Param Pujya Shri Mahashraman Ji officially declared and appointed Mukhya Muni Shri Mahavir Kumar Ji as his successor (Yuvacharya) through a handwritten appointment letter.",
+      hindiA: "२७ जुलाई २०२६ (वि. सं. २०८३ आषाढ़ शुक्ला त्रयोदशी) को जैन विश्व भारती लाडनूँ (महाश्रमण विहार) में आचार्य भिक्षु ३००वें जन्म त्रिशताब्दी वर्ष समापन समारोह के पावन अवसर पर, ११वें पट्टधर आचार्य श्री महाश्रमण जी महाराज ने अपने हस्तलिखित नियुक्ति पत्र द्वारा पूज्य मुख्यमुनि श्री महावीर कुमार जी स्वामी को तेरापंथ धर्मसंघ के 'युवाचार्य' (उत्तराधिकारी) पद पर नियुक्त किया।",
       icon: <Users className="w-5 h-5 text-indigo-500" />
     },
     {

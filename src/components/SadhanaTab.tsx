@@ -1,7 +1,7 @@
 import { memo, useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
-import { Clock, Play, Pause, RotateCcw, Sparkles, Volume2, VolumeX, ShieldCheck, Calendar, Plus, Trash2, CheckCircle2, ChevronRight, ChevronDown, Info, Coffee, Sun, Moon, BookOpen, TrendingUp, Download, FileText, Wind, Flame, Timer, RefreshCw, Mic, FlameKindling, CheckSquare, X, Loader2, Send, GripVertical, ArrowUp, ArrowDown, Tag, Filter, Bookmark, Search, BellRing, ArrowUpDown, Award, Compass } from 'lucide-react';
+import { Clock, Play, Pause, RotateCcw, Sparkles, Volume2, VolumeX, ShieldCheck, Calendar, Plus, Trash2, CheckCircle2, ChevronRight, ChevronDown, Info, Coffee, Sun, Moon, BookOpen, TrendingUp, Download, FileText, Wind, Flame, Timer, RefreshCw, Mic, FlameKindling, CheckSquare, X, Loader2, Send, GripVertical, ArrowUp, ArrowDown, Tag, Filter, Bookmark, Search, BellRing, ArrowUpDown, Award, Compass, Users, Share2 } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -20,6 +20,13 @@ import { KNOWLEDGE_BASE } from '../data/knowledge';
 import ArticleReader from './ArticleReader';
 import { LeshyaDhyanVisualizer, ShvasPrekshaGuidedBreathing } from './PrekshaGuidedPractices';
 import SadhanaGoalsAndPoints from './SadhanaGoalsAndPoints';
+import { 
+  SpiritualMilestoneModal, 
+  Sadhana24HourCircularDial, 
+  QuickReflectionModal, 
+  SpiritualSoundscapesPlayer, 
+  SadhanaStreaksCard 
+} from './SadhanaNewComponents';
 
 // Lazy-loaded components from the Component Registry
 const DhyanTimer = Registry.DhyanTimer;
@@ -295,7 +302,9 @@ const SadhanaTab = memo(({
   mantraAudioCueEnabled, 
   dailyStreak = 0, 
   ambientSoundEnabled, 
-  vibrationIntensity, 
+  vibrationIntensity = 'gentle', 
+  vibrationPattern = 'double_pulse',
+  vibrationDuration = 35,
   spiritualSoundscape,
   readHistory = [],
   combinedKnowledge = [],
@@ -317,7 +326,9 @@ const SadhanaTab = memo(({
   mantraAudioCueEnabled?: boolean; 
   dailyStreak?: number; 
   ambientSoundEnabled?: boolean; 
-  vibrationIntensity?: 'none' | 'gentle' | 'pulsing' | 'steady'; 
+  vibrationIntensity?: 'none' | 'gentle' | 'pulsing' | 'steady' | 'intense'; 
+  vibrationPattern?: 'single' | 'double_pulse' | 'heartbeat' | 'gentle_ripple' | 'deep_focus';
+  vibrationDuration?: number;
   spiritualSoundscape?: 'om' | 'temple_bells' | 'nature';
   readHistory?: any[];
   combinedKnowledge?: any[];
@@ -418,7 +429,8 @@ const SadhanaTab = memo(({
     }
   };
 
-  const [activeSubTab, setActiveSubTab] = useState<'timer' | 'fasting' | 'mantra' | 'breathwork' | 'diary' | 'swadhya' | 'gratitude' | 'suvichar' | 'pratikraman' | 'audio' | 'seva' | 'notifications' | 'salah' | 'streaks' | 'habits' | 'goals'>('timer');
+  const [activeSubTab, setActiveSubTab] = useState<'timer' | 'fasting' | 'mantra' | 'breathwork' | 'diary' | 'swadhya' | 'gratitude' | 'suvichar' | 'pratikraman' | 'audio' | 'seva' | 'notifications' | 'salah' | 'streaks' | 'habits' | 'goals' | 'timeline' | 'soundscapes'>('timer');
+  const [showQuickReflectionModal, setShowQuickReflectionModal] = useState(false);
 
   useEffect(() => {
     if (initialSubTab) {
@@ -480,6 +492,7 @@ const SadhanaTab = memo(({
   const [showJournalModal, setShowJournalModal] = useState(false);
   const [sessionDuration, setSessionDuration] = useState(48);
   const [sessionMood, setSessionMood] = useState("🧘 शांत");
+  const [sessionType, setSessionType] = useState<'guided' | 'silent'>('guided');
   const [sessionJournalText, setSessionJournalText] = useState(() => {
     try {
       return localStorage.getItem('sadhana_summary_observation_autosave') || "";
@@ -489,6 +502,70 @@ const SadhanaTab = memo(({
   });
   const [sessionEmotionalState, setSessionEmotionalState] = useState("");
   const [isSavingJournal, setIsSavingJournal] = useState(false);
+  const [isListeningJournal, setIsListeningJournal] = useState(false);
+
+  const toggleJournalVoiceInput = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      if (setShareToast) {
+        setShareToast({ 
+          show: true, 
+          message: language === 'hi' 
+            ? "ब्राउज़र में वॉइस इनपुट उपलब्ध नहीं है। कृपया टाइप करें।" 
+            : "Voice-to-text is not supported in this browser." 
+        });
+      }
+      return;
+    }
+
+    if (isListeningJournal) {
+      setIsListeningJournal(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = language === 'hi' ? "hi-IN" : "en-IN";
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      recognition.onstart = () => {
+        setIsListeningJournal(true);
+        if (setShareToast) {
+          setShareToast({ 
+            show: true, 
+            message: language === 'hi' ? "🎙️ बोलें... आपका अनुभव रिकॉर्ड हो रहा है..." : "🎙️ Listening... Speak your insights now." 
+          });
+        }
+      };
+
+      recognition.onresult = (event: any) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            transcript += event.results[i][0].transcript;
+          }
+        }
+        if (transcript) {
+          setSessionJournalText(prev => prev ? `${prev} ${transcript}` : transcript);
+        }
+      };
+
+      recognition.onerror = (e: any) => {
+        console.warn("Speech recognition error:", e);
+        setIsListeningJournal(false);
+      };
+
+      recognition.onend = () => {
+        setIsListeningJournal(false);
+      };
+
+      recognition.start();
+    } catch (err) {
+      console.error("Speech recognition start failed:", err);
+      setIsListeningJournal(false);
+    }
+  };
 
   // Auto-save observation text area input to localStorage on change
   useEffect(() => {
@@ -1123,8 +1200,17 @@ const SadhanaTab = memo(({
       await createSadhanaRecord(user.uid, 'diary', journalEntry);
 
       // Trigger tactile vibration
-      if ('vibrate' in navigator) {
-        navigator.vibrate([100, 50, 150]);
+      if ('vibrate' in navigator && vibrationIntensity !== 'none') {
+        const dur = vibrationDuration || 50;
+        let patternSeq: number[] = [dur * 2, 50, dur * 3];
+        if (vibrationPattern === 'double_pulse') patternSeq = [dur, 50, dur, 50, dur * 2];
+        else if (vibrationPattern === 'heartbeat') patternSeq = [dur, 60, dur * 2, 60, dur * 3];
+        else if (vibrationPattern === 'deep_focus') patternSeq = [dur * 2, 60, dur * 3, 60, dur * 4];
+        try {
+          navigator.vibrate(patternSeq);
+        } catch (e) {
+          console.warn("Vibration error:", e);
+        }
       }
 
       // Success feedback
@@ -1242,24 +1328,40 @@ const SadhanaTab = memo(({
     }
   };
 
-  const handleShareSadhana = async () => {
-    const shareText = `🕊️ मैंने अभी ${sessionDuration} मिनट की समता साधना (Samayik Sadhana) पूर्ण की है! मेरी मनःस्थिति: ${sessionMood}.\n\nतेरापंथ AI हब के साथ अपनी आध्यात्मिक यात्रा शुरू करें।`;
+  const handleShareSadhana = async (targetPlatform?: 'native' | 'whatsapp') => {
+    const journalExcerpt = sessionJournalText ? `\n📖 अनुभव (Reflection): "${sessionJournalText}"` : '';
+    const shareText = `🕊️ *तेरापंथ AI — साधना अनुभव सारांश (Sadhana Summary)* 🕊️
+
+🧘‍♂️ साधना अवधि (Duration): ${sessionDuration} मिनट
+🌸 मनःस्थिति (State of Mind): ${sessionMood}${journalExcerpt}
+
+✨ "निरंतर अभ्यास से आत्मशुद्धि होती है और कषायों का शमन होता है।"
+
+जैन धर्मसंघ एवं आध्यात्मिक समुदाय से जुड़ें:
+${window.location.origin}`;
+
+    if (targetPlatform === 'whatsapp') {
+      const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
+      window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Sadhana Completed 🧘‍♂️',
+          title: 'Sadhana Summary 🧘‍♂️ — Terapanth AI',
           text: shareText,
           url: window.location.origin
         });
       } catch (err) {
-        console.error("Error sharing:", err);
+        console.error("Error sharing Sadhana summary:", err);
       }
     } else {
       // Fallback: Copy to clipboard and show toast
       try {
         await navigator.clipboard.writeText(shareText);
         if (setShareToast) {
-          setShareToast({ show: true, message: "Sadhana status copied to clipboard! Share with friends. 🕊️" });
+          setShareToast({ show: true, message: "Sadhana Summary copied to clipboard! Ready to share with community. 🕊️" });
         }
       } catch (err) {
         console.error("Clipboard copy failed:", err);
@@ -1272,62 +1374,123 @@ const SadhanaTab = memo(({
       const { jsPDF } = await import('jspdf');
       const pdf = new jsPDF();
       
-      // Add titles
-      pdf.setFont("Helvetica", "bold");
-      pdf.setFontSize(22);
-      pdf.setTextColor(239, 68, 68); // Rose-500
-      pdf.text("Minee - Jain Terapanth Hub", 105, 30, { align: 'center' });
+      // Top Header Banner
+      pdf.setFillColor(249, 115, 22); // Orange-500
+      pdf.rect(0, 0, 210, 20, 'F');
       
-      pdf.setFontSize(16);
+      pdf.setFont("Helvetica", "bold");
+      pdf.setFontSize(13);
+      pdf.setTextColor(255, 255, 255);
+      pdf.text("TERAPANTH AI HUB — PREKSHA MEDITATION & SADHANA REPORT", 105, 13, { align: 'center' });
+      
+      pdf.setFontSize(18);
       pdf.setTextColor(31, 41, 55); // Gray-800
-      pdf.text("Sadhana Session Summary Report", 105, 45, { align: 'center' });
+      pdf.text("Sadhana Session & Insights Report", 20, 35);
       
       pdf.setDrawColor(229, 231, 235);
-      pdf.line(20, 55, 190, 55);
+      pdf.line(20, 40, 190, 40);
       
-      pdf.setFontSize(12);
-      pdf.setFont("Helvetica", "normal");
-      pdf.setTextColor(75, 85, 99); // Gray-600
+      // Session Metadata Box
+      pdf.setFillColor(249, 250, 251);
+      pdf.roundedRect(20, 45, 170, 48, 3, 3, 'F');
       
-      pdf.text(`User: ${user?.displayName || 'Spiritual Seeker'}`, 20, 70);
-      pdf.text(`Date: ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`, 20, 80);
-      pdf.text(`Session Duration: ${sessionDuration} Minutes`, 20, 90);
-      pdf.text(`Post-Session Mood: ${sessionMood}`, 20, 100);
+      pdf.setFontSize(10);
+      pdf.setFont("Helvetica", "bold");
+      pdf.setTextColor(75, 85, 99);
+      
+      const userName = user?.displayName || 'Spiritual Seeker (साधक)';
+      const dateStr = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+      const modeLabel = sessionType === 'guided' ? 'Guided Session (मार्गदर्शित साधना)' : 'Silent Session (मौन साधना)';
+      
+      pdf.text(`User: ${userName}`, 25, 55);
+      pdf.text(`Date: ${dateStr}`, 115, 55);
+      pdf.text(`Meditation Duration: ${sessionDuration} Minutes`, 25, 65);
+      pdf.text(`Session Type: ${modeLabel}`, 115, 65);
+      pdf.text(`Post-Session Mood: ${sessionMood}`, 25, 75);
       if (sessionEmotionalState) {
-        pdf.text(`Emotional State: ${sessionEmotionalState}`, 20, 110);
+        pdf.text(`Emotional State: ${sessionEmotionalState}`, 115, 75);
       }
       
-      const thoughtsText = sessionJournalText ? sessionJournalText : "Moun & Atma-Nirikshan (Silent Contemplation)";
-      pdf.text("Session Journal & Reflections:", 20, 125);
+      let currentY = 105;
+
+      // Completed Tasks Section
+      const completedTasks = (todos || []).filter((t: any) => t.completed);
       
-      pdf.setFont("Helvetica", "italic");
-      const splitThoughts = pdf.splitTextToSize(thoughtsText, 170);
-      pdf.text(splitThoughts, 20, 135);
-      
+      pdf.setFontSize(12);
       pdf.setFont("Helvetica", "bold");
-      pdf.setFontSize(11);
-      pdf.setTextColor(220, 104, 3); // Orange
-      pdf.text("Sadhana Benefits & Spiritual Merits:", 20, 175);
+      pdf.setTextColor(234, 88, 12); // Orange
+      pdf.text(`Completed Sadhana Tasks (${completedTasks.length}/${(todos || []).length}):`, 20, currentY);
+      currentY += 8;
       
+      pdf.setFontSize(9.5);
       pdf.setFont("Helvetica", "normal");
-      pdf.setTextColor(75, 85, 99);
-      pdf.text("1. Samvara and Nirjara - Calming past karmic vibrations and checking influx.", 25, 185);
-      pdf.text("2. Samata - Calming anger, pride, deceit, and greed (Kashaya).", 25, 193);
-      pdf.text("3. Swadhyay - Inner awareness and purification of the soul.", 25, 201);
+      pdf.setTextColor(55, 65, 81);
       
-      pdf.line(20, 220, 190, 220);
+      if (completedTasks.length > 0) {
+        completedTasks.slice(0, 6).forEach((task: any) => {
+          pdf.text(`[X] ${task.text || task.title}`, 25, currentY);
+          currentY += 6;
+        });
+      } else {
+        pdf.text("- No completed task checklist items recorded for this session.", 25, currentY);
+        currentY += 6;
+      }
+      
+      currentY += 6;
+      
+      // Session Insights & Reflections Section
+      pdf.setFontSize(12);
+      pdf.setFont("Helvetica", "bold");
+      pdf.setTextColor(234, 88, 12);
+      pdf.text("Meditation Insights & State of Mind:", 20, currentY);
+      currentY += 8;
       
       pdf.setFontSize(10);
       pdf.setFont("Helvetica", "italic");
-      pdf.text("🕊️ ' nirantara abhyaasa se aatmasuddhi hotee hai aur kashaayon ka shaman hota hai. '", 105, 235, { align: 'center' });
+      pdf.setTextColor(31, 41, 55);
       
-      pdf.save(`Sadhana_Session_${new Date().toISOString().split('T')[0]}.pdf`);
+      const thoughtsText = sessionJournalText ? sessionJournalText : "Silent reflection and Atma-Nirikshan (आत्म-निरीक्षण).";
+      const splitThoughts = pdf.splitTextToSize(thoughtsText, 165);
+      pdf.text(splitThoughts, 25, currentY);
+      currentY += (splitThoughts.length * 6) + 12;
+      
+      // Spiritual Merits
+      pdf.setFontSize(11);
+      pdf.setFont("Helvetica", "bold");
+      pdf.setTextColor(16, 185, 129); // Emerald
+      pdf.text("Spiritual Benefits & Karmic Merits:", 20, currentY);
+      currentY += 7;
+      
+      pdf.setFontSize(9);
+      pdf.setFont("Helvetica", "normal");
+      pdf.setTextColor(75, 85, 99);
+      pdf.text("1. Samvara & Nirjara - Karma shedding through focused Preksha Dhyan.", 25, currentY);
+      currentY += 5;
+      pdf.text("2. Kashaya Shanti - Cultivation of mental equanimity (Samata) and inner peace.", 25, currentY);
+      currentY += 5;
+      pdf.text("3. Swadhyay & Mindfulness - Heightened self-awareness and spiritual discipline.", 25, currentY);
+      currentY += 14;
+      
+      // Footer Line & Branding
+      pdf.setDrawColor(229, 231, 235);
+      pdf.line(20, currentY, 190, currentY);
+      currentY += 8;
+      
+      pdf.setFontSize(8);
+      pdf.setFont("Helvetica", "italic");
+      pdf.setTextColor(156, 163, 175);
+      pdf.text("Generated by Terapanth AI Assistant | www.terapanth-ai.org | Ahimsa, Sanyam, Tap", 105, currentY, { align: 'center' });
+      
+      pdf.save(`Sadhana_Insights_${new Date().toISOString().split('T')[0]}.pdf`);
       
       if (setShareToast) {
-        setShareToast({ show: true, message: "Sadhana Session Summary PDF downloaded successfully! 📄" });
+        setShareToast({ show: true, message: "PDF Insights Report downloaded successfully! 📄" });
       }
     } catch (err) {
       console.error("PDF export failed:", err);
+      if (setShareToast) {
+        setShareToast({ show: true, message: "Error generating PDF report." });
+      }
     }
   };
 
@@ -1883,17 +2046,33 @@ const SadhanaTab = memo(({
           </button>
 
           <button
-            onClick={() => setActiveTab?.('paryushana')}
-            className="flex items-center gap-2 p-3 bg-black/5 dark:bg-white/5 hover:bg-orange-500/10 hover:text-orange-500 rounded-2xl transition-all duration-300 text-left cursor-pointer col-span-2 sm:col-span-1"
+            onClick={() => setShowQuickReflectionModal(true)}
+            className="flex items-center gap-2 p-3 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-2xl transition-all duration-300 text-left cursor-pointer border border-amber-500/20"
           >
-            <Calendar size={16} className="text-orange-500 shrink-0" />
-            <span className="text-xs font-bold truncate">Paryushana</span>
+            <BookOpen size={16} className="text-amber-500 shrink-0" />
+            <span className="text-xs font-bold truncate">Quick Reflection</span>
+          </button>
+
+          <button
+            onClick={() => setActiveSubTab('timeline')}
+            className="flex items-center gap-2 p-3 bg-black/5 dark:bg-white/5 hover:bg-orange-500/10 hover:text-orange-500 rounded-2xl transition-all duration-300 text-left cursor-pointer"
+          >
+            <Clock size={16} className="text-orange-500 shrink-0" />
+            <span className="text-xs font-bold truncate">24H Dial Timeline</span>
+          </button>
+
+          <button
+            onClick={() => setActiveSubTab('soundscapes')}
+            className="flex items-center gap-2 p-3 bg-black/5 dark:bg-white/5 hover:bg-orange-500/10 hover:text-orange-500 rounded-2xl transition-all duration-300 text-left cursor-pointer"
+          >
+            <Volume2 size={16} className="text-teal-500 shrink-0" />
+            <span className="text-xs font-bold truncate">Soundscapes</span>
           </button>
         </div>
       </div>
 
       <div className="flex gap-1.5 p-0.5 bg-black/5 dark:bg-white/5 rounded-2xl sticky top-0 z-20 backdrop-blur-md overflow-x-auto no-scrollbar scroll-smooth">
-        {(['timer', 'goals', 'salah', 'breathwork', 'mantra', 'fasting', 'diary', 'swadhya', 'gratitude', 'suvichar', 'pratikraman', 'audio', 'seva', 'notifications', 'streaks', 'habits'] as const).map((tab) => (
+        {(['timer', 'goals', 'salah', 'breathwork', 'mantra', 'fasting', 'diary', 'swadhya', 'gratitude', 'suvichar', 'pratikraman', 'audio', 'seva', 'notifications', 'streaks', 'habits', 'timeline', 'soundscapes'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveSubTab(tab)}
@@ -1915,6 +2094,8 @@ const SadhanaTab = memo(({
             {tab === 'notifications' && 'Bulletin Board'}
             {tab === 'streaks' && 'Sadhana Streaks'}
             {tab === 'habits' && 'Habits Calendar'}
+            {tab === 'timeline' && '24H Dial'}
+            {tab === 'soundscapes' && 'Soundscapes'}
           </button>
         ))}
       </div>
@@ -2398,6 +2579,31 @@ const SadhanaTab = memo(({
                 ))}
               </ul>
             </div>
+          </motion.div>
+        )}
+
+        {activeSubTab === 'goals' && (
+          <motion.div
+            key="goals"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="pb-10"
+          >
+            <SadhanaGoalsSection
+              todos={todos}
+              setTodos={setTodos}
+              todoInput={todoInput}
+              setTodoInput={setTodoInput}
+              handleAddTodo={handleAddTodo}
+              handleToggleTodo={handleToggleTodo}
+              handleDeleteTodo={handleDeleteTodo}
+              language={language}
+              onQuickPrayer={onQuickPrayer}
+              archivedTodos={archivedTodos}
+              setArchivedTodos={setArchivedTodos}
+              setShareToast={setShareToast}
+            />
           </motion.div>
         )}
 
@@ -3039,9 +3245,34 @@ const SadhanaTab = memo(({
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
+            className="space-y-6 pb-4"
+          >
+            <SadhanaStreaksCard todos={todos} />
+            <SadhanaStreaks />
+          </motion.div>
+        )}
+
+        {activeSubTab === 'timeline' && (
+          <motion.div
+            key="timeline"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
             className="pb-4"
           >
-            <SadhanaStreaks />
+            <Sadhana24HourCircularDial />
+          </motion.div>
+        )}
+
+        {activeSubTab === 'soundscapes' && (
+          <motion.div
+            key="soundscapes"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="pb-4"
+          >
+            <SpiritualSoundscapesPlayer />
           </motion.div>
         )}
 
@@ -3117,6 +3348,45 @@ const SadhanaTab = memo(({
               </div>
 
               <div className="space-y-5">
+                {/* Session Mode Visual Toggle (Guided Session vs Silent Session) */}
+                <div className="space-y-1.5" id="sadhana-session-type-toggle">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-400 block flex items-center justify-between">
+                    <span>Session Mode (साधना का प्रकार)</span>
+                    <span className="text-[9px] font-bold text-orange-600 dark:text-orange-400">
+                      {sessionType === 'guided' ? 'Guided • मार्गदर्शित' : 'Silent • मौन'}
+                    </span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setSessionType('guided')}
+                      className={`py-3 px-4 rounded-2xl border transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer font-bold text-xs uppercase tracking-wider ${
+                        sessionType === 'guided'
+                          ? "bg-gradient-to-r from-orange-500/20 to-amber-500/20 border-orange-500/40 text-orange-600 dark:text-orange-400 shadow-xs scale-[1.02]"
+                          : "bg-black/5 dark:bg-white/5 border-transparent text-gray-400 hover:bg-black/10"
+                      }`}
+                      id="guided-session-type-btn"
+                    >
+                      <Mic size={15} className={sessionType === 'guided' ? "text-orange-500 animate-pulse" : ""} />
+                      <span>{language === 'hi' ? 'मार्गदर्शित (Guided)' : 'Guided Session'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSessionType('silent')}
+                      className={`py-3 px-4 rounded-2xl border transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer font-bold text-xs uppercase tracking-wider ${
+                        sessionType === 'silent'
+                          ? "bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 shadow-xs scale-[1.02]"
+                          : "bg-black/5 dark:bg-white/5 border-transparent text-gray-400 hover:bg-black/10"
+                      }`}
+                      id="silent-session-type-btn"
+                    >
+                      <Sparkles size={15} className={sessionType === 'silent' ? "text-emerald-500 animate-pulse" : ""} />
+                      <span>{language === 'hi' ? 'मौन (Silent)' : 'Silent Session'}</span>
+                    </button>
+                  </div>
+                </div>
+
                 {/* Duration Field */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black uppercase tracking-wider text-gray-400 block">
@@ -3207,17 +3477,17 @@ const SadhanaTab = memo(({
                   />
                 </div>
 
-                {/* 📈 7-SESSION MEDITATION DURATION TREND LINE CHART */}
+                {/* 📈 7-SESSION PREKSHA MEDITATION PROGRESS & DURATION CHART */}
                 <div className="p-4 bg-orange-500/5 dark:bg-orange-500/10 rounded-2xl border border-orange-500/15 space-y-2 text-left">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5 text-orange-600 dark:text-orange-400">
                       <TrendingUp size={14} />
                       <span className="text-[10px] font-black uppercase tracking-wider">
-                        ध्यान अवधि रुझान (Meditation Duration Trend - Last 7 Sessions)
+                        प्रेक्षा ध्यान प्रगति (Preksha Meditation - Last 7 Days)
                       </span>
                     </div>
                     <span className="text-[9px] font-mono font-bold text-orange-600 dark:text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full border border-orange-500/20">
-                      Avg: {Math.round(last7MeditationSessionsData.reduce((a, b) => a + b.duration, 0) / 7)} mins
+                      Avg: {Math.round(last7MeditationSessionsData.reduce((a, b) => a + b.duration, 0) / 7)} mins/day
                     </span>
                   </div>
 
@@ -3249,7 +3519,7 @@ const SadhanaTab = memo(({
                             fontWeight: 'bold',
                             padding: '6px 10px'
                           }}
-                          formatter={(val: any) => [`${val} Minutes`, 'Duration']}
+                          formatter={(val: any) => [`${val} Mins Spent in Preksha Meditation`, 'Duration']}
                           labelStyle={{ color: '#f97316', fontSize: '9px', fontWeight: '900' }}
                         />
                         <Line 
@@ -3277,27 +3547,43 @@ const SadhanaTab = memo(({
                     साधना के आध्यात्मिक लाभ (Spiritual Benefits)
                   </span>
                   <ul className="text-[10.5px] text-gray-650 dark:text-gray-300 space-y-1 font-semibold list-disc pl-3.5 leading-relaxed">
-                    <li>सामायिक साधना से संवर और निर्जरा (Karmic shedding) होती है।</li>
+                    <li>सामायिक व प्रेक्षा ध्यान से संवर और निर्जरा (Karmic shedding) होती है।</li>
                     <li>कषाय की शांति और मानसिक समता की प्राप्ति होती है।</li>
                     <li>आत्म-साक्षात्कार और परम शांति का मार्ग प्रशस्त होता है।</li>
                   </ul>
                 </motion.div>
 
-                {/* Journal Experience Textarea */}
+                {/* Journal Experience Textarea with Voice Dictation Button */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-black uppercase tracking-wider text-gray-400 block">
-                      Sadhana Experience Journal (साधना अनुभव लेखन)
+                    <label className="text-[10px] font-black uppercase tracking-wider text-gray-400 block flex items-center gap-1.5">
+                      <span>Sadhana Experience Journal (साधना अनुभव)</span>
                     </label>
-                    {sessionJournalText.trim().length > 0 && (
-                      <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md flex items-center gap-1 border border-emerald-500/20">
-                        <CheckCircle2 size={10} /> Auto-saved draft
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {sessionJournalText.trim().length > 0 && (
+                        <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md flex items-center gap-1 border border-emerald-500/20">
+                          <CheckCircle2 size={10} /> Auto-saved
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={toggleJournalVoiceInput}
+                        className={`px-2.5 py-1 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border-0 ${
+                          isListeningJournal
+                            ? "bg-rose-500 text-white animate-pulse shadow-md"
+                            : "bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/20"
+                        }`}
+                        title="Dictate insights using Voice-to-Text"
+                        id="voice-dictate-insights-btn"
+                      >
+                        <Mic size={12} className={isListeningJournal ? "animate-ping" : ""} />
+                        <span>{isListeningJournal ? (language === 'hi' ? 'सुन रहा है...' : 'Listening...') : (language === 'hi' ? 'वॉइस इनपुट' : 'Dictate')}</span>
+                      </button>
+                    </div>
                   </div>
                   <textarea
                     rows={3}
-                    placeholder="इस सत्र में आपके क्या अनुभव रहे? कोई विशेष विचार या कषाय शांति जिसे आपने महसूस किया..."
+                    placeholder="इस सत्र में आपके क्या अनुभव रहे? बोलकर या लिखकर दर्ज करें..."
                     value={sessionJournalText}
                     onChange={(e) => setSessionJournalText(e.target.value)}
                     className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl px-4 py-3 text-xs text-gray-750 dark:text-gray-200 focus:outline-none focus:border-orange-500/50 resize-none leading-relaxed"
@@ -3305,23 +3591,37 @@ const SadhanaTab = memo(({
                 </div>
               </div>
 
-              {/* Share & Report Quick Actions */}
-              <div className="grid grid-cols-2 gap-2.5 px-1 pb-1">
+              {/* Share & Download Insights Quick Actions */}
+              <div className="grid grid-cols-3 gap-2 px-1 pb-1">
                 <button
                   type="button"
                   onClick={handleDownloadSessionPDF}
-                  className="py-2.5 px-3 bg-stone-55 dark:bg-stone-800/40 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 font-black text-[10px] uppercase tracking-wider rounded-xl transition-all border border-stone-200/50 dark:border-stone-800 flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="py-2.5 px-2 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-black text-[9.5px] uppercase tracking-wider rounded-xl transition-all shadow-sm flex items-center justify-center gap-1 cursor-pointer border-0 active:scale-95"
+                  title="Download PDF report containing meditation duration, insights, and completed tasks"
+                  id="download-sadhana-insights-pdf-btn"
                 >
-                  <Download size={11} className="text-stone-500 shrink-0" />
-                  <span>Report (PDF)</span>
+                  <Download size={11} className="shrink-0" />
+                  <span>Download Insights</span>
                 </button>
                 <button
                   type="button"
-                  onClick={handleShareSadhana}
-                  className="py-2.5 px-3 bg-stone-55 dark:bg-stone-800/40 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 font-black text-[10px] uppercase tracking-wider rounded-xl transition-all border border-stone-200/50 dark:border-stone-800 flex items-center justify-center gap-1.5 cursor-pointer"
+                  onClick={() => handleShareSadhana('native')}
+                  className="py-2.5 px-2 bg-stone-700 hover:bg-stone-600 text-white font-black text-[9.5px] uppercase tracking-wider rounded-xl transition-all shadow-xs flex items-center justify-center gap-1 cursor-pointer border-0"
+                  title="Share to Community using Web Share API"
+                  id="share-sadhana-community-btn"
                 >
-                  <Send size={11} className="text-stone-500 shrink-0" />
-                  <span>Share Status</span>
+                  <Users size={11} className="shrink-0" />
+                  <span>Share Community</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleShareSadhana('whatsapp')}
+                  className="py-2.5 px-2 bg-green-600 hover:bg-green-500 text-white font-black text-[9.5px] uppercase tracking-wider rounded-xl transition-all shadow-xs flex items-center justify-center gap-1 cursor-pointer border-0"
+                  title="Share on WhatsApp"
+                  id="share-sadhana-whatsapp-btn"
+                >
+                  <Send size={11} className="shrink-0" />
+                  <span>WhatsApp</span>
                 </button>
               </div>
 
@@ -3376,6 +3676,13 @@ const SadhanaTab = memo(({
         onClose={() => setActiveReadingArticle(null)}
         article={activeReadingArticle}
       />
+
+      <SpiritualMilestoneModal currentPoints={todos.filter(t => t.completed).length * 10 + (fastingLogs.length * 20)} />
+
+      <QuickReflectionModal 
+        isOpen={showQuickReflectionModal} 
+        onClose={() => setShowQuickReflectionModal(false)} 
+      />
     </motion.div>
   );
 });
@@ -3393,7 +3700,8 @@ const SadhanaGoalsSection = ({
   language = "en",
   onQuickPrayer,
   archivedTodos = [],
-  setArchivedTodos
+  setArchivedTodos,
+  setShareToast
 }: {
   todos?: any[];
   setTodos: any;
@@ -3406,6 +3714,7 @@ const SadhanaGoalsSection = ({
   onQuickPrayer?: () => void;
   archivedTodos?: any[];
   setArchivedTodos?: any;
+  setShareToast?: (toast: { show: boolean; message: string }) => void;
 }) => {
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -4107,7 +4416,7 @@ const SadhanaGoalsSection = ({
 
       {/* Visual Summary: Count of Completed Tasks by Tag */}
       <div className="p-4 bg-gradient-to-br from-amber-500/5 via-orange-500/5 to-transparent rounded-3xl border border-orange-500/15 space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <div className="p-1.5 bg-orange-500/15 text-orange-600 dark:text-orange-400 rounded-xl">
               <Sparkles size={16} />
@@ -4121,9 +4430,39 @@ const SadhanaGoalsSection = ({
               </p>
             </div>
           </div>
-          <span className="px-2.5 py-1 bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-black rounded-full border border-green-500/20 font-mono">
-            {completedCount} / {totalCount} {language === 'hi' ? 'पूर्ण' : 'Done'}
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={async () => {
+                const summaryMsg = `🕊️ *तेरापंथ AI — साधना प्रगति सारांश (Sadhana Summary)* 🕊️\n\n📊 कुल पूर्ण साधना संकल्प: ${completedCount} / ${totalCount}\n✨ "संयमः खलु जीवनम् — संयम ही जीवन है।"\n\nतेरापंथ आध्यात्मिक समुदाय से जुड़ें:\n${window.location.origin}`;
+                if (navigator.share) {
+                  try {
+                    await navigator.share({
+                      title: 'Sadhana Summary Report',
+                      text: summaryMsg,
+                      url: window.location.origin
+                    });
+                  } catch (e) {
+                    console.log('Share skipped', e);
+                  }
+                } else {
+                  await navigator.clipboard.writeText(summaryMsg);
+                  if (setShareToast) {
+                    setShareToast({ show: true, message: 'Sadhana summary copied to clipboard! 🕊️' });
+                  }
+                }
+              }}
+              className="px-2.5 py-1 bg-orange-600 hover:bg-orange-500 text-white text-[10px] font-black uppercase tracking-wider rounded-full shadow-xs flex items-center gap-1 cursor-pointer transition-all active:scale-95 border-0"
+              id="share-sadhana-tag-summary-btn"
+              title="Share Sadhana Summary to Community"
+            >
+              <Users size={11} />
+              <span>{language === 'hi' ? 'साझा करें' : 'Share Summary'}</span>
+            </button>
+            <span className="px-2.5 py-1 bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-black rounded-full border border-green-500/20 font-mono">
+              {completedCount} / {totalCount} {language === 'hi' ? 'पूर्ण' : 'Done'}
+            </span>
+          </div>
         </div>
 
         {/* Simple List View of Tag Counts */}

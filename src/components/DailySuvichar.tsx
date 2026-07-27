@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Share2, Heart, RefreshCw, Bookmark, Calendar, ArrowRight, Quote, Trash2, Check } from 'lucide-react';
+import { Share2, Heart, RefreshCw, Bookmark, Calendar, ArrowRight, Quote, Trash2, Check, Users, Send, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db } from '../lib/firebase';
 import { collection, addDoc, query, orderBy, limit, onSnapshot, doc, deleteDoc, serverTimestamp } from 'firebase/firestore';
@@ -150,34 +150,48 @@ export default function DailySuvichar({ onBack }: { onBack?: () => void }) {
     setCurrentIndex((prev) => (prev + 1) % SUVICHAR.length);
   };
 
-  // Share quote with formatting context
-  const handleShareQuote = async () => {
-    const textToShare = `✨ आज का सुविचार — ${getFormattedDateString()} ✨
+  // Share quote with formatting context to Community via Web Share API or WhatsApp
+  const handleShareToCommunity = async (targetPlatform?: 'native' | 'whatsapp') => {
+    const preformattedMessage = `🕊️ *तेरापंथ AI — आज का सुविचार (Daily Suvichar)* 🕊️
+📅 ${getFormattedDateString()}
 
 "${activeQuote.text}"
 — ${activeQuote.author} (${activeQuote.source})
 
-Shared via Terapanth AI Assistant.`;
+✨ "अहिंसा, संयम और तप ही जीवन के मूल स्तंभ हैं।"
+
+आध्यात्मिक संघ और समुदाय से जुड़ें:
+${window.location.origin}`;
+
+    if (targetPlatform === 'whatsapp') {
+      const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(preformattedMessage)}`;
+      window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
 
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'आज का सुविचार - Daily Jain Wisdom',
-          text: textToShare,
+          title: 'आज का सुविचार - Terapanth Spiritual Wisdom',
+          text: preformattedMessage,
           url: window.location.origin
         });
       } catch (e) {
-        devLog("Share canceled or skipped:", e);
+        devLog("Community share skipped:", e);
       }
     } else {
       try {
-        await navigator.clipboard.writeText(textToShare);
+        await navigator.clipboard.writeText(preformattedMessage);
         setCopied(true);
         setTimeout(() => setCopied(false), 2500);
       } catch (err) {
-        console.error("Manual share clipboard copying failed:", err);
+        console.error("Clipboard copy failed:", err);
       }
     }
+  };
+
+  const handleShareQuote = async () => {
+    await handleShareToCommunity('native');
   };
 
   return (
@@ -222,34 +236,46 @@ Shared via Terapanth AI Assistant.`;
       </div>
 
       {/* Interaction buttons container */}
-      <div className="flex flex-wrap items-center gap-3">
-        {/* Web Share */}
+      <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
+        {/* Share to Community (Web Share API) */}
         <button
-          onClick={handleShareQuote}
-          className="flex-1 min-w-[120px] py-3.5 px-4 bg-[var(--card-bg)] hover:bg-black/5 dark:hover:bg-white/5 border border-[var(--border-color)] text-[var(--text-spiritual)] rounded-2xl flex items-center justify-center gap-2 font-bold text-xs uppercase tracking-wider transition-all active:scale-95 relative"
+          onClick={() => handleShareToCommunity('native')}
+          className="flex-1 py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl flex items-center justify-center gap-2 font-black text-xs uppercase tracking-wider transition-all shadow-sm active:scale-95 relative cursor-pointer"
+          id="share-suvichar-community-btn"
         >
-          <Share2 size={16} />
-          {copied ? "Copied!" : "Share Quote"}
+          <Users size={16} />
+          {copied ? "Copied Message!" : "Share to Community"}
+        </button>
+
+        {/* WhatsApp Quick Share */}
+        <button
+          onClick={() => handleShareToCommunity('whatsapp')}
+          className="py-3.5 px-4 bg-green-500 hover:bg-green-600 text-white rounded-2xl flex items-center justify-center gap-1.5 font-bold text-xs uppercase tracking-wider transition-all active:scale-95 cursor-pointer"
+          title="Share on WhatsApp"
+          id="share-suvichar-whatsapp-btn"
+        >
+          <MessageCircle size={16} />
+          <span>WhatsApp</span>
         </button>
 
         {/* Save to Profile */}
         <button
           onClick={handleSaveQuote}
           disabled={isSaving}
-          className={`flex-1 min-w-[120px] py-3.5 px-4 border text-xs uppercase tracking-wider font-bold rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 ${
+          className={`py-3.5 px-4 border text-xs uppercase tracking-wider font-bold rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer ${
             justSaved
-              ? 'bg-emerald-600 border-emerald-600 text-white'
+              ? 'bg-emerald-700 border-emerald-700 text-white'
               : 'bg-[var(--card-bg)] hover:bg-black/5 dark:hover:bg-white/5 border-[var(--border-color)] text-[var(--text-spiritual)]'
           }`}
         >
           {justSaved ? <Check size={16} /> : <Heart size={16} className={justSaved ? "fill-white" : ""} />}
-          {justSaved ? "Saved!" : isSaving ? "Saving..." : "Save Quote"}
+          {justSaved ? "Saved!" : isSaving ? "Saving..." : "Save"}
         </button>
 
         {/* Next cyclic */}
         <button
           onClick={handleNextQuote}
-          className="py-3.5 px-5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest transition-all active:scale-95"
+          className="py-3.5 px-4 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 border border-[var(--border-color)] rounded-2xl flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest transition-all active:scale-95 cursor-pointer"
           title="See next suvichar"
         >
           <RefreshCw size={16} />

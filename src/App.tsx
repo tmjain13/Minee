@@ -596,7 +596,28 @@ export default function App() {
   const [ambientSoundEnabled, setAmbientSoundEnabled] = useState(false);
   const [spiritualSoundscape, setSpiritualSoundscape] = useState<"om" | "temple_bells" | "nature">("om");
   const [autoArchiveEnabled, setAutoArchiveEnabled] = useState(false);
-  const [vibrationIntensity, setVibrationIntensity] = useState<"none" | "gentle" | "pulsing" | "steady">("gentle");
+  const [vibrationIntensity, setVibrationIntensity] = useState<"none" | "gentle" | "pulsing" | "steady" | "intense">(() => {
+    return (localStorage.getItem("app_vibration_intensity") as any) || "gentle";
+  });
+  const [vibrationPattern, setVibrationPattern] = useState<'single' | 'double_pulse' | 'heartbeat' | 'gentle_ripple' | 'deep_focus'>(() => {
+    return (localStorage.getItem("app_vibration_pattern") as any) || "double_pulse";
+  });
+  const [vibrationDuration, setVibrationDuration] = useState<number>(() => {
+    const saved = localStorage.getItem("app_vibration_duration");
+    return saved ? parseInt(saved, 10) : 35;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("app_vibration_intensity", vibrationIntensity);
+  }, [vibrationIntensity]);
+
+  useEffect(() => {
+    localStorage.setItem("app_vibration_pattern", vibrationPattern);
+  }, [vibrationPattern]);
+
+  useEffect(() => {
+    localStorage.setItem("app_vibration_duration", vibrationDuration.toString());
+  }, [vibrationDuration]);
 
   // --- GLOBAL HAPTICS PREFERENCES ---
   const [hapticButtonClicksEnabled, setHapticButtonClicksEnabled] = useState<boolean>(() => {
@@ -1591,6 +1612,8 @@ export default function App() {
                   dailyStreak={4}
                   ambientSoundEnabled={ambientSoundEnabled}
                   vibrationIntensity={vibrationIntensity}
+                  vibrationPattern={vibrationPattern}
+                  vibrationDuration={vibrationDuration}
                   spiritualSoundscape={spiritualSoundscape}
                   setActiveTab={setActiveTab}
                   initialSubTab={sadhanaSubTab as any}
@@ -2619,6 +2642,10 @@ export default function App() {
           onAutoArchiveChange={setAutoArchiveEnabled}
           vibrationIntensity={vibrationIntensity}
           onVibrationIntensityChange={setVibrationIntensity}
+          vibrationPattern={vibrationPattern}
+          onVibrationPatternChange={setVibrationPattern}
+          vibrationDuration={vibrationDuration}
+          onVibrationDurationChange={setVibrationDuration}
           spiritualSoundscape={spiritualSoundscape}
           onSpiritualSoundscapeChange={setSpiritualSoundscape}
           kfontSize={kfontSize}

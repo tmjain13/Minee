@@ -51,38 +51,38 @@ export default function MukhyamuniPortal({ onClose }: { onClose?: () => void }) 
 
   const t = {
     en: {
-      title: "Mukhyamuni Monastic Portal",
+      title: "Yuvacharya & Mukhyamuni Monastic Portal",
       subTitle: "Jain Shvetambar Terapanth Dharmasangh",
       lblBirth: "Birthplace & Early Foundation",
       lblDiksha: "Monastic Diksha & Renunciation",
-      lblPost: "Institutional Elevation as Mukhyamuni",
+      lblPost: "Institutional Elevation as Yuvacharya",
       lblContribution: "Spiritual Contributions & Sermons",
       lblPhilosophy: "Philosophy of Positivity",
       btnLang: "🇮🇳 हिंदी संस्करण",
-      designation: "Pujya Mukhyamuni (The Chief Monk)",
-      designationDesc: "The chief pillars of monastic governance, executive discipline, and spiritual guidance within the Terapanth order under Acharya Mahashraman Ji.",
+      designation: "Pujya Yuvacharya (Designated Successor) Shree Mahavir Kumar Ji",
+      designationDesc: "Appointed as the official Yuvacharya (Successor) of Jain Shwetambar Terapanth Dharmasangh by 11th Acharya Param Pujya Shri Mahashraman Ji on 27 July 2026 at JVBI Ladnun.",
       btnShare: "Share Wisdom",
       btnHymn: "Melodious Bhajans (Amritvani)",
-      hymnDesc: "Listen to the soulful devotional hymns and prayers composed & recited by Mukhyamuni Ji.",
+      hymnDesc: "Listen to the soulful devotional hymns and prayers composed & recited by Yuvacharya Shree Mahavir Kumar Ji.",
       lblCopy: "Motto Copied Successfully!",
-      lblElevationPhase: "Two-Stage Apostolic Ascent"
+      lblElevationPhase: "Historic Apostolic Elevation to Yuvacharya"
     },
     hi: {
-      title: "Pujya Mukhyamuni Shraman Portal",
+      title: "पूज्य युवाचार्य श्री महावीर कुमार जी पोर्टल",
       subTitle: "जैन श्वेतांबर तेरापंथ धर्मसंघ",
       lblBirth: "जन्मभूमि एवं प्रारंभिक पृष्ठभूमि",
       lblDiksha: "वैराग्य एवं कठिन जैन श्रमण दीक्षा",
-      lblPost: "मुख्यमुनि गौरव ऐतिहासिक अलंकरण",
+      lblPost: "युवाचार्य गौरव ऐतिहासिक नियुक्ति",
       lblContribution: "आध्यात्मिक अवदान एवं मंगल प्रवचन",
       lblPhilosophy: "सकारात्मक जीवन दर्शन (आम का चयन)",
       btnLang: "🔤 English Edition",
-      designation: "पूज्य मुख्यमुनि (Chief Monk) श्री महावीर कुमार जी",
-      designationDesc: "परम पूज्य आचार्य श्री महाश्रमण देव के अत्यंत विश्वसनीय, आज्ञानुवर्ती, और प्रिय शिष्य। आप संपूर्ण साधु वृन्द के कुशल अनुशासन के मुख्य संवाहक हैं।",
+      designation: "नवघोषित युवाचार्य पूज्य श्री महावीर कुमार जी स्वामी",
+      designationDesc: "परम पूज्य ११वें पट्टधर आचार्य श्री महाश्रमण जी द्वारा २७ जुलाई २०२६ को लाडनूँ (राजस्थान) में भिक्षु जन्म त्रिशताब्दी समारोह के अवसर पर तेरापंथ धर्मसंघ के 'युवाचार्य' (भावी उत्तराधिकारी) पद पर नियुक्त।",
       btnShare: "विचार साझा करें",
       btnHymn: "मधुर जैन भजन (अमृतवाणी)",
-      hymnDesc: "पूज्य मुख्यमुनि जी के सुरीले कंठ से सजे प्रेरणादायक आत्मिक भजनों एवं गीतों का रसपान करें।",
+      hymnDesc: "पूज्य युवाचार्य जी के सुरीले कंठ से सजे प्रेरणादायक आत्मिक भजनों एवं गीतों का रसपान करें।",
       lblCopy: "सकारात्मक विचार कॉपी किया गया!",
-      lblElevationPhase: "द्वि-चरणीय ऐतिहासिक पद-सृजन"
+      lblElevationPhase: "ऐतिहासिक त्रि-चरणीय पद-सृजन एवं युवाचार्य नियुक्ति"
     }
   }[lang];
 
@@ -276,11 +276,11 @@ export default function MukhyamuniPortal({ onClose }: { onClose?: () => void }) 
 
                   {/* Step 2 */}
                   <div className="relative">
-                    <span className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center text-[7px] font-black z-10 text-white shadow-md shadow-amber-500/25">2</span>
+                    <span className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-amber-500/40 border-2 border-amber-500 flex items-center justify-center text-[7px] font-black z-10 text-amber-300">2</span>
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-black text-amber-400">सन् २०१७ ( Assam Formal Coronation )</span>
-                        <span className="text-[8px] bg-amber-500 text-slate-950 font-black px-2 py-0.5 rounded uppercase tracking-wider">Official Chayan</span>
+                        <span className="text-xs font-black text-amber-400">सन् २०१७ ( Assam Coronation )</span>
+                        <span className="text-[8px] bg-slate-800 text-amber-300 border border-amber-500/30 font-black px-2 py-0.5 rounded uppercase tracking-wider">Mukhya Muni Title</span>
                       </div>
                       <h5 className="font-extrabold text-[11px] sm:text-xs text-white">
                         {lang === 'hi' ? 'असम प्रान्त में मुख्यमुनि पद का ऐतिहासिक सृजन' : 'Formal Coronation in Barpathar, Assam'}
@@ -292,10 +292,46 @@ export default function MukhyamuniPortal({ onClose }: { onClose?: () => void }) 
                       </p>
                     </div>
                   </div>
+
+                  {/* Step 3 - HISTORIC YUVACHARYA ELEVATION ON 27 JULY 2026 */}
+                  <div className="relative">
+                    <span className="absolute -left-[31px] top-0 w-5 h-5 -ml-0.5 rounded-full bg-gradient-to-tr from-amber-400 via-orange-500 to-amber-600 flex items-center justify-center text-[9px] font-black z-10 text-slate-950 shadow-lg shadow-amber-500/40 animate-pulse">3</span>
+                    <div className="space-y-2 bg-gradient-to-br from-amber-500/10 via-slate-900/90 to-slate-950 border border-amber-500/40 rounded-2xl p-4 shadow-xl">
+                      <div className="flex items-center justify-between flex-wrap gap-1.5">
+                        <span className="text-xs font-black text-amber-400 flex items-center gap-1">
+                          👑 २७ जुलाई २०२६ ( 27 July 2026 )
+                        </span>
+                        <span className="text-[8px] bg-amber-500 text-slate-950 font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
+                          {lang === 'hi' ? 'युवाचार्य घोषित' : 'Yuvacharya Appointed'}
+                        </span>
+                      </div>
+                      <h5 className="font-black text-xs sm:text-sm text-amber-300">
+                        {lang === 'hi' ? 'ऐतिहासिक युवाचार्य पद पर आधिकारिक नियुक्ति (लाडनूँ)' : 'Historic Elevation to Yuvacharya (JVBI Ladnun)'}
+                      </h5>
+                      <p className="text-[11px] text-gray-200 leading-relaxed font-medium">
+                        {lang === 'hi'
+                          ? "आचार्य भिक्षु ३००वें जन्म त्रिशताब्दी वर्ष समापन समारोह के पावन अवसर पर, परम पूज्य ११वें पट्टधर आचार्य श्री महाश्रमण जी महाराज ने जैन विश्व भारती लाडनूँ (महाश्रमण विहार) में अपने हस्तलिखित नियुक्ति पत्र द्वारा मुख्यमुनि श्री महावीर कुमार जी को तेरापंथ धर्मसंघ के 'युवाचार्य' (उत्तराधिकारी) पद पर नियुक्त किया।"
+                          : "On 27 July 2026 (VS 2083 Ashadha Shukla Trayodashi) at JVBI Ladnun during the conclusion of Acharya Bhikshu Tercentenary Year, 11th Acharya Mahashraman Ji officially declared and appointed Mukhya Muni Shri Mahavir Kumar Ji as the Yuvacharya (Designated Successor) of Terapanth."}
+                      </p>
+
+                      {/* Handwritten Document Transcript Box */}
+                      <div className="mt-3 p-3 bg-amber-950/40 border border-amber-500/30 rounded-xl space-y-1.5">
+                        <div className="text-[9px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1">
+                          📜 {lang === 'hi' ? 'हस्तलिखित नियुक्ति पत्र (दुर्लभ दस्तावेज)' : 'Handwritten Appointment Letter'}
+                        </div>
+                        <p className="text-[10px] text-amber-100/90 font-serif leading-relaxed italic">
+                          "मैं आचार्य महाश्रमण अपने सुशिष्य मुनि महावीर कुमार को अपने उत्तराधिकारी के रूप में युवाचार्य पद पर नियुक्त करता हूँ और शुभाशंसा करता हूँ कि यह अध्यात्मनिष्ठा, अनुशासन, विनम्रता और कौशलपूर्ण कार्यशैली से भिक्षु शासन की गरिमा को बढ़ाता रहे।"
+                        </p>
+                        <div className="text-[8px] text-amber-400/80 font-bold text-right pt-1">
+                          — आचार्य महाश्रमण (२७.७.२०२६ / आषाढ़ शुक्ला त्रयोदशी, लाडनूँ)
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="bg-slate-900 border border-white/5 p-3 rounded-2xl text-[9px] sm:text-[10px] text-center text-gray-400 font-extrabold uppercase tracking-wide">
-                  🎉 {lang === 'hi' ? "संघ प्रतिवर्ष इस तिथि को 'चयन दिवस' के रूप में गर्व से मनाता है।" : "Sect celebrates this historical day annually as 'Chayan Diwas' globally."}
+                <div className="bg-amber-500/10 border border-amber-500/30 p-3 rounded-2xl text-[9px] sm:text-[10px] text-center text-amber-300 font-extrabold uppercase tracking-wide">
+                  🎉 {lang === 'hi' ? "२७ जुलाई २०२६: तेरापंथ धर्मसंघ के इतिहास का स्वर्णिम दिन - नवनिर्दिष्ट युवाचार्य श्री महावीर कुमार जी को कोटि-कोटि वंदन!" : "27 July 2026: Golden milestone in Terapanth History - Reverent salutations to newly appointed Yuvacharya Shree Mahavir Kumar Ji!"}
                 </div>
               </div>
             )}

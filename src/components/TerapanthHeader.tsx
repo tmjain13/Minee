@@ -15,10 +15,11 @@ import {
   MapPin,
   Flame,
 } from "lucide-react";
-import { getAuth } from "firebase/auth";
+import { auth } from "../lib/firebase";
 import { useLanguage } from "../context/LanguageContext";
 import { useLocation } from "../context/LocationContext";
 import { motion, AnimatePresence } from "motion/react";
+import { getUserProfile, getPersonalizedGreeting, UserProfileData } from "../utils/userProfile";
 
 export interface TerapanthHeaderProps {
   theme?: string;
@@ -138,6 +139,15 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
 
   const [isOnline, setIsOnline] = useState(checkOnlineStatus);
   const [greeting, setGreeting] = useState("");
+  const [userProfileData, setUserProfileData] = useState<UserProfileData>(getUserProfile());
+
+  useEffect(() => {
+    const handleProfileSync = () => {
+      setUserProfileData(getUserProfile());
+    };
+    window.addEventListener("terapanth_profile_updated", handleProfileSync);
+    return () => window.removeEventListener("terapanth_profile_updated", handleProfileSync);
+  }, []);
 
   const scrollToTop = () => {
     triggerHaptic(20);
@@ -174,11 +184,27 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
   }, [activeLanguage]);
 
   const [isLogoLoaded, setIsLogoLoaded] = useState(false);
-  const auth = getAuth();
-  const currentUser = auth.currentUser;
+  const currentUser = auth?.currentUser;
 
   const handleLogoTap = useCallback(() => {
     triggerHaptic(25);
+
+    // Check if main window or any scrollable container is currently scrolled
+    const currentWindowScroll = typeof window !== "undefined" ? window.scrollY || document.documentElement.scrollTop || 0 : 0;
+    const scrollContainers = typeof document !== "undefined" ? document.querySelectorAll(".overflow-y-auto, [class*='overflow-y-auto']") : [];
+    let isScrolled = currentWindowScroll > 5;
+
+    scrollContainers.forEach((el) => {
+      if (el.scrollTop > 5) {
+        isScrolled = true;
+        el.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    });
+
+    if (currentWindowScroll > 5 && typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
     if (onLogoClick) {
       onLogoClick();
     } else {
@@ -186,15 +212,26 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
     }
   }, [onLogoClick, triggerHaptic]);
 
-  const shadowOpacityPct = Math.min(15, Math.max(0, (scrollY / 100) * 15)).toFixed(2);
+  const scrollRatio = Math.min(1, Math.max(0, scrollY / 120));
+  const shadowOpacityPct = (scrollRatio * 18).toFixed(2);
+  const shadowYOffset = scrollRatio * 6;
+  const shadowBlur = 4 + scrollRatio * 20;
+  const shadowSpread = scrollRatio * 4;
 
   return (
     <>
-      <header
+      <motion.header
+        initial={false}
+        animate={{
+          y: isHeaderHidden ? "-100%" : "0%",
+          opacity: isHeaderHidden ? 0 : 1,
+        }}
+        transition={{
+          y: { type: "spring", damping: 28, stiffness: 220, mass: 0.8 },
+          opacity: { duration: 0.25, ease: "easeInOut" },
+        }}
         className={`fixed top-0 left-0 right-0 z-50 pt-[env(safe-area-inset-top,0px)] ${
-          isHeaderHidden
-            ? "-translate-y-full opacity-0 pointer-events-none"
-            : "translate-y-0 opacity-100 pointer-events-auto"
+          isHeaderHidden ? "pointer-events-none" : "pointer-events-auto"
         } ${
           scrolled
             ? isDarkActive
@@ -205,11 +242,10 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
             : "bg-[#FFFDF8] border-b border-[#ECE8E3]/50 text-[#1E1E1E]"
         }`}
         style={{
-          boxShadow: `0 4px 20px color-mix(in srgb, var(--border-color) ${shadowOpacityPct}%, transparent)`,
+          boxShadow: `0 ${shadowYOffset.toFixed(1)}px ${shadowBlur.toFixed(1)}px ${shadowSpread.toFixed(1)}px color-mix(in srgb, var(--border-color) ${shadowOpacityPct}%, transparent)`,
           backdropFilter: scrolled ? "blur(12px)" : "none",
           WebkitBackdropFilter: scrolled ? "blur(12px)" : "none",
-          transition:
-            "transform 350ms cubic-bezier(0.16, 1, 0.3, 1), opacity 300ms ease, box-shadow 300ms ease, backdrop-filter 300ms ease, background-color 300ms ease, border-color 300ms ease",
+          transition: "box-shadow 250ms ease, backdrop-filter 300ms ease, background-color 300ms ease, border-color 300ms ease",
         }}
       >
         <div className="max-w-lg mx-auto px-4 sm:px-6 h-16 flex items-center justify-between relative">
@@ -306,8 +342,11 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
               className="flex flex-col text-left cursor-pointer group focus:outline-hidden"
               title={activeLanguage === "hi" ? "मुख्य पृष्ठ (Home)" : "Go to Home"}
             >
-              <span className="font-serif font-bold text-lg leading-none text-[#6E1F2A] dark:text-[#D4AF64] group-hover:opacity-80 transition-opacity">
+              <span className="font-serif font-bold text-base sm:text-lg leading-none text-[#6E1F2A] dark:text-[#D4AF64] group-hover:opacity-80 transition-opacity">
                 Terapanth AI
+              </span>
+              <span className="text-[10px] font-extrabold text-amber-800 dark:text-amber-300 leading-tight tracking-tight mt-0.5 truncate max-w-[120px] sm:max-w-[180px]">
+                {getPersonalizedGreeting(activeLanguage, userProfileData.name || currentUser?.displayName || '')}
               </span>
             </button>
           </div>
@@ -393,7 +432,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
                   <button
                     onClick={() => {
                       triggerHaptic(30);
-                      auth.signOut();
+                      auth?.signOut?.();
                       setShowProfileMenu(false);
                     }}
                     className="w-full px-3 py-2 text-left text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl flex items-center gap-2 cursor-pointer mt-1"
@@ -502,7 +541,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
             boxShadow: scrolled ? "0 1px 10px rgba(212, 175, 100, 0.5)" : "none",
           }}
         />
-      </header>
+      </motion.header>
 
       {/* Scroll to Top Floating Action Button */}
       <AnimatePresence>

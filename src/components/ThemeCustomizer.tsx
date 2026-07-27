@@ -23,8 +23,12 @@ interface ThemeCustomizerProps {
   onHighContrastChange: (enabled: boolean) => void;
   autoArchiveEnabled: boolean;
   onAutoArchiveChange: (enabled: boolean) => void;
-  vibrationIntensity: 'none' | 'gentle' | 'pulsing' | 'steady';
-  onVibrationIntensityChange: (intensity: 'none' | 'gentle' | 'pulsing' | 'steady') => void;
+  vibrationIntensity: 'none' | 'gentle' | 'pulsing' | 'steady' | 'intense';
+  onVibrationIntensityChange: (intensity: 'none' | 'gentle' | 'pulsing' | 'steady' | 'intense') => void;
+  vibrationPattern?: 'single' | 'double_pulse' | 'heartbeat' | 'gentle_ripple' | 'deep_focus';
+  onVibrationPatternChange?: (pattern: 'single' | 'double_pulse' | 'heartbeat' | 'gentle_ripple' | 'deep_focus') => void;
+  vibrationDuration?: number;
+  onVibrationDurationChange?: (duration: number) => void;
   spiritualSoundscape?: 'om' | 'temple_bells' | 'nature';
   onSpiritualSoundscapeChange?: (type: 'om' | 'temple_bells' | 'nature') => void;
   kfontSize?: number;
@@ -80,6 +84,10 @@ export default function ThemeCustomizer({
   onAutoArchiveChange,
   vibrationIntensity,
   onVibrationIntensityChange,
+  vibrationPattern = 'double_pulse',
+  onVibrationPatternChange,
+  vibrationDuration = 35,
+  onVibrationDurationChange,
   spiritualSoundscape = 'om',
   onSpiritualSoundscapeChange,
   kfontSize = 15,
@@ -144,6 +152,8 @@ export default function ThemeCustomizer({
       case 'highContrast': onHighContrastChange(value); break;
       case 'autoArchive': onAutoArchiveChange(value); break;
       case 'vibrationIntensity': onVibrationIntensityChange(value); break;
+      case 'vibrationPattern': onVibrationPatternChange?.(value); break;
+      case 'vibrationDuration': onVibrationDurationChange?.(value); break;
       case 'spiritualSoundscape': onSpiritualSoundscapeChange?.(value); break;
       case 'kfontSize': onKfontSizeChange?.(value); break;
       case 'kfontType': onKfontTypeChange?.(value); break;
@@ -672,23 +682,28 @@ export default function ThemeCustomizer({
                     </button>
                   </div>
 
-                  <div className="flex flex-col gap-4 pt-4 border-t border-black/5 dark:border-white/5">
-                    <div className="flex items-center justify-between">
+                  {/* Japa Counter & Sadhana Timer Haptics */}
+                  <div className="flex flex-col gap-4 pt-4 border-t border-black/5 dark:border-white/5" id="japa-sadhana-haptics-customizer">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-4">
                         <div className="p-3 bg-rose-500/10 rounded-2xl text-rose-500">
                           <Vibrate size={20} />
                         </div>
                         <div>
-                          <span className="block font-bold text-sm text-[var(--text-spiritual)]">Haptic Feedback</span>
-                          <span className="block text-[10px] text-gray-400 font-medium uppercase tracking-wider mt-0.5">Vibration on Mantra counts</span>
+                          <span className="block font-bold text-sm text-[var(--text-spiritual)]">
+                            {language === 'hi' ? 'जाप माला व साधना टाइमर वाइब्रेशन' : 'Japa & Sadhana Haptic Intensity'}
+                          </span>
+                          <span className="block text-[10px] text-gray-400 font-medium uppercase tracking-wider mt-0.5">
+                            {language === 'hi' ? 'मंत्र जप व साधना टाइमर की कंपन तीव्रता' : 'Vibration intensity for Japa counter & Sadhana timers'}
+                          </span>
                         </div>
                       </div>
-                      <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-xl">
-                        {(['none', 'gentle', 'pulsing', 'steady'] as const).map((intensity) => (
+                      <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-xl flex-wrap gap-1">
+                        {(['none', 'gentle', 'pulsing', 'steady', 'intense'] as const).map((intensity) => (
                           <button
                             key={intensity}
-                            onClick={() => onVibrationIntensityChange(intensity)}
-                            className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+                            onClick={() => handlePreferenceChange('vibrationIntensity', intensity)}
+                            className={`px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer ${
                               vibrationIntensity === intensity
                                 ? 'bg-rose-500 text-white shadow-sm'
                                 : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
@@ -699,6 +714,81 @@ export default function ThemeCustomizer({
                         ))}
                       </div>
                     </div>
+
+                    {/* Pulse Duration Slider */}
+                    {vibrationIntensity !== 'none' && (
+                      <div className="p-3.5 bg-black/5 dark:bg-white/5 rounded-2xl space-y-2 border border-black/5 dark:border-white/5">
+                        <div className="flex items-center justify-between text-xs font-bold text-[var(--text-spiritual)]">
+                          <span>{language === 'hi' ? 'कंपन अवधि (Pulse Duration)' : 'Pulse Duration (ms)'}</span>
+                          <span className="font-mono text-rose-500 font-black">{vibrationDuration} ms</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={15}
+                          max={120}
+                          step={5}
+                          value={vibrationDuration}
+                          onChange={(e) => handlePreferenceChange('vibrationDuration', parseInt(e.target.value))}
+                          className="w-full accent-rose-500 cursor-pointer"
+                        />
+                      </div>
+                    )}
+
+                    {/* Custom Focus Vibration Patterns */}
+                    {vibrationIntensity !== 'none' && (
+                      <div className="p-3.5 bg-black/5 dark:bg-white/5 rounded-2xl space-y-3 border border-black/5 dark:border-white/5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-black uppercase tracking-wider text-rose-500">
+                            {language === 'hi' ? 'गहन ध्यान वाइब्रेशन पैटर्न' : 'Custom Deep Focus Patterns'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              let sequence: number[] = [vibrationDuration];
+                              if (vibrationPattern === 'double_pulse') sequence = [vibrationDuration, 45, vibrationDuration];
+                              else if (vibrationPattern === 'heartbeat') sequence = [vibrationDuration, 60, Math.round(vibrationDuration * 2)];
+                              else if (vibrationPattern === 'gentle_ripple') sequence = [Math.round(vibrationDuration * 0.7), 30, vibrationDuration, 30, Math.round(vibrationDuration * 1.3)];
+                              else if (vibrationPattern === 'deep_focus') sequence = [Math.round(vibrationDuration * 1.4), 50, vibrationDuration, 50, Math.round(vibrationDuration * 1.8)];
+                              
+                              if ('vibrate' in navigator) {
+                                navigator.vibrate(sequence);
+                                toast.success(language === 'hi' ? 'कंपन पैटर्न का अनुभव करें 📳' : `Tested ${vibrationPattern.replace('_', ' ')} pattern! 📳`);
+                              } else {
+                                toast.error('Vibration is not supported on this browser/device');
+                              }
+                            }}
+                            className="px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-lg text-[9.5px] font-black uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer"
+                          >
+                            <Vibrate size={11} />
+                            <span>{language === 'hi' ? 'परीक्षण करें' : 'Test Pattern'}</span>
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {[
+                            { id: 'single', label: language === 'hi' ? 'एकल स्पर्श' : 'Single Soft Tap', desc: '[Short]' },
+                            { id: 'double_pulse', label: language === 'hi' ? 'द्वि-स्पंदन' : 'Double Pulse', desc: '[Tap-Tap]' },
+                            { id: 'heartbeat', label: language === 'hi' ? 'हृदय ताल' : 'Heartbeat', desc: '[Thump]' },
+                            { id: 'gentle_ripple', label: language === 'hi' ? 'शांत तरंग' : 'Calming Ripple', desc: '[Wave]' },
+                            { id: 'deep_focus', label: language === 'hi' ? 'गहन ध्यान' : 'Deep Focus Resonance', desc: '[Resonant]' },
+                          ].map((pat) => (
+                            <button
+                              key={pat.id}
+                              type="button"
+                              onClick={() => handlePreferenceChange('vibrationPattern', pat.id)}
+                              className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                                vibrationPattern === pat.id
+                                  ? 'bg-rose-500/15 border-rose-500 text-rose-500 font-bold'
+                                  : 'border-black/10 dark:border-white/10 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
+                              }`}
+                            >
+                              <span className="block text-[11px] font-black leading-tight">{pat.label}</span>
+                              <span className="block text-[9px] opacity-75 font-mono">{pat.desc}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

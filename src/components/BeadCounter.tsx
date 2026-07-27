@@ -115,18 +115,33 @@ export default function BeadCounter() {
     }
   };
 
+  const triggerHaptic = () => {
+    if (typeof navigator === 'undefined' || !('vibrate' in navigator)) return;
+    const intensity = localStorage.getItem('app_vibration_intensity') || 'gentle';
+    if (intensity === 'none') return;
+
+    const pattern = localStorage.getItem('app_vibration_pattern') || 'double_pulse';
+    const dur = parseInt(localStorage.getItem('app_vibration_duration') || '35', 10);
+
+    let sequence: number[] = [dur];
+    if (pattern === 'double_pulse') sequence = [dur, 45, dur];
+    else if (pattern === 'heartbeat') sequence = [dur, 60, Math.round(dur * 2)];
+    else if (pattern === 'gentle_ripple') sequence = [Math.round(dur * 0.7), 30, dur, 30, Math.round(dur * 1.3)];
+    else if (pattern === 'deep_focus') sequence = [Math.round(dur * 1.4), 50, dur, 50, Math.round(dur * 1.8)];
+
+    try {
+      navigator.vibrate(sequence);
+    } catch {
+      // Fallback
+    }
+  };
+
   const handleIncrement = () => {
     setCount(prev => prev + 1);
     setIsAnimating(true);
     playClickAudio();
 
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      try {
-        navigator.vibrate(25);
-      } catch {
-        // Fallback
-      }
-    }
+    triggerHaptic();
 
     setTimeout(() => setIsAnimating(false), 180);
   };
