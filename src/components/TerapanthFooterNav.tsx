@@ -244,9 +244,7 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({
 
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 z-50 pointer-events-none pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] px-3 flex justify-center transition-all duration-300 ${
-        isPaginationVisible ? 'translate-y-0 opacity-100' : 'translate-y-16 opacity-0'
-      }`}
+      className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] px-3 flex justify-center transition-all duration-300 translate-y-0 opacity-100"
     >
       {/* Floating Capsule Outer Container */}
       <nav
@@ -265,7 +263,7 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({
         <div className="relative w-full h-[60px] bg-gradient-to-r from-[#781822] via-[#851D29] to-[#560F18] border border-[#D4AF37] rounded-full shadow-[0_10px_32px_rgba(0,0,0,0.5)] flex items-center justify-between px-3 sm:px-6">
           
           {/* Center Raised Bridge Ring and AI Circle */}
-          <div className="absolute left-1/2 -top-[16px] -translate-x-1/2 w-[72px] h-[72px] rounded-full bg-gradient-to-b from-[#851D29] to-[#6E1F2A] border border-[#D4AF37] p-1 flex items-center justify-center shadow-lg z-20">
+          <div className="absolute left-1/2 -top-[12px] -translate-x-1/2 w-[62px] h-[62px] rounded-full bg-gradient-to-b from-[#851D29] to-[#6E1F2A] border border-[#D4AF37] p-1 flex items-center justify-center shadow-lg z-20">
             <button
               id="tp-nav-tab-chat"
               onClick={() => {
@@ -274,14 +272,14 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({
                 }
                 setActiveTab('chat');
               }}
-              className={`w-full h-full rounded-full bg-[#FFFDF8] border-2 border-[#D4AF37] flex flex-col items-center justify-center transition-transform duration-200 active:scale-95 cursor-pointer shadow-[0_0_20px_rgba(255,230,170,0.8)] ${
+              className={`w-full h-full rounded-full bg-[#FFFDF8] border-2 border-[#D4AF37] flex flex-col items-center justify-center transition-transform duration-200 active:scale-95 cursor-pointer shadow-[0_0_16px_rgba(255,230,170,0.7)] ${
                 isAiActive ? 'ring-2 ring-[#FFD700] ring-offset-2 ring-offset-[#781822] scale-102' : 'hover:bg-white'
               }`}
               aria-label="AI Assistant"
             >
-              <AISparklesIcon size={24} />
-              <span className="text-[11px] font-bold text-[#6E1620] leading-none flex items-center gap-0.5 mt-0.5">
-                <span className="text-[8px] text-[#C59B27]">✨</span>
+              <AISparklesIcon size={18} />
+              <span className="text-[10px] font-bold text-[#6E1620] leading-none flex items-center gap-0.5 mt-0.5">
+                <span className="text-[7px] text-[#C59B27]">✨</span>
                 {language === 'hi' ? 'AI' : 'AI'}
               </span>
             </button>
@@ -331,7 +329,7 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({
           </div>
 
           {/* Spacer for Center AI Circle */}
-          <div className="w-[56px] shrink-0" />
+          <div className="w-[48px] shrink-0" />
 
           {/* Right Side: Sadhana & Profile */}
           <div className="relative z-10 flex items-center justify-around w-[40%] pl-1">

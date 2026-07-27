@@ -30,6 +30,8 @@ export interface TerapanthHeaderProps {
   onProfileClick?: () => void;
   onLoginClick?: () => void;
   zenMode?: boolean;
+  isDeepFocus?: boolean;
+  hideHeader?: boolean;
   zenElapsed?: number;
   activeTab?: string;
   onSearchClick?: () => void;
@@ -44,6 +46,7 @@ export interface TerapanthHeaderProps {
   isDarkMode?: boolean;
   language?: "hi" | "en";
   onToggleLanguage?: () => void;
+  hapticsEnabled?: boolean;
 }
 
 export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
@@ -56,6 +59,8 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
   onProfileClick,
   onLoginClick,
   zenMode = false,
+  isDeepFocus = false,
+  hideHeader = false,
   zenElapsed = 0,
   activeTab,
   onSearchClick,
@@ -70,6 +75,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
   isDarkMode,
   language: customLanguage,
   onToggleLanguage,
+  hapticsEnabled = true,
 }) => {
   const isDarkActive = isDarkMode !== undefined ? isDarkMode : theme === "dark";
   const activeStreak = streakDays !== undefined ? streakDays : streak;
@@ -86,6 +92,23 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
   const [scrollY, setScrollY] = useState(0);
   const [showOverflowMenu, setShowOverflowMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  // Global Haptic Feedback Triggering
+  const triggerHaptic = useCallback((pattern: number | number[] = 15) => {
+    if (typeof window === "undefined" || !("vibrate" in navigator)) return;
+    const isEnabledProp = hapticsEnabled !== false;
+    const hapticClicksEnabled =
+      isEnabledProp &&
+      localStorage.getItem("haptic_button_clicks") !== "false" &&
+      localStorage.getItem("terapanth_haptics") !== "false";
+    if (hapticClicksEnabled) {
+      try {
+        navigator.vibrate(pattern);
+      } catch {
+        // Fallback for restricted contexts
+      }
+    }
+  }, [hapticsEnabled]);
 
   useEffect(() => {
     const handleScroll = (e: Event) => {
@@ -104,6 +127,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
 
   const scrolled = scrollY > 20;
   const showScrollTop = scrollY > 300;
+  const isHeaderHidden = zenMode || isDeepFocus || hideHeader;
 
   const checkOnlineStatus = () => {
     if (typeof window !== "undefined" && window.localStorage.getItem("terapanth_offline_simulation") === "true") {
@@ -116,6 +140,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
   const [greeting, setGreeting] = useState("");
 
   const scrollToTop = () => {
+    triggerHaptic(20);
     window.scrollTo({ top: 0, behavior: "smooth" });
     const scrollContainers = document.querySelectorAll(".overflow-y-auto, [class*='overflow-y-auto']");
     scrollContainers.forEach((el) => {
@@ -153,36 +178,43 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
   const currentUser = auth.currentUser;
 
   const handleLogoTap = useCallback(() => {
-    if (typeof navigator !== "undefined" && navigator.vibrate) {
-      try {
-        navigator.vibrate(35);
-      } catch {
-        // Fallback for restricted contexts
-      }
-    }
+    triggerHaptic(25);
     if (onLogoClick) {
       onLogoClick();
     } else {
       window.dispatchEvent(new CustomEvent('switch-tab', { detail: 'home' }));
     }
-  }, [onLogoClick]);
+  }, [onLogoClick, triggerHaptic]);
+
+  const shadowOpacityPct = Math.min(15, Math.max(0, (scrollY / 100) * 15)).toFixed(2);
 
   return (
     <>
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        className={`fixed top-0 left-0 right-0 z-50 pt-[env(safe-area-inset-top,0px)] ${
+          isHeaderHidden
+            ? "-translate-y-full opacity-0 pointer-events-none"
+            : "translate-y-0 opacity-100 pointer-events-auto"
+        } ${
           scrolled
             ? isDarkActive
-              ? "bg-[#12090B]/90 backdrop-blur-xl border-b border-[#2E1B22] text-[#F7F3EC] shadow-sm"
-              : "bg-[#FFFDF8]/90 backdrop-blur-xl border-b border-[#ECE8E3] text-[#1E1E1E] shadow-2xs"
+              ? "bg-[#12090B]/90 backdrop-blur-xl border-b border-[#2E1B22] text-[#F7F3EC]"
+              : "bg-[#FFFDF8]/90 backdrop-blur-xl border-b border-[#ECE8E3] text-[#1E1E1E]"
             : isDarkActive
             ? "bg-[#12090B] border-b border-[#2E1B22]/50 text-[#F7F3EC]"
             : "bg-[#FFFDF8] border-b border-[#ECE8E3]/50 text-[#1E1E1E]"
         }`}
+        style={{
+          boxShadow: `0 4px 20px color-mix(in srgb, var(--border-color) ${shadowOpacityPct}%, transparent)`,
+          backdropFilter: scrolled ? "blur(12px)" : "none",
+          WebkitBackdropFilter: scrolled ? "blur(12px)" : "none",
+          transition:
+            "transform 350ms cubic-bezier(0.16, 1, 0.3, 1), opacity 300ms ease, box-shadow 300ms ease, backdrop-filter 300ms ease, background-color 300ms ease, border-color 300ms ease",
+        }}
       >
-        <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="max-w-lg mx-auto px-4 sm:px-6 h-16 flex items-center justify-between relative">
           {/* Logo & Branding Section */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3.5">
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: -2 }}
               animate={
@@ -281,29 +313,33 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
           </div>
 
           {/* Primary Action Buttons: Search, Profile & Overflow Menu */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Streak Badge */}
             {activeStreak > 0 && (
-              <div className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#6E1F2A]/10 text-[#6E1F2A] dark:text-[#D4AF64] text-xs font-semibold mr-1">
-                <Flame size={12} className="fill-[#6E1F2A] dark:fill-[#D4AF64]" />
+              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#6E1F2A]/10 text-[#6E1F2A] dark:text-[#D4AF64] text-xs font-semibold mr-1">
+                <Flame size={13} className="fill-[#6E1F2A] dark:fill-[#D4AF64]" />
                 <span>{activeStreak}d</span>
               </div>
             )}
 
             {/* Global Search Button */}
             <button
-              onClick={onSearchClick}
-              className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800/60 text-stone-700 dark:text-stone-300 transition-all active:scale-95 cursor-pointer"
+              onClick={() => {
+                triggerHaptic();
+                onSearchClick?.();
+              }}
+              className="p-2.5 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800/60 text-stone-700 dark:text-stone-300 transition-all active:scale-95 cursor-pointer"
               title="Search"
               aria-label="Search"
             >
-              <Search size={18} strokeWidth={1.8} />
+              <Search size={19} strokeWidth={1.8} />
             </button>
 
             {/* User Profile Button */}
             <div className="relative">
               <button
                 onClick={() => {
+                  triggerHaptic();
                   if (currentUser) {
                     setShowProfileMenu(!showProfileMenu);
                     setShowOverflowMenu(false);
@@ -313,11 +349,11 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
                     onProfileClick();
                   }
                 }}
-                className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800/60 text-stone-700 dark:text-stone-300 transition-all active:scale-95 cursor-pointer relative"
+                className="p-2.5 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800/60 text-stone-700 dark:text-stone-300 transition-all active:scale-95 cursor-pointer relative"
                 title="Profile"
                 aria-label="Profile"
               >
-                <User size={18} strokeWidth={1.8} />
+                <User size={19} strokeWidth={1.8} />
                 {currentUser && (
                   <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#6E1F2A] dark:bg-[#D4AF64] rounded-full" />
                 )}
@@ -336,6 +372,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
                   </div>
                   <button
                     onClick={() => {
+                      triggerHaptic();
                       onProfileClick?.();
                       setShowProfileMenu(false);
                     }}
@@ -345,6 +382,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
                   </button>
                   <button
                     onClick={() => {
+                      triggerHaptic();
                       triggerOpenCustomizer?.();
                       setShowProfileMenu(false);
                     }}
@@ -354,6 +392,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
                   </button>
                   <button
                     onClick={() => {
+                      triggerHaptic(30);
                       auth.signOut();
                       setShowProfileMenu(false);
                     }}
@@ -369,14 +408,15 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
             <div className="relative">
               <button
                 onClick={() => {
+                  triggerHaptic();
                   setShowOverflowMenu(!showOverflowMenu);
                   setShowProfileMenu(false);
                 }}
-                className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800/60 text-stone-700 dark:text-stone-300 transition-all active:scale-95 cursor-pointer"
+                className="p-2.5 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800/60 text-stone-700 dark:text-stone-300 transition-all active:scale-95 cursor-pointer"
                 title="More Actions"
                 aria-label="More Actions"
               >
-                <MoreVertical size={18} strokeWidth={1.8} />
+                <MoreVertical size={19} strokeWidth={1.8} />
               </button>
 
               {/* Overflow Menu */}
@@ -384,6 +424,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
                 <div className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-[#1C1014] rounded-2xl shadow-xl border border-[#ECE8E3] dark:border-[#2E1B22] p-2 z-50 animate-in fade-in zoom-in-95">
                   <button
                     onClick={() => {
+                      triggerHaptic();
                       triggerToggleLanguage?.();
                       setShowOverflowMenu(false);
                     }}
@@ -399,6 +440,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
 
                   <button
                     onClick={() => {
+                      triggerHaptic();
                       triggerToggleTheme?.();
                       setShowOverflowMenu(false);
                     }}
@@ -412,6 +454,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
 
                   <button
                     onClick={() => {
+                      triggerHaptic();
                       setShowLocationModal(true);
                       setShowOverflowMenu(false);
                     }}
@@ -425,6 +468,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
 
                   <button
                     onClick={() => {
+                      triggerHaptic(20);
                       triggerRefresh?.();
                       setShowOverflowMenu(false);
                     }}
@@ -435,6 +479,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
 
                   <button
                     onClick={() => {
+                      triggerHaptic();
                       onPenClick?.();
                       setShowOverflowMenu(false);
                     }}
@@ -447,11 +492,21 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Dynamic Depth Accent Glow Line on Scroll */}
+        <div
+          className={`absolute bottom-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#D4AF64]/80 dark:via-[#D4AF64]/90 to-transparent transition-opacity duration-300 pointer-events-none ${
+            scrolled ? "opacity-100" : "opacity-0"
+          }`}
+          style={{
+            boxShadow: scrolled ? "0 1px 10px rgba(212, 175, 100, 0.5)" : "none",
+          }}
+        />
       </header>
 
       {/* Scroll to Top Floating Action Button */}
       <AnimatePresence>
-        {showScrollTop && (
+        {showScrollTop && !isHeaderHidden && (
           <motion.button
             initial={{ opacity: 0, scale: 0.8, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}

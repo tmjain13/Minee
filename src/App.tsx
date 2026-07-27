@@ -1547,7 +1547,7 @@ export default function App() {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         style={{ touchAction: 'pan-y' }}
-        className={`w-full flex-1 relative z-10 max-w-md mx-auto scroll-smooth p-0 m-0 border-none ${activeTab === "chat" ? "overflow-hidden flex flex-col p-0 pb-[76px]" : "overflow-y-auto px-0 m-0 border-none pb-24"}`}
+        className={`w-full flex-1 relative z-10 max-w-md mx-auto scroll-smooth p-0 m-0 border-none ${activeTab === "chat" ? "overflow-hidden flex flex-col p-0 pb-[76px]" : "overflow-y-auto px-0 m-0 border-none pt-16 pb-32"}`}
       >
         <Suspense fallback={<LoadingSpinner />}>
           <AnimatePresence mode="wait">
@@ -2202,29 +2202,11 @@ export default function App() {
             )}
           </AnimatePresence>
 
-          {/* Subtle "Scroll for more" indicator */}
-          <AnimatePresence>
-            {showScrollMore && activeTab !== "chat" && (
-              <motion.div
-                initial={{ opacity: 0, y: 10, x: "-50%" }}
-                animate={{ opacity: 1, y: 0, x: "-50%" }}
-                exit={{ opacity: 0, y: 10, x: "-50%" }}
-                transition={{ duration: 0.3 }}
-                className="fixed bottom-20 left-1/2 z-40 pointer-events-none flex flex-col items-center gap-1 bg-amber-500/90 text-white px-4 py-1.5 rounded-full shadow-lg border border-white/20 text-[9px] font-black tracking-widest uppercase"
-              >
-                <div className="flex items-center gap-1.5">
-                  <span>{language === 'hi' ? 'अधिक जानकारी के लिए नीचे स्क्रॉल करें' : 'Scroll for more'}</span>
-                  <ChevronDown size={10} className="animate-bounce stroke-[3]" />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
           <TerapanthFooterNav 
             activeTab={activeTab} 
             setActiveTab={setActiveTab}
             language={language}
-            isPaginationVisible={isPaginationVisible}
+            isPaginationVisible={true}
           />
         </>
       )}

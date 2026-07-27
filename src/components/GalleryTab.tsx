@@ -519,7 +519,7 @@ const GalleryTab = memo(({ setShareToast, isDarkMode = false }: GalleryTabProps)
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className="fixed inset-x-0 bottom-0 max-h-[82dvh] bg-[var(--card-bg)] border-t border-[var(--border-color)] rounded-t-[32px] shadow-2xl z-[120] overflow-y-auto pb-8 select-none"
+              className="fixed inset-x-0 bottom-0 max-h-[82dvh] bg-[var(--card-bg)] border-t border-[var(--border-color)] rounded-t-[32px] shadow-2xl z-[120] overflow-y-auto pb-28 select-none"
               style={{ color: 'var(--text-spiritual)' }}
             >
               {/* Grab Drag Bar */}

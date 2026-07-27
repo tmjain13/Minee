@@ -2,7 +2,7 @@
 
 import { precacheAndRoute } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
-import { CacheFirst, NetworkFirst } from 'workbox-strategies';
+import { CacheFirst, NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 
 declare const self: ServiceWorkerGlobalScope;
@@ -11,18 +11,73 @@ const CACHE_VERSION = 'v2';
 const PRECACHE_NAME = `terapanth-precache-${CACHE_VERSION}`;
 const RUNTIME_CACHE_NAME = `terapanth-spiritual-${CACHE_VERSION}`;
 
-// Precache resources
+// Precache resources registered via Workbox manifest
 precacheAndRoute((self as any).__WB_MANIFEST || []);
 
-// Runtime caching routes
+// Core static app routes and shell resources to precache
+const CORE_APP_ASSETS = [
+  '/',
+  '/index.html',
+  '/favicon.ico',
+  '/manifest.json'
+];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(PRECACHE_NAME).then((cache) => {
+      return cache.addAll(CORE_APP_ASSETS).catch((err) => {
+        // Soft error handling for missing optional assets
+      });
+    })
+  );
+  self.skipWaiting();
+});
+
+// Runtime caching routes for Google Fonts CSS stylesheets
 registerRoute(
   /^https:\/\/fonts\.googleapis\.com\/.*/i,
+  new StaleWhileRevalidate({
+    cacheName: `google-fonts-stylesheets-${CACHE_VERSION}`,
+  })
+);
+
+// Cache Google Fonts webfont binaries (fonts.gstatic.com)
+registerRoute(
+  /^https:\/\/fonts\.gstatic\.com\/.*/i,
   new CacheFirst({
-    cacheName: `google-fonts-cache-${CACHE_VERSION}`,
+    cacheName: `google-fonts-webfonts-${CACHE_VERSION}`,
     plugins: [
       new ExpirationPlugin({
-        maxEntries: 10,
+        maxEntries: 30,
         maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+      }),
+    ],
+  })
+);
+
+// Cache core UI components, media assets, and logos
+registerRoute(
+  /^\/(?:assets|media)\/.*$/i,
+  new CacheFirst({
+    cacheName: `ui-components-media-${CACHE_VERSION}`,
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 120,
+        maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+      }),
+    ],
+  })
+);
+
+// Cache static bundle extensions (scripts, styles, icons, webp, woff2)
+registerRoute(
+  /\.(?:png|gif|jpg|jpeg|webp|svg|ico|woff2?|ttf|css|js)$/i,
+  new StaleWhileRevalidate({
+    cacheName: `static-ui-assets-${CACHE_VERSION}`,
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 150,
+        maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
       }),
     ],
   })

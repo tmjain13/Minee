@@ -1660,7 +1660,7 @@ const SadhanaTab = memo(({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="space-y-6 pb-20 px-4"
+      className="space-y-6 pb-32 px-4"
     >
       {dailyStreak !== undefined && dailyStreak > 0 && (
         <div className="flex items-center justify-between px-6 py-4 bg-orange-500/10 rounded-[2rem] border border-orange-500/20 shadow-sm overflow-hidden relative group">

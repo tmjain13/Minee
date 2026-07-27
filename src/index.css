@@ -61,11 +61,11 @@
 }
 
 .dark {
-  --bg-cream: #12090B;
-  --text-spiritual: #F7F3EC;
-  --text-secondary: #A09890;
-  --card-bg: #1C1014;
-  --border-color: #2E1B22;
+  --bg-cream: #140D0F;
+  --text-spiritual: #F7F2EC;
+  --text-secondary: #A69C94;
+  --card-bg: #1E1417;
+  --border-color: #2D1E23;
   --accent-gold: #D4AF64;
   --accent-soft: rgba(182, 141, 64, 0.1);
   --radius-card: 20px;
@@ -73,24 +73,24 @@
 }
 
 .dark.theme-ocean {
-  --bg-cream: #09121A;
+  --bg-cream: #0B131B;
   --text-spiritual: #E0EBF2;
-  --card-bg: #101E2B;
-  --border-color: #1A3145;
+  --card-bg: #12202D;
+  --border-color: #1B3347;
 }
 
 .dark.theme-forest {
-  --bg-cream: #0A1710;
+  --bg-cream: #0B1811;
   --text-spiritual: #E0F0E5;
-  --card-bg: #12241A;
-  --border-color: #1B3828;
+  --card-bg: #13261C;
+  --border-color: #1C392A;
 }
 
 .dark.theme-saffron {
-  --bg-cream: #140709;
+  --bg-cream: #15090B;
   --text-spiritual: #F5E8EA;
-  --card-bg: #220B0E;
-  --border-color: #3D1217;
+  --card-bg: #220E11;
+  --border-color: #3D141A;
   --accent-soft: rgba(122, 31, 43, 0.2);
 }
 
