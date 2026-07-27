@@ -3721,6 +3721,7 @@ const SadhanaGoalsSection = ({
   const [activeConfettiId, setActiveConfettiId] = useState<string | null>(null);
   const [activeTagFilter, setActiveTagFilter] = useState<string>('All');
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('All');
+  const [activePriorityFilter, setActivePriorityFilter] = useState<'All' | 'High' | 'Medium' | 'Low'>('All');
   const [searchKeyword, setSearchKeyword] = useState<string>('');
   const [sortBy, setSortBy] = useState<'date_desc' | 'date_asc' | 'impact_desc' | 'impact_asc'>('impact_desc');
   const [newGoalTag, setNewGoalTag] = useState<string>('Daily');
@@ -4167,8 +4168,9 @@ const SadhanaGoalsSection = ({
     const result = todos.filter((t: any) => {
       const matchesTag = activeTagFilter === 'All' || (t.tag || 'Daily') === activeTagFilter;
       const matchesCategory = activeCategoryFilter === 'All' || (t.category || 'Sadhana') === activeCategoryFilter;
+      const matchesPriority = activePriorityFilter === 'All' || (t.impact || 'Medium') === activePriorityFilter;
       const matchesKeyword = !searchKeyword.trim() || t.text.toLowerCase().includes(searchKeyword.toLowerCase().trim());
-      return matchesTag && matchesCategory && matchesKeyword;
+      return matchesTag && matchesCategory && matchesPriority && matchesKeyword;
     });
 
     const getImpactVal = (impact?: string) => {
@@ -4196,7 +4198,7 @@ const SadhanaGoalsSection = ({
       // date_desc
       return (Number(b.id) || 0) - (Number(a.id) || 0);
     });
-  }, [todos, activeTagFilter, activeCategoryFilter, searchKeyword, sortBy]);
+  }, [todos, activeTagFilter, activeCategoryFilter, activePriorityFilter, searchKeyword, sortBy]);
 
   const completedCount = todos.filter(t => t.completed).length;
   const totalCount = todos.length;
@@ -4679,6 +4681,32 @@ const SadhanaGoalsSection = ({
                   {cat.emoji} {language === 'hi' ? cat.label.hi : cat.label.en}
                 </option>
               ))}
+            </select>
+          </div>
+
+          {/* Priority Level Filter Dropdown */}
+          <div className="flex items-center gap-1.5 bg-white dark:bg-zinc-900 border border-black/10 dark:border-zinc-800 rounded-2xl px-3 py-2 text-xs shrink-0 shadow-xs">
+            <Sparkles size={14} className="text-orange-500 shrink-0" />
+            <span className="text-[11px] font-bold text-gray-400 hidden sm:inline">
+              {language === 'hi' ? 'प्राथमिकता:' : 'Priority:'}
+            </span>
+            <select
+              value={activePriorityFilter}
+              onChange={(e) => setActivePriorityFilter(e.target.value as any)}
+              className="bg-transparent text-xs font-bold text-gray-700 dark:text-gray-200 focus:outline-none cursor-pointer pr-1"
+            >
+              <option value="All" className="dark:bg-zinc-900 text-gray-800 dark:text-gray-200">
+                {language === 'hi' ? 'सभी प्राथमिकताएं' : 'All Priorities'}
+              </option>
+              <option value="High" className="dark:bg-zinc-900 text-red-600 font-bold">
+                🔴 {language === 'hi' ? 'उच्च प्राथमिकता (High)' : 'High Priority'}
+              </option>
+              <option value="Medium" className="dark:bg-zinc-900 text-amber-600 font-bold">
+                🟡 {language === 'hi' ? 'मध्यम प्राथमिकता (Medium)' : 'Medium Priority'}
+              </option>
+              <option value="Low" className="dark:bg-zinc-900 text-emerald-600 font-bold">
+                🟢 {language === 'hi' ? 'निम्न प्राथमिकता (Low)' : 'Low Priority'}
+              </option>
             </select>
           </div>
 
