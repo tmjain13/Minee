@@ -3723,7 +3723,9 @@ const SadhanaGoalsSection = ({
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('All');
   const [activePriorityFilter, setActivePriorityFilter] = useState<'All' | 'High' | 'Medium' | 'Low'>('All');
   const [searchKeyword, setSearchKeyword] = useState<string>('');
-  const [sortBy, setSortBy] = useState<'date_desc' | 'date_asc' | 'impact_desc' | 'impact_asc'>('impact_desc');
+  const [sortBy, setSortBy] = useState<
+    'date_desc' | 'date_asc' | 'impact_desc' | 'impact_asc' | 'alphabetical_asc' | 'alphabetical_desc' | 'status_pending_first' | 'status_completed_first'
+  >('impact_desc');
   const [newGoalTag, setNewGoalTag] = useState<string>('Daily');
   const [newGoalCategory, setNewGoalCategory] = useState<string>('Sadhana');
   const [newImpact, setNewImpact] = useState<'Low' | 'Medium' | 'High'>('Medium');
@@ -3862,6 +3864,9 @@ const SadhanaGoalsSection = ({
     { id: 'Evening', label: { en: 'Evening', hi: 'सायंकालीन' }, emoji: '🌙' },
     { id: 'Weekly', label: { en: 'Weekly', hi: 'साप्ताहिक' }, emoji: '📅' },
     { id: 'Special Ritual', label: { en: 'Special Ritual', hi: 'विशेष अनुष्ठान' }, emoji: '✨' },
+    { id: 'Health', label: { en: 'Health', hi: 'स्वास्थ्य' }, emoji: '🌿' },
+    { id: 'Service', label: { en: 'Service', hi: 'सेवा' }, emoji: '🤝' },
+    { id: 'Ritual', label: { en: 'Ritual', hi: 'धार्मिक क्रिया' }, emoji: '🕯️' },
   ];
 
   const PRESET_GOALS = [
@@ -4079,7 +4084,13 @@ const SadhanaGoalsSection = ({
       case 'Weekly':
         return 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20';
       case 'Special Ritual':
+        return 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20';
+      case 'Health':
         return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20';
+      case 'Service':
+        return 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/20';
+      case 'Ritual':
+        return 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/20';
       case 'Daily':
       default:
         return 'bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/20';
@@ -4164,6 +4175,74 @@ const SadhanaGoalsSection = ({
       isApproaching,
       isOverdue: diffMins < 0
     };
+  };
+
+  const handleDownloadSadhanaCSV = () => {
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    
+    const rows = [
+      ['Type', 'Task / Practice Name', 'Category', 'Tag', 'Priority', 'Status', 'Completed Date/Time', 'Notes / Observations']
+    ];
+
+    const allTasks = [...todos, ...(archivedTodos || [])];
+
+    allTasks.forEach((t: any) => {
+      const type = 'Sadhana Task';
+      const text = t.text || '';
+      const category = t.category || 'Sadhana';
+      const tag = t.tag || 'Daily';
+      const priority = t.impact || 'Medium';
+      const status = t.completed ? 'Completed' : 'Pending';
+      const completedAtStr = t.completedAt ? new Date(t.completedAt).toLocaleString() : (t.completed ? new Date().toLocaleString() : '');
+      const notes = t.notes || '';
+
+      rows.push([type, text, category, tag, priority, status, completedAtStr, notes]);
+    });
+
+    try {
+      const savedDiary = localStorage.getItem('sadhana_diary_entries') || localStorage.getItem('sadhana_notes');
+      if (savedDiary) {
+        const parsed = JSON.parse(savedDiary);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((item: any) => {
+            rows.push([
+              'Meditation Observation',
+              item.title || item.topic || 'Meditation Observation',
+              item.category || 'Observation',
+              item.tag || 'Meditation',
+              'Medium',
+              'Recorded',
+              item.date ? new Date(item.date).toLocaleString() : (item.timestamp ? new Date(item.timestamp).toLocaleString() : ''),
+              item.content || item.notes || item.text || ''
+            ]);
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Could not parse diary entries for CSV export', e);
+    }
+
+    const csvContent = rows
+      .map(row =>
+        row
+          .map(cell => {
+            const str = String(cell ?? '').replace(/"/g, '""');
+            return `"${str}"`;
+          })
+          .join(',')
+      )
+      .join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Terapanth_Sadhana_Log_${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const onToggle = (id: string) => {
@@ -4471,6 +4550,20 @@ const SadhanaGoalsSection = ({
     };
 
     return [...result].sort((a: any, b: any) => {
+      if (sortBy === 'alphabetical_asc') {
+        return (a.text || '').localeCompare(b.text || '');
+      }
+      if (sortBy === 'alphabetical_desc') {
+        return (b.text || '').localeCompare(a.text || '');
+      }
+      if (sortBy === 'status_pending_first') {
+        if (a.completed === b.completed) return (Number(b.id) || 0) - (Number(a.id) || 0);
+        return a.completed ? 1 : -1;
+      }
+      if (sortBy === 'status_completed_first') {
+        if (a.completed === b.completed) return (Number(b.id) || 0) - (Number(a.id) || 0);
+        return a.completed ? -1 : 1;
+      }
       if (sortBy === 'impact_desc') {
         const valA = getImpactVal(a.impact);
         const valB = getImpactVal(b.impact);
@@ -5234,18 +5327,31 @@ const SadhanaGoalsSection = ({
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
               className="bg-transparent text-xs font-bold text-gray-700 dark:text-gray-200 focus:outline-none cursor-pointer pr-1"
+              id="sadhana-sort-by-select"
             >
+              <option value="alphabetical_asc" className="dark:bg-zinc-900 text-gray-800 dark:text-gray-200">
+                🔤 {language === 'hi' ? 'वर्णानुक्रम (A से Z)' : 'Alphabetical (A → Z)'}
+              </option>
+              <option value="alphabetical_desc" className="dark:bg-zinc-900 text-gray-800 dark:text-gray-200">
+                🔤 {language === 'hi' ? 'वर्णानुक्रम (Z से A)' : 'Alphabetical (Z → A)'}
+              </option>
+              <option value="status_pending_first" className="dark:bg-zinc-900 text-gray-800 dark:text-gray-200">
+                ⏳ {language === 'hi' ? 'स्थिति: शेष (Pending) पहले' : 'Status: Pending First'}
+              </option>
+              <option value="status_completed_first" className="dark:bg-zinc-900 text-gray-800 dark:text-gray-200">
+                ✅ {language === 'hi' ? 'स्थिति: पूर्ण (Completed) पहले' : 'Status: Completed First'}
+              </option>
               <option value="impact_desc" className="dark:bg-zinc-900 text-gray-800 dark:text-gray-200">
-                {language === 'hi' ? 'महत्व: उच्च से निम्न' : 'Importance: High → Low'}
+                ⭐ {language === 'hi' ? 'प्राथमिकता: उच्च से निम्न (Custom Priority)' : 'Custom Priority: High → Low'}
               </option>
               <option value="impact_asc" className="dark:bg-zinc-900 text-gray-800 dark:text-gray-200">
-                {language === 'hi' ? 'महत्व: निम्न से उच्च' : 'Importance: Low → High'}
+                ⭐ {language === 'hi' ? 'प्राथमिकता: निम्न से उच्च' : 'Custom Priority: Low → High'}
               </option>
               <option value="date_desc" className="dark:bg-zinc-900 text-gray-800 dark:text-gray-200">
-                {language === 'hi' ? 'तिथि: नवीन पहले' : 'Date: Newest First'}
+                📅 {language === 'hi' ? 'तिथि: नवीन पहले' : 'Date: Newest First'}
               </option>
               <option value="date_asc" className="dark:bg-zinc-900 text-gray-800 dark:text-gray-200">
-                {language === 'hi' ? 'तिथि: पुराना पहले' : 'Date: Oldest First'}
+                📅 {language === 'hi' ? 'तिथि: पुराना पहले' : 'Date: Oldest First'}
               </option>
             </select>
           </div>
@@ -5441,15 +5547,28 @@ const SadhanaGoalsSection = ({
           </span>
         </div>
 
-        <button
-          type="button"
-          onClick={handleCopyTasksToClipboard}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-orange-500/10 to-amber-500/10 hover:from-orange-500/20 hover:to-amber-500/20 text-orange-700 dark:text-orange-300 border border-orange-500/30 text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95"
-          title={language === 'hi' ? 'सभी संकल्पों को क्लिपबोर्ड पर कॉपी करें' : 'Copy formatted task list to clipboard for journaling or sharing'}
-        >
-          <Copy size={14} className="text-orange-500" />
-          <span>{copyToast ? (language === 'hi' ? 'कॉपी हो गया! ✓' : 'Copied! ✓') : (language === 'hi' ? 'सूची कॉपी करें' : 'Copy Tasks')}</span>
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={handleDownloadSadhanaCSV}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95"
+            title={language === 'hi' ? 'साधना लॉग को CSV फ़ाइल के रूप में डाउनलोड करें' : 'Download Sadhana log and completed observations as a formatted CSV file'}
+            id="download-sadhana-log-csv-btn"
+          >
+            <Download size={14} />
+            <span>{language === 'hi' ? 'साधना लॉग (CSV)' : 'Download Sadhana Log'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleCopyTasksToClipboard}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-orange-500/10 to-amber-500/10 hover:from-orange-500/20 hover:to-amber-500/20 text-orange-700 dark:text-orange-300 border border-orange-500/30 text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95"
+            title={language === 'hi' ? 'सभी संकल्पों को क्लिपबोर्ड पर कॉपी करें' : 'Copy formatted task list to clipboard for journaling or sharing'}
+          >
+            <Copy size={14} className="text-orange-500" />
+            <span>{copyToast ? (language === 'hi' ? 'कॉपी हो गया! ✓' : 'Copied! ✓') : (language === 'hi' ? 'सूची कॉपी करें' : 'Copy Tasks')}</span>
+          </button>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -5699,17 +5818,33 @@ const SadhanaGoalsSection = ({
                             </div>
 
                             {/* Completion Toggle */}
-                            <button
+                            <motion.button
                               type="button"
+                              whileTap={{ scale: 0.8 }}
+                              animate={
+                                activeConfettiId === todo.id || todo.completed
+                                  ? { scale: [1, 1.35, 1], rotate: [0, 8, -8, 0] }
+                                  : { scale: 1 }
+                              }
+                              transition={{ duration: 0.3, type: "spring", stiffness: 350, damping: 15 }}
                               onClick={() => onToggle(todo.id)}
-                              className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                              className={`w-6 h-6 rounded-lg border flex items-center justify-center shrink-0 transition-all cursor-pointer shadow-2xs ${
                                 todo.completed 
-                                  ? 'bg-green-500 border-green-500 text-white' 
-                                  : 'border-gray-300 dark:border-zinc-700 hover:border-orange-500'
+                                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 border-emerald-500 text-white shadow-emerald-500/30 shadow-xs' 
+                                  : 'border-gray-300 dark:border-zinc-700 hover:border-orange-500 bg-white/50 dark:bg-zinc-800/50'
                               }`}
+                              id={`task-toggle-${todo.id}`}
                             >
-                              {todo.completed && <CheckCircle2 size={12} className="text-white fill-white" />}
-                            </button>
+                              {todo.completed && (
+                                <motion.div
+                                  initial={{ scale: 0, rotate: -45 }}
+                                  animate={{ scale: 1, rotate: 0 }}
+                                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                                >
+                                  <CheckCircle2 size={13} className="text-white fill-white" />
+                                </motion.div>
+                              )}
+                            </motion.button>
 
                             {/* Impact Dot */}
                             {(() => {
