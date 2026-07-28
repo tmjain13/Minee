@@ -13,6 +13,7 @@ import {
   Compass,
   Filter,
   Hash,
+  ArrowUpDown,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { KnowledgeItem } from "../hooks/useSyncKnowledgeBase";
@@ -35,8 +36,12 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [selectedTag, setSelectedTag] = useState<string>("All");
+  const [sortBy, setSortBy] = useState<"Relevance" | "Recent" | "Category">("Relevance");
   const [selectedItem, setSelectedItem] = useState<KnowledgeItem | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const COMMON_TAGS = ["All", "Japa", "Samayik", "Philosophy", "Pratikraman", "Anuvrat", "Tapa", "Gyanshala", "Acharya"];
 
   const handleCloseOrBack = () => {
     if (selectedItem) {
@@ -56,6 +61,8 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
       }, 100);
       setSearchQuery("");
       setSelectedCategory("All");
+      setSelectedTag("All");
+      setSortBy("Relevance");
       setSelectedItem(null);
     }
   }, [isOpen]);
@@ -186,22 +193,49 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
       .map((res) => res.item);
   }, [searchQuery, knowledgeItems, offlineResults]);
 
-  // Filtered display items combining Search + Category selection
+  // Filtered display items combining Search + Category selection + Tag Filter + Sorting
   const activeDisplayItems = useMemo(() => {
+    let baseList: KnowledgeItem[] = [];
+
     if (searchQuery.trim()) {
-      if (selectedCategory === "All") return searchResults;
-      return searchResults.filter(
-        (item) => getStandardizedCategory(item.category) === selectedCategory
-      );
+      baseList = searchResults;
+    } else if (selectedCategory !== "All" || selectedTag !== "All") {
+      baseList = knowledgeItems;
+    } else {
+      return [];
     }
-    // When no search query, if a specific category is chosen, display all items in that category
+
+    // Category filter
     if (selectedCategory !== "All") {
-      return knowledgeItems.filter(
+      baseList = baseList.filter(
         (item) => getStandardizedCategory(item.category) === selectedCategory
       );
     }
-    return [];
-  }, [searchQuery, selectedCategory, searchResults, knowledgeItems]);
+
+    // Tag filter
+    if (selectedTag !== "All") {
+      const tagLower = selectedTag.toLowerCase();
+      baseList = baseList.filter((item) => {
+        const hasInTags = (item.tags || []).some((t) => t.toLowerCase().includes(tagLower));
+        const hasInTitle = (item.title || "").toLowerCase().includes(tagLower);
+        const hasInCategory = (item.category || "").toLowerCase().includes(tagLower);
+        const hasInDesc = (item.description || "").toLowerCase().includes(tagLower);
+        return hasInTags || hasInTitle || hasInCategory || hasInDesc;
+      });
+    }
+
+    // Sort logic
+    const sorted = [...baseList];
+    if (sortBy === "Recent") {
+      sorted.sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
+    } else if (sortBy === "Category") {
+      sorted.sort((a, b) =>
+        getStandardizedCategory(a.category).localeCompare(getStandardizedCategory(b.category))
+      );
+    }
+
+    return sorted;
+  }, [searchQuery, selectedCategory, selectedTag, sortBy, searchResults, knowledgeItems]);
 
   // Suggestions for quick search
   const suggestions = useMemo(() => {
@@ -312,49 +346,81 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
               </button>
             </div>
 
-            {/* Category Navigation Pills */}
+            {/* Category & Tag Navigation Pills */}
             {!selectedItem && (
-              <div
-                className={`px-3 py-2 border-b shrink-0 flex items-center gap-1.5 overflow-x-auto no-scrollbar ${
-                  isDarkMode ? "border-stone-800 bg-stone-900/90" : "border-orange-100/80 bg-orange-50/50"
-                }`}
-              >
-                <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mr-1 flex items-center gap-1 shrink-0">
-                  <Filter size={11} /> श्रेणियां:
-                </span>
-                {CATEGORIES.map((cat) => {
-                  const Icon = cat.icon;
-                  const isSelected = selectedCategory === cat.id;
-                  const count = categoryCounts[cat.id as keyof typeof categoryCounts] || 0;
+              <div className="border-b shrink-0 divide-y divide-orange-100/60 dark:divide-stone-800">
+                {/* Categories */}
+                <div
+                  className={`px-3 py-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar ${
+                    isDarkMode ? "bg-stone-900/90" : "bg-orange-50/50"
+                  }`}
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mr-1 flex items-center gap-1 shrink-0">
+                    <Filter size={11} /> श्रेणियां:
+                  </span>
+                  {CATEGORIES.map((cat) => {
+                    const Icon = cat.icon;
+                    const isSelected = selectedCategory === cat.id;
+                    const count = categoryCounts[cat.id as keyof typeof categoryCounts] || 0;
 
-                  return (
-                    <button
-                      key={cat.id}
-                      onClick={() => setSelectedCategory(cat.id)}
-                      className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap border transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 shrink-0 ${
-                        isSelected
-                          ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white border-transparent shadow-sm"
-                          : isDarkMode
-                          ? "bg-stone-850 border-stone-800 text-stone-300 hover:bg-stone-800"
-                          : "bg-white border-orange-100 text-stone-700 hover:bg-orange-100/50"
-                      }`}
-                    >
-                      <Icon size={12} className={isSelected ? "text-white" : "text-orange-500"} />
-                      <span>{cat.label}</span>
-                      <span
-                        className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    return (
+                      <button
+                        key={cat.id}
+                        onClick={() => setSelectedCategory(cat.id)}
+                        className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap border transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 shrink-0 ${
                           isSelected
-                            ? "bg-white/20 text-white"
+                            ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white border-transparent shadow-xs"
                             : isDarkMode
-                            ? "bg-stone-800 text-stone-400"
-                            : "bg-orange-100 text-orange-700"
+                            ? "bg-stone-850 border-stone-800 text-stone-300 hover:bg-stone-800"
+                            : "bg-white border-orange-100 text-stone-700 hover:bg-orange-100/50"
                         }`}
                       >
-                        {count}
-                      </span>
-                    </button>
-                  );
-                })}
+                        <Icon size={12} className={isSelected ? "text-white" : "text-orange-500"} />
+                        <span>{cat.label}</span>
+                        <span
+                          className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                            isSelected
+                              ? "bg-white/20 text-white"
+                              : isDarkMode
+                              ? "bg-stone-800 text-stone-400"
+                              : "bg-orange-100 text-orange-700"
+                          }`}
+                        >
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Tag Filter Bar */}
+                <div
+                  className={`px-3 py-1.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar ${
+                    isDarkMode ? "bg-stone-900/60" : "bg-white/60"
+                  }`}
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mr-1 flex items-center gap-1 shrink-0">
+                    <Tag size={10} className="text-orange-500" /> टैग:
+                  </span>
+                  {COMMON_TAGS.map((tag) => {
+                    const isSelected = selectedTag === tag;
+                    return (
+                      <button
+                        key={tag}
+                        onClick={() => setSelectedTag(tag)}
+                        className={`px-2 py-0.5 rounded-lg text-[11px] font-semibold transition-all active:scale-95 cursor-pointer shrink-0 border ${
+                          isSelected
+                            ? "bg-orange-500 text-white border-orange-500 shadow-xs"
+                            : isDarkMode
+                            ? "bg-stone-850 text-stone-300 border-stone-800 hover:bg-stone-800"
+                            : "bg-stone-100 text-stone-700 border-stone-200/80 hover:bg-stone-200/60"
+                        }`}
+                      >
+                        #{tag}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
@@ -443,8 +509,8 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                       </button>
                     </div>
                   </motion.div>
-                ) : searchQuery.trim() || selectedCategory !== "All" ? (
-                  /* RESULTS OR CATEGORY FILTERED VIEW */
+                ) : searchQuery.trim() || selectedCategory !== "All" || selectedTag !== "All" ? (
+                  /* RESULTS OR CATEGORY / TAG FILTERED VIEW */
                   <motion.div
                     key="results"
                     initial={{ opacity: 0 }}
@@ -452,17 +518,34 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                     exit={{ opacity: 0 }}
                     className="space-y-2.5"
                   >
-                    <div className="flex items-center justify-between text-xs font-bold uppercase tracking-widest text-stone-400 mb-2">
-                      <span>
-                        {searchQuery.trim()
-                          ? `खोज परिणाम / Search Results (${activeDisplayItems.length})`
-                          : `${selectedCategory} सूची / Items (${activeDisplayItems.length})`}
-                      </span>
-                      {selectedCategory !== "All" && (
-                        <span className="text-[10px] text-orange-500 lowercase font-medium">
-                          फ़िल्टर: {selectedCategory}
+                    <div className="flex items-center justify-between text-xs font-bold uppercase tracking-widest text-stone-400 mb-2 gap-2 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <span>
+                          {searchQuery.trim()
+                            ? `परिणाम / Results (${activeDisplayItems.length})`
+                            : `सूची / Items (${activeDisplayItems.length})`}
                         </span>
-                      )}
+                        {selectedTag !== "All" && (
+                          <span className="text-[10px] text-orange-500 bg-orange-100 dark:bg-orange-950/40 px-2 py-0.5 rounded-md font-bold lowercase">
+                            #{selectedTag}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Sort Dropdown */}
+                      <div className="flex items-center gap-1 bg-stone-100 dark:bg-stone-850 px-2 py-1 rounded-xl border border-stone-200/80 dark:border-stone-800 text-[11px]">
+                        <ArrowUpDown size={12} className="text-orange-500 shrink-0" />
+                        <span className="text-stone-400 font-bold hidden sm:inline">Sort:</span>
+                        <select
+                          value={sortBy}
+                          onChange={(e) => setSortBy(e.target.value as any)}
+                          className="bg-transparent font-bold text-stone-700 dark:text-stone-200 outline-none cursor-pointer text-[11px]"
+                        >
+                          <option value="Relevance" className="dark:bg-stone-900">Relevance (प्रासंगिकता)</option>
+                          <option value="Recent" className="dark:bg-stone-900">Recent (नवीनतम)</option>
+                          <option value="Category" className="dark:bg-stone-900">Category (श्रेणी)</option>
+                        </select>
+                      </div>
                     </div>
 
                     {activeDisplayItems.length > 0 ? (
@@ -497,24 +580,40 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                             </div>
                             <div className="flex-1 min-w-0 space-y-1">
                               <div className="flex items-center justify-between gap-1">
-                                <span
-                                  className={`px-2 py-0.5 text-[8px] uppercase font-bold tracking-widest rounded-md border ${getCategoryColor(
-                                    item.category
-                                  )}`}
-                                >
-                                  {stdCat}
-                                </span>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span
+                                    className={`px-2 py-0.5 text-[8px] uppercase font-bold tracking-widest rounded-md border ${getCategoryColor(
+                                      item.category
+                                    )}`}
+                                  >
+                                    {stdCat}
+                                  </span>
+                                  {(item.tags || []).slice(0, 2).map((tg, i) => (
+                                    <span
+                                      key={i}
+                                      className="text-[9px] font-semibold text-orange-600 dark:text-orange-400 bg-orange-100/60 dark:bg-orange-950/40 px-1.5 py-0.2 rounded-md"
+                                    >
+                                      #{tg}
+                                    </span>
+                                  ))}
+                                </div>
                                 <ChevronRight
                                   size={14}
-                                  className="text-stone-400 group-hover:text-orange-500 group-hover:translate-x-0.5 transition-all"
+                                  className="text-stone-400 group-hover:text-orange-500 group-hover:translate-x-0.5 transition-all shrink-0"
                                 />
                               </div>
                               <h3 className="font-bold text-sm leading-snug truncate group-hover:text-orange-500 transition-colors">
                                 {item.title}
                               </h3>
-                              <p className="text-xs text-stone-500 dark:text-stone-400 line-clamp-2 leading-relaxed">
-                                {item.description}
+                              <p className="text-xs text-stone-600 dark:text-stone-300 line-clamp-2 leading-relaxed font-medium">
+                                {item.description || item.details || "कोई विवरण उपलब्ध नहीं है।"}
                               </p>
+                              {item.details && item.details !== item.description && (
+                                <p className="text-[11px] text-stone-500 dark:text-stone-400 line-clamp-1 italic font-sans bg-stone-100/80 dark:bg-stone-800/50 px-2 py-0.5 rounded-md mt-1 border border-stone-200/50 dark:border-stone-700/50">
+                                  <span className="font-bold text-orange-500 not-italic">अंश: </span>
+                                  {item.details}
+                                </p>
+                              )}
                             </div>
                           </button>
                         );

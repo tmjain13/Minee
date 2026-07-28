@@ -4267,6 +4267,46 @@ const SadhanaGoalsSection = ({
 
   return (
     <div className="space-y-6 pb-6 text-left">
+      {/* Daily Task Completion Progress Bar */}
+      <div className="p-4 bg-gradient-to-r from-emerald-500/10 via-amber-500/10 to-orange-500/10 dark:from-emerald-950/30 dark:via-amber-950/20 dark:to-orange-950/30 border border-emerald-500/20 dark:border-emerald-500/30 rounded-2xl shadow-xs space-y-2.5 relative overflow-hidden">
+        <div className="flex items-center justify-between text-xs font-bold text-gray-800 dark:text-gray-200">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-xs">
+              <CheckCircle2 size={16} />
+            </div>
+            <div>
+              <span className="font-extrabold text-xs text-gray-800 dark:text-gray-100 block">
+                {language === 'hi' ? 'दैनिक साधना संकल्प प्रगति' : 'Daily Sadhana Completion'}
+              </span>
+              <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">
+                {completedCount} / {totalCount} {language === 'hi' ? 'संकल्प पूर्ण हुए' : 'tasks completed today'}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono font-black text-xs text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 px-3 py-1 rounded-full border border-emerald-500/20 shadow-2xs">
+              {progressPercent}%
+            </span>
+          </div>
+        </div>
+
+        {/* Progress Bar Track & Fill */}
+        <div className="w-full h-2.5 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden p-0.5">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${progressPercent}%` }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            className={`h-full rounded-full transition-all duration-300 ${
+              progressPercent === 100
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-400 shadow-xs shadow-emerald-500/50'
+                : progressPercent >= 50
+                ? 'bg-gradient-to-r from-amber-500 to-emerald-500'
+                : 'bg-gradient-to-r from-orange-500 to-amber-500'
+            }`}
+          />
+        </div>
+      </div>
+
       {/* Search Bar at Top of Sadhana Goals */}
       <div className="relative flex items-center bg-white dark:bg-zinc-900 border-2 border-orange-500/30 rounded-2xl p-3 shadow-md hover:border-orange-500/60 transition-all">
         <Search size={18} className="text-orange-500 ml-2 mr-3 shrink-0" />
