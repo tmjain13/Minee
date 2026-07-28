@@ -3,38 +3,38 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-saffron: #6E1F2A;
-  --color-maroon: #6E1F2A;
-  --color-maroon-dark: #50161E;
-  --color-maroon-secondary: #8C2A38;
-  --color-gold: #B68D40;
-  --color-cream: #FFFDF8;
+  --color-saffron: #7A1F2B;
+  --color-maroon: #7A1F2B;
+  --color-maroon-dark: #5A1620;
+  --color-maroon-secondary: #9B2D3B;
+  --color-gold: #B08D57;
+  --color-cream: #FAF8F3;
   --color-spiritual: var(--text-spiritual);
   --font-serif: "Cormorant Garamond", serif;
   --font-sans: "Inter", "Mukta", sans-serif;
 
-  --color-orange-50: #FFFDF8;
-  --color-orange-100: #F7F3EC;
-  --color-orange-200: #ECE8E3;
-  --color-orange-300: #D8CEB8;
-  --color-orange-400: #B68D40;
-  --color-orange-500: #6E1F2A;
-  --color-orange-600: #6E1F2A;
-  --color-orange-700: #50161E;
-  --color-orange-800: #380F15;
-  --color-orange-900: #240A0E;
+  --color-orange-50: #FAF8F3;
+  --color-orange-100: #F3EFE6;
+  --color-orange-200: #E9E2D8;
+  --color-orange-300: #D0C3B0;
+  --color-orange-400: #B08D57;
+  --color-orange-500: #7A1F2B;
+  --color-orange-600: #7A1F2B;
+  --color-orange-700: #5A1620;
+  --color-orange-800: #3D0E15;
+  --color-orange-900: #26090D;
   --color-orange-950: #140508;
 
-  --color-amber-50: #FFFDF8;
-  --color-amber-100: #F7F3EC;
-  --color-amber-200: #ECE8E3;
-  --color-amber-300: #D8CEB8;
-  --color-amber-400: #B68D40;
-  --color-amber-500: #6E1F2A;
-  --color-amber-600: #6E1F2A;
-  --color-amber-700: #50161E;
-  --color-amber-800: #380F15;
-  --color-amber-900: #240A0E;
+  --color-amber-50: #FAF8F3;
+  --color-amber-100: #F3EFE6;
+  --color-amber-200: #E9E2D8;
+  --color-amber-300: #D0C3B0;
+  --color-amber-400: #B08D57;
+  --color-amber-500: #7A1F2B;
+  --color-amber-600: #7A1F2B;
+  --color-amber-700: #5A1620;
+  --color-amber-800: #3D0E15;
+  --color-amber-900: #26090D;
   --color-amber-950: #140508;
 
   @keyframes spin-slow {
@@ -49,15 +49,16 @@
 }
 
 :root {
-  --bg-cream: #FFFDF8;
-  --text-spiritual: #1E1E1E;
-  --text-secondary: #6E6E6E;
+  --bg-cream: #FAF8F3;
+  --text-spiritual: #2B2B2B;
+  --text-secondary: #707070;
   --card-bg: #FFFFFF;
-  --border-color: #ECE8E3;
-  --accent-gold: #B68D40;
-  --accent-soft: rgba(110, 31, 42, 0.05);
-  --radius-card: 20px;
-  --shadow-card: 0 4px 20px -2px rgba(110, 31, 42, 0.04);
+  --border-color: #E9E2D8;
+  --accent-gold: #B08D57;
+  --maroon-primary: #7A1F2B;
+  --accent-soft: rgba(122, 31, 43, 0.04);
+  --radius-card: 22px;
+  --shadow-card: 0 4px 20px -2px rgba(43, 43, 43, 0.04);
 }
 
 .dark {
@@ -197,9 +198,26 @@ body {
   background-color: var(--bg-cream);
   color: var(--text-spiritual);
   transition:
-    background-color 0.5s ease,
-    color 0.5s ease;
+    background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   line-height: 1.5;
+}
+
+/* Global Subtle Theme-Color Transition Animation for smooth dark/light & palette switching */
+html,
+body,
+#root,
+.bg-white,
+.dark,
+[class*="bg-"],
+[class*="border-"],
+[class*="text-"] {
+  transition:
+    background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .serif-text {

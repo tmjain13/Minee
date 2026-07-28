@@ -236,10 +236,10 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
           scrolled
             ? isDarkActive
               ? "bg-[#12090B]/90 backdrop-blur-xl border-b border-[#2E1B22] text-[#F7F3EC]"
-              : "bg-[#FFFDF8]/90 backdrop-blur-xl border-b border-[#ECE8E3] text-[#1E1E1E]"
+              : "bg-white/90 backdrop-blur-xl border-b border-[#E9E2D8] text-[#2B2B2B]"
             : isDarkActive
             ? "bg-[#12090B] border-b border-[#2E1B22]/50 text-[#F7F3EC]"
-            : "bg-[#FFFDF8] border-b border-[#ECE8E3]/50 text-[#1E1E1E]"
+            : "bg-[#FAF8F3] border-b border-[#E9E2D8]/50 text-[#2B2B2B]"
         }`}
         style={{
           boxShadow: `0 ${shadowYOffset.toFixed(1)}px ${shadowBlur.toFixed(1)}px ${shadowSpread.toFixed(1)}px color-mix(in srgb, var(--border-color) ${shadowOpacityPct}%, transparent)`,

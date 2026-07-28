@@ -14,3 +14,23 @@ export interface QA {
   explanation?: string;
 }
 
+export interface SubTask {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
+export interface Todo {
+  id: string;
+  text: string;
+  completed: boolean;
+  tag?: string;
+  category?: string;
+  categoryColor?: string;
+  notes?: string;
+  completedAt?: number;
+  dueTime?: string;
+  impact?: 'Low' | 'Medium' | 'High';
+  subtasks?: SubTask[];
+}
+

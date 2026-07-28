@@ -10,23 +10,28 @@ interface TerapanthFooterNavProps {
   isPaginationVisible?: boolean;
 }
 
-// 1. Home Icon (Solid fill house matching image)
-const HomeIcon: React.FC<{ active?: boolean; size?: number }> = ({ active, size = 22 }) => (
+// 1. Home Icon
+const HomeIcon: React.FC<{ active?: boolean; size?: number }> = ({ active, size = 20 }) => (
   <svg
     width={size}
     height={size}
     viewBox="0 0 24 24"
-    fill="currentColor"
+    fill={active ? "currentColor" : "none"}
+    stroke="currentColor"
+    strokeWidth={active ? "1.5" : "1.75"}
+    strokeLinecap="round"
+    strokeLinejoin="round"
     className={`transition-colors duration-200 ${
-      active ? 'text-[#FFFDF8]' : 'text-[#E6CDAA]/85 group-hover:text-[#FFFDF8]'
+      active ? 'text-[#7A1F2B]' : 'text-[#707070] group-hover:text-[#2B2B2B]'
     }`}
   >
-    <path d="M12 2.5L2 11h3v10.5a1 1 0 001 1h12a1 1 0 001-1V11h3L12 2.5z" />
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    <polyline points="9 22 9 12 15 12 15 22" />
   </svg>
 );
 
-// 2. Calendar Icon (Outline grid calendar matching image)
-const CalendarIcon: React.FC<{ active?: boolean; size?: number }> = ({ active, size = 22 }) => (
+// 2. Calendar Icon
+const CalendarIcon: React.FC<{ active?: boolean; size?: number }> = ({ active, size = 20 }) => (
   <svg
     width={size}
     height={size}
@@ -37,12 +42,12 @@ const CalendarIcon: React.FC<{ active?: boolean; size?: number }> = ({ active, s
     strokeLinecap="round"
     strokeLinejoin="round"
     className={`transition-colors duration-200 ${
-      active ? 'text-[#FFFDF8]' : 'text-[#E6CDAA]/85 group-hover:text-[#FFFDF8]'
+      active ? 'text-[#7A1F2B]' : 'text-[#707070] group-hover:text-[#2B2B2B]'
     }`}
   >
     <rect x="3" y="4" width="18" height="17" rx="3.5" ry="3.5" />
-    <line x1="16" y1="2" x2="16" y2="5" strokeWidth="2.2" />
-    <line x1="8" y1="2" x2="8" y2="5" strokeWidth="2.2" />
+    <line x1="16" y1="2" x2="16" y2="5" strokeWidth="2" />
+    <line x1="8" y1="2" x2="8" y2="5" strokeWidth="2" />
     <line x1="3" y1="9" x2="21" y2="9" strokeWidth="1.2" />
     <circle cx="7.5" cy="12.5" r="1" fill="currentColor" />
     <circle cx="12" cy="12.5" r="1" fill="currentColor" />
@@ -53,24 +58,21 @@ const CalendarIcon: React.FC<{ active?: boolean; size?: number }> = ({ active, s
   </svg>
 );
 
-// 3. Lotus Icon for Sadhana (Exact gold lotus vector matching image with central star)
-const LotusIcon: React.FC<{ active?: boolean; size?: number }> = ({ active, size = 24 }) => (
+// 3. Lotus Icon for Sadhana
+const LotusIcon: React.FC<{ active?: boolean; size?: number }> = ({ active, size = 22 }) => (
   <svg
     width={size}
     height={size}
     viewBox="0 0 100 90"
     fill="none"
     className={`transition-colors duration-200 ${
-      active ? 'text-[#FFFDF8]' : 'text-[#E6CDAA]/85 group-hover:text-[#FFFDF8]'
+      active ? 'text-[#7A1F2B]' : 'text-[#707070] group-hover:text-[#2B2B2B]'
     }`}
   >
-    {/* 4-pointed sparkle star inside upper central petal */}
     <path
       d="M50 24 C50 30 46 34 39 34 C46 34 50 38 50 44 C50 38 54 34 61 34 C54 34 50 30 50 24 Z"
       fill="currentColor"
     />
-
-    {/* Central Petal Outline */}
     <path
       d="M50 78 C38 58 38 36 50 16 C62 36 62 58 50 78 Z"
       stroke="currentColor"
@@ -78,8 +80,6 @@ const LotusIcon: React.FC<{ active?: boolean; size?: number }> = ({ active, size
       strokeLinecap="round"
       strokeLinejoin="round"
     />
-
-    {/* Inner bottom stem lines inside central petal */}
     <path
       d="M50 78 C50 62 42 52 42 45"
       stroke="currentColor"
@@ -92,8 +92,6 @@ const LotusIcon: React.FC<{ active?: boolean; size?: number }> = ({ active, size
       strokeWidth="3"
       strokeLinecap="round"
     />
-
-    {/* Middle layer petals */}
     <path
       d="M50 78 C31 68 25 48 31 34 M31 34 C38 29 44 26 50 24"
       stroke="currentColor"
@@ -108,41 +106,11 @@ const LotusIcon: React.FC<{ active?: boolean; size?: number }> = ({ active, size
       strokeLinecap="round"
       strokeLinejoin="round"
     />
-
-    {/* Upper back petals */}
-    <path
-      d="M31 34 C30 26 36 21 44 20"
-      stroke="currentColor"
-      strokeWidth="3.5"
-      strokeLinecap="round"
-    />
-    <path
-      d="M69 34 C70 26 64 21 56 20"
-      stroke="currentColor"
-      strokeWidth="3.5"
-      strokeLinecap="round"
-    />
-
-    {/* Outer side wing petals and bottom cradle arch */}
-    <path
-      d="M31 34 C18 39 12 44 10 49 C18 69 34 76 50 78"
-      stroke="currentColor"
-      strokeWidth="3.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M69 34 C82 39 88 44 90 49 C82 69 66 76 50 78"
-      stroke="currentColor"
-      strokeWidth="3.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
   </svg>
 );
 
-// 4. Profile Icon (User head and shoulder outline)
-const ProfileIcon: React.FC<{ active?: boolean; size?: number }> = ({ active, size = 22 }) => (
+// 4. Profile Icon
+const ProfileIcon: React.FC<{ active?: boolean; size?: number }> = ({ active, size = 20 }) => (
   <svg
     width={size}
     height={size}
@@ -153,7 +121,7 @@ const ProfileIcon: React.FC<{ active?: boolean; size?: number }> = ({ active, si
     strokeLinecap="round"
     strokeLinejoin="round"
     className={`transition-colors duration-200 ${
-      active ? 'text-[#FFFDF8]' : 'text-[#E6CDAA]/85 group-hover:text-[#FFFDF8]'
+      active ? 'text-[#7A1F2B]' : 'text-[#707070] group-hover:text-[#2B2B2B]'
     }`}
   >
     <circle cx="12" cy="7.5" r="4" />
@@ -161,33 +129,18 @@ const ProfileIcon: React.FC<{ active?: boolean; size?: number }> = ({ active, si
   </svg>
 );
 
-// 5. Center AI Sparkle Cluster Icon
-const AISparklesIcon: React.FC<{ size?: number }> = ({ size = 24 }) => (
+// 5. Center AI Sparkle Icon
+const AISparklesIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    {/* Main central sparkle */}
     <path
       d="M12 2C12 6.41828 8.41828 10 4 10C8.41828 10 12 13.5817 12 18C12 13.5817 15.5817 10 20 10C15.5817 10 12 6.41828 12 2Z"
-      fill="url(#goldSparkleGrad)"
+      fill="#B08D57"
     />
-    {/* Top right smaller sparkle */}
     <path
       d="M18 1.5C18 3.433 16.433 5 14.5 5C16.433 5 18 6.567 18 8.5C18 6.567 19.567 5 21.5 5C19.567 5 18 3.433 18 1.5Z"
-      fill="url(#goldSparkleGrad)"
-      opacity="0.9"
-    />
-    {/* Bottom left tiny sparkle */}
-    <path
-      d="M6 14.5C6 15.8807 4.88071 17 3.5 17C4.88071 17 6 18.1193 6 19.5C6 18.1193 7.11929 17 8.5 17C7.11929 17 6 15.8807 6 14.5Z"
-      fill="url(#goldSparkleGrad)"
+      fill="#B08D57"
       opacity="0.85"
     />
-    <defs>
-      <linearGradient id="goldSparkleGrad" x1="4" y1="2" x2="21.5" y2="20" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#E6C065" />
-        <stop offset="0.5" stopColor="#C59B27" />
-        <stop offset="1" stopColor="#9E7312" />
-      </linearGradient>
-    </defs>
   </svg>
 );
 
@@ -259,11 +212,11 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({
           </div>
         )}
 
-        {/* Maroon Pill Bar Container with Center Arched Bridge */}
-        <div className="relative w-full h-[60px] bg-gradient-to-r from-[#781822] via-[#851D29] to-[#560F18] border border-[#D4AF37] rounded-full shadow-[0_10px_32px_rgba(0,0,0,0.5)] flex items-center justify-between px-3 sm:px-6">
+        {/* Clean Light Card Bottom Navigation Bar with 22px Radius & Soft Shadow */}
+        <div className="relative w-full h-[58px] bg-white/95 dark:bg-[#1E1417]/95 backdrop-blur-md border border-[#E9E2D8] dark:border-[#2D1E23] rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.06)] flex items-center justify-between px-3 sm:px-5">
           
-          {/* Center Raised Bridge Ring and AI Circle */}
-          <div className="absolute left-1/2 -top-[12px] -translate-x-1/2 w-[62px] h-[62px] rounded-full bg-gradient-to-b from-[#851D29] to-[#6E1F2A] border border-[#D4AF37] p-1 flex items-center justify-center shadow-lg z-20">
+          {/* Center Raised AI Circle: White Circular Button + Thin Gold Ring + Small Glow */}
+          <div className="absolute left-1/2 -top-[10px] -translate-x-1/2 w-[56px] h-[56px] rounded-full bg-[#FAF8F3] dark:bg-[#140D0F] border border-[#E9E2D8] dark:border-[#2D1E23] p-1 flex items-center justify-center shadow-md z-20">
             <button
               id="tp-nav-tab-chat"
               onClick={() => {
@@ -272,15 +225,14 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({
                 }
                 setActiveTab('chat');
               }}
-              className={`w-full h-full rounded-full bg-[#FFFDF8] border-2 border-[#D4AF37] flex flex-col items-center justify-center transition-transform duration-200 active:scale-95 cursor-pointer shadow-[0_0_16px_rgba(255,230,170,0.7)] ${
-                isAiActive ? 'ring-2 ring-[#FFD700] ring-offset-2 ring-offset-[#781822] scale-102' : 'hover:bg-white'
+              className={`w-full h-full rounded-full bg-white dark:bg-[#1E1417] border border-[#B08D57] flex flex-col items-center justify-center transition-all duration-200 active:scale-95 cursor-pointer shadow-[0_2px_10px_rgba(176,141,87,0.25)] ${
+                isAiActive ? 'ring-2 ring-[#7A1F2B] ring-offset-2 ring-offset-[#FAF8F3] dark:ring-offset-[#140D0F] scale-102' : 'hover:border-[#7A1F2B]'
               }`}
               aria-label="AI Assistant"
             >
               <AISparklesIcon size={18} />
-              <span className="text-[10px] font-bold text-[#6E1620] leading-none flex items-center gap-0.5 mt-0.5">
-                <span className="text-[7px] text-[#C59B27]">✨</span>
-                {language === 'hi' ? 'AI' : 'AI'}
+              <span className="text-[10px] font-bold text-[#7A1F2B] dark:text-[#B08D57] leading-none mt-0.5">
+                AI
               </span>
             </button>
           </div>
@@ -306,12 +258,12 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({
                   aria-current={Active ? 'page' : undefined}
                 >
                   <div className="flex items-center justify-center">
-                    {IconComponent && <IconComponent active={Active} size={22} />}
+                    {IconComponent && <IconComponent active={Active} size={20} />}
                   </div>
 
                   <span
-                    className={`text-[11px] font-medium tracking-tight mt-0.5 transition-colors ${
-                      Active ? 'text-[#FFFDF8] font-semibold' : 'text-[#E6CDAA]/85 group-hover:text-[#FFFDF8]'
+                    className={`text-[10px] font-medium tracking-tight mt-0.5 transition-colors ${
+                      Active ? 'text-[#7A1F2B] dark:text-[#B08D57] font-bold' : 'text-[#707070] dark:text-stone-400 group-hover:text-[#2B2B2B]'
                     }`}
                   >
                     {language === 'hi' ? item.labelHi : item.labelEn}
@@ -319,9 +271,9 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({
 
                   {/* Active Indicator Dot under Label */}
                   {Active ? (
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#E5BA60] mt-0.5 shadow-xs" />
+                    <span className="w-1 h-1 rounded-full bg-[#7A1F2B] dark:bg-[#B08D57] mt-0.5" />
                   ) : (
-                    <span className="w-1.5 h-1.5 opacity-0 mt-0.5" />
+                    <span className="w-1 h-1 opacity-0 mt-0.5" />
                   )}
                 </button>
               );
@@ -329,7 +281,7 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({
           </div>
 
           {/* Spacer for Center AI Circle */}
-          <div className="w-[48px] shrink-0" />
+          <div className="w-[44px] shrink-0" />
 
           {/* Right Side: Sadhana & Profile */}
           <div className="relative z-10 flex items-center justify-around w-[40%] pl-1">
@@ -352,16 +304,16 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({
                   aria-current={Active ? 'page' : undefined}
                 >
                   <div className="flex items-center justify-center relative">
-                    {IconComponent && <IconComponent active={Active} size={22} />}
+                    {IconComponent && <IconComponent active={Active} size={20} />}
 
                     {item.id === 'sadhana' && pendingSyncs > 0 && (
-                      <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-[#D4AF37] ring-1 ring-[#6E1F2A]" />
+                      <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-[#7A1F2B]" />
                     )}
                   </div>
 
                   <span
-                    className={`text-[11px] font-medium tracking-tight mt-0.5 transition-colors ${
-                      Active ? 'text-[#FFFDF8] font-semibold' : 'text-[#E6CDAA]/85 group-hover:text-[#FFFDF8]'
+                    className={`text-[10px] font-medium tracking-tight mt-0.5 transition-colors ${
+                      Active ? 'text-[#7A1F2B] dark:text-[#B08D57] font-bold' : 'text-[#707070] dark:text-stone-400 group-hover:text-[#2B2B2B]'
                     }`}
                   >
                     {language === 'hi' ? item.labelHi : item.labelEn}
@@ -369,9 +321,9 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({
 
                   {/* Active Indicator Dot under Label */}
                   {Active ? (
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#E5BA60] mt-0.5 shadow-xs" />
+                    <span className="w-1 h-1 rounded-full bg-[#7A1F2B] dark:bg-[#B08D57] mt-0.5" />
                   ) : (
-                    <span className="w-1.5 h-1.5 opacity-0 mt-0.5" />
+                    <span className="w-1 h-1 opacity-0 mt-0.5" />
                   )}
                 </button>
               );

@@ -173,16 +173,24 @@ export interface SyncLog {
   status: "Success" | "Failed";
 }
 
-interface Todo {
+export interface SubTask {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
+export interface Todo {
   id: string;
   text: string;
   completed: boolean;
   tag?: string;
-  category?: string; // 'Samayik' | 'Swadhyaya' | 'Japa' | 'Tap' | 'Sadhana' | 'Other'
+  category?: string;
+  categoryColor?: string;
   notes?: string;
   completedAt?: number;
   dueTime?: string;
   impact?: 'Low' | 'Medium' | 'High';
+  subtasks?: SubTask[];
 }
 
 const DEFAULT_TAB_ORDER = ['home', 'chat', 'sadhana', 'panchang', 'profile'];
@@ -1395,13 +1403,23 @@ export default function App() {
 
   const handleSync = async () => {
     setIsSyncing(true);
-    setTimeout(() => {
-      setIsSyncing(false);
-      setIsSynced(true);
-      const now = new Date().toISOString();
-      setLastSyncTime(now);
-      localStorage.setItem('last_sync_time', now);
-    }, 1500);
+    return new Promise<void>((resolve, reject) => {
+      setTimeout(() => {
+        const isOfflineSim = typeof localStorage !== 'undefined' && localStorage.getItem('terapanth_offline_simulation') === 'true';
+        if ((typeof navigator !== 'undefined' && !navigator.onLine) || isOfflineSim) {
+          setIsSyncing(false);
+          reject(new Error("Network connection offline or simulation active"));
+          return;
+        }
+
+        setIsSyncing(false);
+        setIsSynced(true);
+        const now = new Date().toISOString();
+        setLastSyncTime(now);
+        localStorage.setItem('last_sync_time', now);
+        resolve();
+      }, 1000);
+    });
   };
 
   const handleFullAccountBackup = async () => {
