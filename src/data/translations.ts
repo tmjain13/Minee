@@ -16,7 +16,27 @@ export const translations = {
     settings: 'Settings', notifications: 'Notifications', faq: 'FAQ',
     help: 'Help', about: 'About', privacy: 'Privacy', terms: 'Terms',
     vihar: 'Vihar', gochari: 'Gochari', bhawan: 'Bhawan', upvas: 'Upvas',
-    parishad: 'Bahushrut Parishad', scholars: 'Scholars'
+    parishad: 'Bahushrut Parishad', scholars: 'Scholars',
+
+    // Yuvacharya Terminology & Names
+    yuvacharya: 'Yuvacharya',
+    successorDesignate: 'Successor-designate',
+    appointedDate: 'Appointment Date',
+    sampannataSamaroh: 'Sampannata Samaroh',
+    mukhyaMuni: 'Mukhya Muni',
+    acharyaBharimal: 'Acharya Bharimal',
+    acharyaRaichand: 'Acharya Raichand',
+    acharyaJeetmal: 'Acharya Jeetmal (Jayacharya)',
+    acharyaMaghraj: 'Acharya Maghraj',
+    acharyaManaklal: 'Acharya Manaklal',
+    acharyaDalchand: 'Acharya Dalchand',
+    acharyaKalugani: 'Acharya Kalugani (Kaluram)',
+    acharyaTulsi: 'Acharya Tulsi',
+    acharyaMahapragya: 'Acharya Mahapragya (Nathmal)',
+    acharyaMahashraman: 'Acharya Mahashraman (Mudit)',
+    yuvacharyaMahaveerKumar: 'Yuvacharya Mahaveer Kumar',
+    yuvacharyaAppointment2026: '27 July 2026 — Yuvacharya Mahaveer Kumar appointed',
+    terapanthHistoricalAnnouncement: 'Historic Announcement of Terapanth Dharmasangh'
   },
   hi: {
     home: 'होम', chat: 'चैट', gallery: 'गैलरी', knowledge: 'ज्ञान',
@@ -35,6 +55,26 @@ export const translations = {
     settings: 'सेटिंग्स', notifications: 'सूचनाएं', faq: 'सामान्य प्रश्न',
     help: 'सहायता', about: 'हमारे बारे में', privacy: 'गोपनीयता', terms: 'शर्तें',
     vihar: 'विहार', gochari: 'गोचरी', bhawan: 'भवन', upvas: 'उपवास',
-    parishad: 'बहुश्रुत परिषद', scholars: 'विद्वान'
+    parishad: 'बहुश्रुत परिषद', scholars: 'विद्वान',
+
+    // Yuvacharya Terminology & Names
+    yuvacharya: 'युवाचार्य',
+    successorDesignate: 'भावी उत्तराधिकारी',
+    appointedDate: 'नियुक्ति तिथि',
+    sampannataSamaroh: 'संपन्नता समारोह',
+    mukhyaMuni: 'मुख्य मुनि',
+    acharyaBharimal: 'आचार्य भरिमल',
+    acharyaRaichand: 'आचार्य रायचंद',
+    acharyaJeetmal: 'आचार्य जीतमल (जयाचार्य)',
+    acharyaMaghraj: 'आचार्य मघराज',
+    acharyaManaklal: 'आचार्य मनकलाल',
+    acharyaDalchand: 'आचार्य दलचंद',
+    acharyaKalugani: 'आचार्य कालुगणी (कालूराम)',
+    acharyaTulsi: 'आचार्य तुलसी',
+    acharyaMahapragya: 'आचार्य महाप्रज्ञ (नाथमल)',
+    acharyaMahashraman: 'आचार्य महाश्रमण (मुदित)',
+    yuvacharyaMahaveerKumar: 'युवाचार्य महावीर कुमार',
+    yuvacharyaAppointment2026: '27 जुलाई 2026 — युवाचार्य महावीर कुमार की नियुक्ति',
+    terapanthHistoricalAnnouncement: 'तेरापंथ धर्मसंघ की ऐतिहासिक घोषणा'
   }
 };

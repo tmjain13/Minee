@@ -1,15 +1,39 @@
 export interface Acharya {
   id: number;
   name: string;
-  secularName?: string; 
-  title: string;
-  period: string;
-  startYear: number;
-  endYear: number | null;
+  aliases?: string[];
+  tenureStart: number;
+  tenureEnd: number | null;
+  birthYear: number | null;
+  deathYear: number | null;
+  vikramSamvatStart?: number;
+  vikramSamvatEnd?: number | null;
+  keyContributions: string[];
+  initiatesMale?: number;
+  initiatesFemale?: number;
+  birthName?: string;
+  secularName?: string;
   isCurrent: boolean;
-  description: string;
-  achievements: string[];
-  notableWorks: string[];
+  isYuvacharya?: boolean;
+  appointedDate?: string;
+  appointedBy?: string;
+  appointedLocation?: string;
+  eventName?: string;
+
+  // Backward-compatibility fields
+  nr?: number;
+  title?: string;
+  period?: string;
+  startYear?: number;
+  endYear?: number | null;
+  description?: string;
+  desc?: string;
+  achievements?: string[];
+  notableWorks?: string[];
+  img?: string;
+  quote?: string;
+  tags?: string[];
+  chaturmas?: { year: number; loc: string }[];
   birthDetails?: {
     date?: string;
     place?: string;
@@ -21,415 +45,15 @@ export interface Acharya {
     age?: number;
     dikshaGuru?: string;
   };
-  samadhiDetails?: { 
+  samadhiDetails?: {
     date?: string;
     place?: string;
   };
-
-  // Backwards compatibility fields
-  nr?: number;
-  img?: string;
-  desc?: string;
   stats?: { label: string; value: string }[];
   teachings?: string[];
-  quote?: string;
-  tags?: string[];
-  chaturmas?: { year: number; loc: string }[];
   fullBio?: string;
   contributions?: string[];
 }
-
-export const acharyas: Acharya[] = [
-  {
-    id: 1,
-    name: "आचार्य भिक्षु",
-    secularName: "भीखणजी",
-    title: "प्रवर्तक / प्रथम आचार्य",
-    period: "1760 – 1803",
-    startYear: 1760,
-    endYear: 1803,
-    isCurrent: false,
-    description: "वि.सं. 1817 (1760 ई.) आषाढ़ शुक्ला पूर्णिमा को केलवा में तेरापंथ धर्मसंघ की स्थापना की। उन्होंने दया-दान के सूक्ष्म दर्शन को स्पष्ट कर श्रमण परंपरा में क्रांति ला दी।",
-    achievements: [
-      "तेरापंथ धर्मसंघ की स्थापना (वि.सं. 1817, केलवा)",
-      "'एक गुरु, एक विधान' (एक आचार्य की व्यवस्था) का सिद्धांत प्रतिपादित किया",
-      "संघ की आचार संहिता और 'मर्यादा' की आधारशिला रखी",
-      "धर्म और समाज सेवा (लौकिक और लोकोत्तर) के बीच का भेद स्पष्ट किया"
-    ],
-    notableWorks: [
-      "राजस्थानी भाषा में लगभग 38,000 पद्यों की रचना",
-      "'नव पदार्थ' सिद्धांत का प्रतिपादन",
-      "भिक्षु विचार दर्शन"
-    ],
-    birthDetails: {
-      date: "वि.सं. 1783 (1726 ई.) आषाढ़ शुक्ला त्रयोदशी",
-      place: "कंटालिया, मारवाड़ (राजस्थान)",
-      parents: "पिता: बल्लूजी, माता: दीपां बाई"
-    },
-    dikshaDetails: {
-      date: "वि.सं. 1808 (1751 ई.)",
-      place: "मारवाड़",
-      age: 25,
-      dikshaGuru: "आचार्य रघुनाथ जी (बाद में वैचारिक मतभेद के कारण स्वतंत्र विहार किया)"
-    },
-    samadhiDetails: {
-      date: "वि.सं. 1860 (1803 ई.) भाद्रपद शुक्ला त्रयोदशी",
-      place: "सिरियारी, पाली (राजस्थान)"
-    }
-  },
-  {
-    id: 2,
-    name: "आचार्य भारीमल जी",
-    secularName: "भारीमल",
-    title: "द्वितीय आचार्य",
-    period: "1803 – 1821",
-    startYear: 1803,
-    endYear: 1821,
-    isCurrent: false,
-    description: "आचार्य भिक्षु के अत्यंत निष्ठावान शिष्य, जिन्होंने नवस्थापित तेरापंथ संघ की जड़ों को सींचा और मर्यादाओं को कठोरता से लागू किया।",
-    achievements: [
-      "संघ की प्रारंभिक मर्यादाओं को सुदृढ़ किया",
-      "आचार्य भिक्षु के विचारों का संरक्षण और प्रसार",
-      "संघ की सदस्य संख्या में वृद्धि"
-    ],
-    notableWorks: [
-      "विभिन्न आध्यात्मिक एवं सैद्धांतिक ढालों (प्रकरण) की रचना, लगभग 5 लाख गाथाओं का लिपिकरण"
-    ],
-    birthDetails: {
-      date: "वि.सं. 1803 (1747 ई.)",
-      place: "मुहां ग्राम, मेवाड़ (राजस्थान)",
-      parents: "पिता: कृष्णो जी (किशनोजी), माता: धारिणी"
-    },
-    dikshaDetails: {
-      date: "वि.सं. 1813 (1756 ई.)",
-      place: "मेवाड़",
-      age: 10,
-      dikshaGuru: "आचार्य भिक्षु"
-    },
-    samadhiDetails: {
-      date: "वि.सं. 1878 (1821 ई.) माघ कृष्णा अष्टमी",
-      place: "राजनगर, राजसमंद (राजस्थान)"
-    }
-  },
-  {
-    id: 3,
-    name: "आचार्य रायचंद जी",
-    secularName: "रायचंद",
-    title: "तृतीय आचार्य",
-    period: "1821 – 1851",
-    startYear: 1821,
-    endYear: 1851,
-    isCurrent: false,
-    description: "प्रखर वैराग्य और कठोर अनुशासन के धनी आचार्य, जिनके नेतृत्व में तेरापंथ का विस्तार मारवाड़ से मेवाड़ और मालवा तक हुआ।",
-    achievements: [
-      "विहार क्षेत्रों का विस्तार, गुजरात और कच्छ की यात्रा करने वाले प्रथम आचार्य",
-      "साधु-साध्वियों के ज्ञानार्जन एवं आगम-अध्ययन को बढ़ावा दिया",
-      "संघीय अनुशासन को नई ऊँचाइयाँ दीं"
-    ],
-    notableWorks: [
-      "आध्यात्मिक पत्राचार एवं उपदेशों का संग्रह"
-    ],
-    birthDetails: {
-      date: "वि.सं. 1847 (1790 ई.)",
-      place: "बड़ी रावलिया, मेवाड़ (राजस्थान)",
-      parents: "पिता: चतुर जी (चंतराजी), माता: कुशलां जी"
-    },
-    dikshaDetails: {
-      date: "वि.सं. 1857 (1801 ई.) चैत्र शुक्ला पूर्णिमा",
-      place: "बड़ी रावलिया",
-      age: 11,
-      dikshaGuru: "आचार्य भिक्षु"
-    },
-    samadhiDetails: {
-      date: "वि.सं. 1908 (1852 ई.) माघ कृष्णा चतुर्दशी",
-      place: "छोटी रावलिया / थाली (राजस्थान)"
-    }
-  },
-  {
-    id: 4,
-    name: "आचार्य जीतमल जी",
-    secularName: "जीतमल गोलछा",
-    title: "जयाचार्य (चतुर्थ आचार्य)",
-    period: "1851 – 1881",
-    startYear: 1851,
-    endYear: 1881,
-    isCurrent: false,
-    description: "तेरापंथ के 'संविधान निर्माता' और महान साहित्यकार। उन्होंने संघीय व्यवस्था को लिखित रूप (मर्यादा पत्र) दिया और विपुल साहित्य सृजन किया।",
-    achievements: [
-      "तेरापंथ के अलिखित नियमों को 'मर्यादा पत्र' (संघीय संविधान) के रूप में लिपिबद्ध किया",
-      "आगमों का राजस्थानी पद्य में अनुवाद (विशेषकर भगवती सूत्र)",
-      "शास्त्रार्थ (वाद-विवाद) में अत्यंत निपुण, अनेक भ्रांतियों का निवारण किया",
-      "साध्वी प्रमुखा व्यवस्था को सुव्यवस्थित किया (1853 ई.)"
-    ],
-    notableWorks: [
-      "'भगवती जोड़' (सबसे बड़ा पद्यानुवाद)",
-      "लगभग 3 लाख श्लोक-प्रमाण साहित्य (60 से अधिक ग्रंथ)",
-      "'भ्रम विध्वंसन'"
-    ],
-    birthDetails: {
-      date: "वि.सं. 1860 (1803 ई.) आश्विन शुक्ला चतुर्दशी",
-      place: "रोयट, पाली (राजस्थान)",
-      parents: "पिता: ऐदान जी, माता: कल्लू जी"
-    },
-    dikshaDetails: {
-      date: "वि.सं. 1869 (1813 ई.) माघ कृष्णा सप्तमी",
-      place: "जयपुर (राजस्थान)",
-      age: 9,
-      dikshaGuru: "युवाचार्य रायचंद जी (आचार्य भारीमल जी की आज्ञा से)"
-    },
-    samadhiDetails: {
-      date: "वि.सं. 1938 (1881 ई.) भाद्रपद कृष्णा द्वादशी",
-      place: "रामनिवास बाग, जयपुर (राजस्थान)"
-    }
-  },
-  {
-    id: 5,
-    name: "आचार्य मघराज जी",
-    secularName: "मघराज बेंगानी",
-    title: "मघवागणी (पंचम आचार्य)",
-    period: "1881 – 1892",
-    startYear: 1881,
-    endYear: 1892,
-    isCurrent: false,
-    description: "अत्यंत कम आयु में आचार्य पद का दायित्व संभालने वाले, विशुद्ध आचार और सरलता की प्रतिमूर्ति।",
-    achievements: [
-      "जयाचार्य द्वारा निर्मित संघीय व्यवस्थाओं का सुचारू संचालन",
-      "अपनी सादगी और निरहंकारिता से जैन समाज में व्यापक प्रभाव छोड़ा"
-    ],
-    notableWorks: [
-      "विविध आध्यात्मिक आलेख एवं ढालें"
-    ],
-    birthDetails: {
-      date: "वि.सं. 1897 (1840 ई.) चैत्र शुक्ला एकादशी",
-      place: "बीदासर (राजस्थान)",
-      parents: "पिता: पूरणमल जी, माता: गुलाबां जी"
-    },
-    dikshaDetails: {
-      date: "वि.सं. 1908 (1851 ई.)",
-      place: "लाडनूं (राजस्थान)",
-      age: 11,
-      dikshaGuru: "युवाचार्य जीतमल जी"
-    },
-    samadhiDetails: {
-      date: "वि.सं. 1949 (1892 ई.) चैत्र कृष्णा पंचमी",
-      place: "सरदारशहर (राजस्थान)"
-    }
-  },
-  {
-    id: 6,
-    name: "आचार्य माणकलाल जी",
-    secularName: "माणकलाल श्रीमाल",
-    title: "माणकगणी (षष्ठम आचार्य)",
-    period: "1892 – 1897",
-    startYear: 1892,
-    endYear: 1897,
-    isCurrent: false,
-    description: "बहुत ही संक्षिप्त कार्यकाल वाले आचार्य, जिन्होंने लंबी पदयात्राएं कीं और तेरापंथ को नई भौगोलिक सीमाएँ दीं।",
-    achievements: [
-      "हरियाणा और अन्य दूरस्थ क्षेत्रों की यात्रा करने वाले प्रथम आचार्य",
-      "संघ में नव-ऊर्जा का संचार"
-    ],
-    notableWorks: [
-      "धर्मोपदेश एवं नीति वाक्य"
-    ],
-    birthDetails: {
-      date: "वि.सं. 1912 (1855 ई.) भाद्रपद कृष्णा चतुर्थी",
-      place: "जयपुर (राजस्थान)",
-      parents: "पिता: हुकमीचंद जी (लाला लिछमनदास जी के पौत्र), माता: छोटां जी"
-    },
-    dikshaDetails: {
-      date: "वि.सं. 1928 (1872 ई.) फाल्गुन शुक्ला एकादशी",
-      place: "लाडनूं (राजस्थान)",
-      age: 16,
-      dikshaGuru: "आचार्य जीतमल जी (जयाचार्य)"
-    },
-    samadhiDetails: {
-      date: "वि.सं. 1954 (1897 ई.) कार्तिक कृष्णा तृतीया",
-      place: "सुजानगढ़ (राजस्थान)"
-    }
-  },
-  {
-    id: 7,
-    name: "आचार्य डालचंद जी",
-    secularName: "डालचंद पीपड़ा",
-    title: "डालगणी (सप्तम आचार्य)",
-    period: "1897 – 1909",
-    startYear: 1897,
-    endYear: 1909,
-    isCurrent: false,
-    description: "आगमों के प्रकांड विद्वान, जिनके शांत और गंभीर व्यक्तित्व ने तेरापंथ में ज्ञान-आराधना का नया युग शुरू किया।",
-    achievements: [
-      "संस्कृत और प्राकृत के अध्ययन को विशेष प्रोत्साहन",
-      "कालूगणी जैसे महान शिष्य का निर्माण",
-      "संघ में बौद्धिक विकास की नींव रखी"
-    ],
-    notableWorks: [
-      "आगमिक व्याख्यान साहित्य"
-    ],
-    birthDetails: {
-      date: "वि.सं. 1909 (1852 ई.) आषाढ़ शुक्ला चतुर्थी",
-      place: "उज्जैन (मध्य प्रदेश)",
-      parents: "पिता: कानीराम जी, माता: जड़ाव जी"
-    },
-    dikshaDetails: {
-      date: "वि.सं. 1923 (1866 ई.) भाद्रपद कृष्णा द्वादशी",
-      place: "इंदौर (मध्य प्रदेश)",
-      age: 14,
-      dikshaGuru: "मुनि हीरालाल जी"
-    },
-    samadhiDetails: {
-      date: "वि.सं. 1966 (1909 ई.) भाद्रपद शुक्ला द्वादशी",
-      place: "लाडनूं (राजस्थान)"
-    }
-  },
-  {
-    id: 8,
-    name: "आचार्य कालूगणी",
-    secularName: "कालूराम चोपड़ा",
-    title: "अष्टम आचार्य / युगप्रधान",
-    period: "1909 – 1936",
-    startYear: 1909,
-    endYear: 1936,
-    isCurrent: false,
-    description: "आधुनिक तेरापंथ के वास्तुकार। उन्होंने परमार्थिक शिक्षण संस्था की स्थापना की और संघ को शैक्षिक रूप से अत्यंत मजबूत किया।",
-    achievements: [
-      "संस्कृत व्याकरण (कालू कौमुदी) और न्याय शास्त्र के पठन-पाठन की व्यवस्था",
-      "'परमार्थिक शिक्षण संस्था' की स्थापना",
-      "300 से अधिक मुनि-साध्वियों को दीक्षा प्रदान की (संघ का अभूतपूर्व विस्तार)",
-      "आचार्य तुलसी जैसे युग-दृष्टा शिष्य का निर्माण"
-    ],
-    notableWorks: [
-      "'कालू कौमुदी' (संस्कृत व्याकरण)",
-      "विभिन्न पूजा एवं स्तोत्र रचनाएँ"
-    ],
-    birthDetails: {
-      date: "वि.सं. 1933 (1877 ई.)  फाल्गुन शुक्ला द्वितीया",
-      place: "छापर (राजस्थान)",
-      parents: "पिता: मूलचंद जी चोपड़ा, माता: चोगां जी"
-    },
-    dikshaDetails: {
-      date: "वि.सं. 1944 (1887 ई.) आश्विन कृष्णा तृतीया",
-      place: "बीदासर (राजस्थान)",
-      age: 10,
-      dikshaGuru: "आचार्य मघराज जी (मघवागणी)"
-    },
-    samadhiDetails: {
-      date: "वि.सं. 1993 (1936 ई.) भाद्रपद शुक्ला षष्ठी",
-      place: "गंगापुर, भीलवाड़ा (राजस्थान)"
-    }
-  },
-  {
-    id: 9,
-    name: "आचार्य तुलसी",
-    secularName: "तुलसी खटेड़",
-    title: "नवम आचार्य / युगप्रधान / गणाधिपति",
-    period: "1936 – 1994",
-    startYear: 1936,
-    endYear: 1994,
-    isCurrent: false,
-    description: "विश्व विख्यात संत, जिन्होंने 'अणुव्रत आंदोलन' के माध्यम से जैन धर्म की सीमाओं को पार कर वैश्विक नैतिकता की अलख जगाई। 20वीं सदी के महानतम आध्यात्मिक विचारकों में से एक।",
-    achievements: [
-      "अणुव्रत आंदोलन का सूत्रपात (1 मार्च 1949)",
-      "जैन विश्व भारती (JVB), लाडनूं की स्थापना (1970)",
-      "'समण श्रेणी' (Saman Order) की स्थापना कर विदेश यात्रा की बाधा को दूर किया (1980)",
-      "आगमों का संपादन (आगम संपदा) एवं 'नया मोड़' कार्यक्रम",
-      "अपने जीवनकाल में ही आचार्य पद का त्याग कर युवाचार्य महाप्रज्ञ को आचार्य बनाया (1994)"
-    ],
-    notableWorks: [
-      "'जैन सिद्धांत दीपिका'",
-      "'मनोनुशासनम्'",
-      "'भिक्षु स्मृति ग्रंथ'",
-      "सैकड़ों अणुव्रत गीत और साहित्य"
-    ],
-    birthDetails: {
-      date: "वि.सं. 1971 (20 अक्टूबर 1914) कार्तिक शुक्ला द्वितीया",
-      place: "लाडनूं (राजस्थान)",
-      parents: "पिता: झूमरमल खटेड़, माता: वदनां जी"
-    },
-    dikshaDetails: {
-      date: "वि.सं. 1982 (5 दिसंबर 1925)",
-      place: "लाडनूं (राजस्थान)",
-      age: 11,
-      dikshaGuru: "आचार्य कालूगणी"
-    },
-    samadhiDetails: {
-      date: "वि.सं. 2054 (23 जून 1997)",
-      place: "गंगाशहर, बीकानेर (राजस्थान)"
-    }
-  },
-  {
-    id: 10,
-    name: "आचार्य महाप्रज्ञ जी",
-    secularName: "नथमल चोरड़िया",
-    title: "दशम आचार्य / युगप्रधान",
-    period: "1994 – 2010",
-    startYear: 1994,
-    endYear: 2010,
-    isCurrent: false,
-    description: "अध्यात्म और विज्ञान के अद्भुत समन्वयक। 'प्रेक्षा ध्यान' के प्रणेता, जिन्होंने पूर्व राष्ट्रपति डॉ. ए.पी.जे. अब्दुल कलाम के साथ मिलकर देश को दिशा दी।",
-    achievements: [
-      "'प्रेक्षा ध्यान' (Preksha Meditation) और 'जीवन विज्ञान' (Science of Living) की स्थापना",
-      "अहिंसा समवाय (Ahimsa Samavaya) का विचार",
-      "आगमों का हिंदी अनुवाद एवं आधुनिक संपादन",
-      "राष्ट्रीय एकता के लिए 'कम्युनल हार्मनी अवार्ड' और 'इंदिरा गांधी पुरस्कार' से सम्मानित"
-    ],
-    notableWorks: [
-      "'प्रेक्षा ध्यान: आधार और प्रयोग'",
-      "'आपा में आपाणौ'",
-      "'The Family and the Nation' (सह-लेखक: डॉ. ए.पी.जे. अब्दुल कलाम)",
-      "300 से अधिक मौलिक पुस्तकें"
-    ],
-    birthDetails: {
-      date: "वि.सं. 1977 (14 जून 1920) आषाढ़ कृष्णा त्रयोदशी",
-      place: "टमकोर (राजस्थान)",
-      parents: "पिता: तोलाराम चोरड़िया, माता: बालू जी"
-    },
-    dikshaDetails: {
-      date: "वि.सं. 1987 (29 जनवरी 1931)",
-      place: "सरदारशहर (राजस्थान)",
-      age: 10,
-      dikshaGuru: "आचार्य कालूगणी"
-    },
-    samadhiDetails: {
-      date: "वि.सं. 2067 (9 मई 2010) वैशाख कृष्णा एकादशी",
-      place: "सरदारशहर (राजस्थान)"
-    }
-  },
-  {
-    id: 11,
-    name: "आचार्य महाश्रमण जी",
-    secularName: "मोहन दूगड़",
-    title: "एकादशम आचार्य / वर्तमान अनुशास्ता",
-    period: "2010 – वर्तमान",
-    startYear: 2010,
-    endYear: null, 
-    isCurrent: true,
-    description: "महातपस्वी and वर्तमान अनुशास्ता। 'अहिंसा यात्रा' के माध्यम से भारत, नेपाल और भूटान के गाँव-गाँव में नशामुक्ति और सद्भावना का संदेश दे रहे हैं।",
-    achievements: [
-      "युवाचार्य घोषणा (27 जुलाई 2026): लाडनूँ (राजस्थान) में भिक्षु जन्म त्रिशताब्दी वर्ष समापन पर मुख्यमुनि श्री महावीर कुमार जी को धर्मसंघ के 'युवाचार्य' (उत्तराधिकारी) पद पर नियुक्त किया।",
-      "अहिंसा यात्रा (Ahimsa Yatra): 3 देशों, 20 राज्यों में 55,000+ किमी की ऐतिहासिक पदयात्रा (2014-2022)",
-      "ज्ञानशालाओं (Gyanshala) के विशाल नेटवर्क का सुदृढ़ीकरण",
-      "साधना और आध्यात्मिक अभ्यास पर अत्यधिक जोर",
-      "लाखों लोगों को नशामुक्त और शाकाहारी बनने का संकल्प दिलाया"
-    ],
-    notableWorks: [
-      "'अहिंसा यात्रा' से जुड़े वृत्तांत",
-      "आगम साहित्य एवं दार्शनिक ग्रंथों का दिशा-निर्देशन",
-      "अनेक प्रेरणादायी प्रवचन शृंखलाएँ"
-    ],
-    birthDetails: {
-      date: "वि.सं. 2019 (13 मई 1962) वैशाख शुक्ला नवमी",
-      place: "सरदारशहर (राजस्थान)",
-      parents: "पिता: झूमरमल दूगड़, माता: नेमा देवी"
-    },
-    dikshaDetails: {
-      date: "वि.सं. 2031 (5 मई 1974)",
-      place: "सरदारशहर (राजस्थान)",
-      age: 11,
-      dikshaGuru: "आचार्य तुलसी"
-    }
-  }
-];
 
 const imagesMap: Record<number, string> = {
   1: "https://prakrit.org.in/prakrit_dev/files/acharya_images/acharya_972.JPG",
@@ -443,6 +67,7 @@ const imagesMap: Record<number, string> = {
   9: "https://prakrit.org.in/prakrit_dev/files/acharya_images/acharya_980.JPG",
   10: "https://prakrit.org.in/prakrit_dev/files/acharya_images/acharya_981.JPG",
   11: "https://prakrit.org.in/prakrit_dev/files/acharya_images/acharya_982.JPG",
+  12: "https://prakrit.org.in/prakrit_dev/files/acharya_images/acharya_982.JPG"
 };
 
 const quotesMap: Record<number, string> = {
@@ -457,20 +82,7 @@ const quotesMap: Record<number, string> = {
   9: "Self-purification is the core of religion. Unless the individual improves, society cannot improve.",
   10: "True peace is observed inside deep silence. In coordination with scientific laws, our ancient Yoga is proven.",
   11: "Let us walk together in harmony. Universal love is the greatest light that dispels the darkness of greed and competition.",
-};
-
-const tagsMap: Record<number, string[]> = {
-  1: ['founder', 'reformer', 'author'],
-  2: ['early', 'consolidator'],
-  3: ['early', 'preacher'],
-  4: ['author', 'poet', 'administrator'],
-  5: ['saintly', 'discipline'],
-  6: ['saintly', 'devotional'],
-  7: ['education', 'scholarship'],
-  8: ['education', 'literary'],
-  9: ['reformer', 'anuvrat', 'global'],
-  10: ['preksha', 'scientist', 'author'],
-  11: ['ahimsa', 'marches', 'living-guru'],
+  12: "Spiritual discipline and inner dedication are the true foundation of leadership in the Dharmasangh."
 };
 
 const chaturmasMap: Record<number, { year: number; loc: string }[]> = {
@@ -490,30 +102,362 @@ const chaturmasMap: Record<number, { year: number; loc: string }[]> = {
   ]
 };
 
-export const ACHARYAS: Acharya[] = acharyas.map(item => {
+export const rawAcharyas: Acharya[] = [
+  {
+    id: 1,
+    name: "Acharya Bhikshu",
+    aliases: ["Bhikhanji", "Bhikhamji", "Bhikhu", "Swamiji"],
+    tenureStart: 1760,
+    tenureEnd: 1803,
+    birthYear: 1726,
+    deathYear: 1803,
+    keyContributions: [
+      "Founder of Terapanth at Kelwa, Rajasthan",
+      "Established 13 core principles (Tera-pantha)",
+      "Ideology of one Acharya, one principle, one thought",
+      "Ended concept of self-discipleship",
+      "Revolutionized principles that had become meaningless"
+    ],
+    isCurrent: false,
+    secularName: "भीखणजी",
+    birthDetails: { date: "वि.सं. 1783 (1726 ई.) आषाढ़ शुक्ला त्रयोदशी", place: "कंटालिया, मारवाड़", parents: "पिता: बल्लूजी, माता: दीपां बाई" },
+    dikshaDetails: { date: "वि.सं. 1808 (1751 ई.)", place: "मारवाड़", age: 25, dikshaGuru: "आचार्य रघुनाथ जी" },
+    samadhiDetails: { date: "वि.सं. 1860 (1803 ई.) भाद्रपद शुक्ला त्रयोदशी", place: "सिरियारी, पाली" }
+  },
+  {
+    id: 2,
+    name: "Acharya Bharimal",
+    tenureStart: 1803,
+    tenureEnd: 1821,
+    birthYear: 1747,
+    deathYear: 1821,
+    vikramSamvatStart: 1860,
+    vikramSamvatEnd: 1878,
+    keyContributions: [
+      "Deep scriptural memorization",
+      "Rewrote all of Swamiji's works — considered authentic copies",
+      "Wrote ~5 lakh poems in lifetime",
+      "First to test all new codes of conduct",
+      "Extremely courageous and poised"
+    ],
+    initiatesMale: 38,
+    initiatesFemale: 44,
+    isCurrent: false,
+    secularName: "भारीमल",
+    birthDetails: { date: "वि.सं. 1803 (1747 ई.)", place: "मुहां ग्राम, मेवाड़", parents: "पिता: किशनोजी, माता: धारिणी" },
+    dikshaDetails: { date: "वि.सं. 1813 (1756 ई.)", place: "मेवाड़", age: 10, dikshaGuru: "आचार्य भिक्षु" },
+    samadhiDetails: { date: "वि.सं. 1878 (1821 ई.) माघ कृष्णा अष्टमी", place: "राजनगर, राजसमंद" }
+  },
+  {
+    id: 3,
+    name: "Acharya Raichand",
+    tenureStart: 1821,
+    tenureEnd: 1851,
+    birthYear: 1790,
+    deathYear: 1851,
+    vikramSamvatStart: 1878,
+    vikramSamvatEnd: 1908,
+    keyContributions: [
+      "First Acharya to visit Gujarat, Saurashtra, and Kutch",
+      "Sweet, melodious voice — could be heard in nearby villages",
+      "Expert in giving religious sermons",
+      "Fearless personality — confronted robbers with courage"
+    ],
+    initiatesMale: 77,
+    initiatesFemale: 168,
+    isCurrent: false,
+    secularName: "रायचंद",
+    birthDetails: { date: "वि.सं. 1847 (1790 ई.)", place: "बड़ी रावलिया, मेवाड़", parents: "पिता: चंतराजी, माता: कुशलां जी" },
+    dikshaDetails: { date: "वि.सं. 1857 (1801 ई.) चैत्र शुक्ला पूर्णिमा", place: "बड़ी रावलिया", age: 11, dikshaGuru: "आचार्य भिक्षु" },
+    samadhiDetails: { date: "वि.सं. 1908 (1852 ई.) माघ कृष्णा चतुर्दशी", place: "छोटी रावलिया" }
+  },
+  {
+    id: 4,
+    name: "Acharya Jeetmal",
+    aliases: ["Jayacharya"],
+    tenureStart: 1851,
+    tenureEnd: 1881,
+    birthYear: 1803,
+    deathYear: 1881,
+    vikramSamvatStart: 1908,
+    vikramSamvatEnd: 1938,
+    keyContributions: [
+      "Prolific writer — 'Jayacharya's revolution'",
+      "Equal distribution reform (socialistic outlook)",
+      "Translated Pannavana in Rajasthani at age 19",
+      "Created Bhagavati ki Jod (5th part of Bharati)",
+      "Wrote 3+ lakh verses on philosophy, meditation, grammar",
+      "Called 'Second Bhikshu' for dedication to Bhikshu's philosophy"
+    ],
+    initiatesMale: 105,
+    initiatesFemale: 224,
+    isCurrent: false,
+    secularName: "जीतमल गोलछा",
+    birthDetails: { date: "वि.सं. 1860 (1803 ई.) आश्विन शुक्ला चतुर्दशी", place: "रोयट, पाली", parents: "पिता: ऐदान जी, माता: कल्लू जी" },
+    dikshaDetails: { date: "वि.सं. 1869 (1813 ई.) माघ कृष्णा सप्तमी", place: "जयपुर", age: 9, dikshaGuru: "युवाचार्य रायचंद जी" },
+    samadhiDetails: { date: "वि.सं. 1938 (1881 ई.) भाद्रपद कृष्णा द्वादशी", place: "रामनिवास बाग, जयपुर" }
+  },
+  {
+    id: 5,
+    name: "Acharya Maghraj",
+    tenureStart: 1881,
+    tenureEnd: 1892,
+    birthYear: 1840,
+    deathYear: 1892,
+    vikramSamvatStart: 1938,
+    vikramSamvatEnd: 1948,
+    keyContributions: [
+      "Most tender-hearted of all Terapanth Acharyas",
+      "Never gave strong reproach — unique non-violent discipline",
+      "Extremely polite in disciplining the sect",
+      "Appointed as head arbitrator at age 14"
+    ],
+    initiatesMale: 36,
+    initiatesFemale: 83,
+    isCurrent: false,
+    secularName: "मघराज बेंगानी",
+    birthDetails: { date: "वि.सं. 1897 (1840 ई.) चैत्र शुक्ला एकादशी", place: "बीदासर", parents: "पिता: पूरणमल जी, माता: गुलाबां जी" },
+    dikshaDetails: { date: "वि.सं. 1908 (1851 ई.)", place: "लाडनूं", age: 11, dikshaGuru: "युवाचार्य जीतमल जी" },
+    samadhiDetails: { date: "वि.सं. 1949 (1892 ई.) चैत्र कृष्णा पंचमी", place: "सरदारशहर" }
+  },
+  {
+    id: 6,
+    name: "Acharya Manaklal",
+    tenureStart: 1892,
+    tenureEnd: 1897,
+    birthYear: 1855,
+    deathYear: 1897,
+    vikramSamvatStart: 1949,
+    vikramSamvatEnd: 1945,
+    keyContributions: [
+      "First Acharya to visit Haryana",
+      "Preferred long journeys to expand the sect",
+      "Fair skinned, tall, fragile with loud sweet voice",
+      "Died young at 42 — no successor nominated"
+    ],
+    initiatesMale: 15,
+    initiatesFemale: 25,
+    isCurrent: false,
+    secularName: "माणकलाल श्रीमाल",
+    birthDetails: { date: "वि.सं. 1912 (1855 ई.) भाद्रपद कृष्णा चतुर्थी", place: "जयपुर", parents: "पिता: हुकमीचंद जी, माता: छोटां जी" },
+    dikshaDetails: { date: "वि.सं. 1928 (1872 ई.) फाल्गुन शुक्ला एकादशी", place: "लाडनूं", age: 16, dikshaGuru: "आचार्य जीतमल जी" },
+    samadhiDetails: { date: "वि.सं. 1954 (1897 ई.) कार्तिक कृष्णा तृतीया", place: "सुजानगढ़" }
+  },
+  {
+    id: 7,
+    name: "Acharya Dalchand",
+    tenureStart: 1897,
+    tenureEnd: 1909,
+    birthYear: 1852,
+    deathYear: 1909,
+    keyContributions: [
+      "First non-nominated succession in Terapanth history",
+      "Unanimously elected by leading saints at Ladnun",
+      "Steered Terapanth for ~12 years effectively",
+      "Fearless attitude solved many challenging situations",
+      "Died at age 59 at Bidasar"
+    ],
+    isCurrent: false,
+    secularName: "डालचंद पीपड़ा",
+    birthDetails: { date: "वि.सं. 1909 (1852 ई.) आषाढ़ शुक्ला चतुर्थी", place: "उज्जैन", parents: "पिता: कानीराम जी, माता: जड़ाव जी" },
+    dikshaDetails: { date: "वि.सं. 1923 (1866 ई.) भाद्रपद कृष्णा द्वादशी", place: "इंदौर", age: 14, dikshaGuru: "मुनि हीरालाल जी" },
+    samadhiDetails: { date: "वि.सं. 1966 (1909 ई.) भाद्रपद शुक्ला द्वादशी", place: "लाडनूं" }
+  },
+  {
+    id: 8,
+    name: "Acharya Kalugani",
+    birthName: "Kaluram",
+    tenureStart: 1909,
+    tenureEnd: 1936,
+    birthYear: 1877,
+    deathYear: 1936,
+    keyContributions: [
+      "Heavy focus on education and scriptural training of monks",
+      "Born Kaluram — name changed to Kalugani",
+      "Family moved close to Sangh after father's early death",
+      "Mother and cousin also embraced sainthood"
+    ],
+    isCurrent: false,
+    secularName: "कालूराम चोपड़ा",
+    birthDetails: { date: "वि.सं. 1933 (1877 ई.) फाल्गुन शुक्ला द्वितीया", place: "छापर", parents: "पिता: मूलचंद जी चोपड़ा, माता: चोगां जी" },
+    dikshaDetails: { date: "वि.सं. 1944 (1887 ई.) आश्विन कृष्णा तृतीया", place: "बीदासर", age: 10, dikshaGuru: "आचार्य मघराज जी" },
+    samadhiDetails: { date: "वि.सं. 1993 (1936 ई.) भाद्रपद शुक्ला षष्ठी", place: "गंगापुर, भीलवाड़ा" }
+  },
+  {
+    id: 9,
+    name: "Acharya Tulsi",
+    tenureStart: 1936,
+    tenureEnd: 1997,
+    birthYear: 1914,
+    deathYear: 1997,
+    keyContributions: [
+      "Anuvrat Movement founder (1949)",
+      "776+ monks/nuns initiated",
+      "Created Saman/Samani rank (overseas travel permitted)",
+      "Established Jain Vishva Bharati institute at Ladnun",
+      "Called 'Yuga-Pradhan' by President V.V. Giri (1971)",
+      "Dr. Radhakrishnan included in world's 15 great persons",
+      "Proponent of Jain unity regardless of sectarian differences"
+    ],
+    isCurrent: false,
+    secularName: "तुलसी खटेड़",
+    birthDetails: { date: "वि.सं. 1971 (20 अक्टूबर 1914) कार्तिक शुक्ला द्वितीया", place: "लाडनूं", parents: "पिता: झूमरमल खटेड़, माता: वदनां जी" },
+    dikshaDetails: { date: "वि.सं. 1982 (5 दिसंबर 1925)", place: "लाडनूं", age: 11, dikshaGuru: "आचार्य कालूगणी" },
+    samadhiDetails: { date: "वि.सं. 2054 (23 जून 1997)", place: "गंगाशहर, बीकानेर" }
+  },
+  {
+    id: 10,
+    name: "Acharya Mahapragya",
+    birthName: "Nathmal",
+    aliases: ["Mahaprajna", "Yuvacharya Mahaprajna"],
+    tenureStart: 1997,
+    tenureEnd: 2010,
+    birthYear: 1920,
+    deathYear: 2010,
+    keyContributions: [
+      "Formulated Preksha Meditation (Perceptive meditation)",
+      "Led historic 10,000 km Ahimsa Yatra on foot",
+      "Jeevan Vigyan (Science of Living) founder",
+      "Called 'Second Vivekananda of India' by Ramdhari Singh Dinkar",
+      "Mobile encyclopedia — scholar of Jain Agamas",
+      "Coordinator of science and spiritualism",
+      "Nominated Yuvacharya 4 Feb 1979 at Rajaldesar"
+    ],
+    isCurrent: false,
+    secularName: "नथमल चोरड़िया",
+    birthDetails: { date: "वि.सं. 1977 (14 जून 1920) आषाढ़ कृष्णा त्रयोदशी", place: "टमकोर", parents: "पिता: तोलाराम चोरड़िया, माता: बालू जी" },
+    dikshaDetails: { date: "वि.सं. 1987 (29 जनवरी 1931)", place: "सरदारशहर", age: 10, dikshaGuru: "आचार्य कालूगणी" },
+    samadhiDetails: { date: "वि.सं. 2067 (9 मई 2010) वैशाख कृष्णा एकादशी", place: "सरदारशहर" }
+  },
+  {
+    id: 11,
+    name: "Acharya Mahashraman",
+    birthName: "Mudit",
+    tenureStart: 2010,
+    tenureEnd: null,
+    birthYear: 1962,
+    deathYear: null,
+    keyContributions: [
+      "Current Acharya of Terapanth",
+      "Became Yuvacharya in 1997 at age 35",
+      "Scientific and rational outlook",
+      "Guides youth wings morally and emotionally",
+      "Extraordinary genius with minute insight and intuition"
+    ],
+    isCurrent: true,
+    secularName: "मोहन दूगड़",
+    birthDetails: { date: "वि.सं. 2019 (13 मई 1962) वैशाख शुक्ला नवमी", place: "सरदारशहर", parents: "पिता: झूमरमल दूगड़, माता: नेमा देवी" },
+    dikshaDetails: { date: "वि.सं. 2031 (5 मई 1974)", place: "सरदारशहर", age: 11, dikshaGuru: "आचार्य तुलसी" }
+  }
+];
+
+export const YUVACHARYA: Acharya = {
+  id: 12,
+  name: "Yuvacharya Mahaveer Kumar",
+  tenureStart: 2026,
+  tenureEnd: null,
+  birthYear: null,
+  deathYear: null,
+  keyContributions: [
+    "Appointed as successor-designate to Acharya Mahashraman",
+    "Previous position: Mukhya Muni",
+    "First Yuvacharya appointment since Mahapragya (1979)"
+  ],
+  isCurrent: true,
+  isYuvacharya: true,
+  appointedDate: "2026-07-27",
+  appointedBy: "Acharya Mahashraman",
+  appointedLocation: "Aapaon, Ladnun, Rajasthan",
+  eventName: "Sampannata Samaroh",
+  nr: 12,
+  title: "भावी उत्तराधिकारी (युवाचार्य)",
+  period: "2026 – वर्तमान",
+  startYear: 2026,
+  endYear: null,
+  img: imagesMap[12],
+  description: "27 जुलाई 2026 को आचार्य श्री महाश्रमण जी द्वारा लाडनूँ में तेरापंथ धर्मसंघ के युवाचार्य पद पर नियुक्त।",
+  desc: "27 जुलाई 2026 को आचार्य श्री महाश्रमण जी द्वारा लाडनूँ में तेरापंथ धर्मसंघ के युवाचार्य पद पर नियुक्त।",
+  achievements: [
+    "आचार्य महाश्रमण जी के उत्तराधिकारी घोषित (27 जुलाई 2026)",
+    "पूर्व पद: मुख्य मुनि",
+    "लाडनूँ में भिक्षु जन्म त्रिशताब्दी वर्ष संपन्नता समारोह पर नियुक्ति"
+  ],
+  notableWorks: ["संघीय अनुशासन एवं धर्मसंघ दिशा-निर्देशन"]
+};
+
+export const ACHARYAS: Acharya[] = rawAcharyas.map(a => {
+  const period = `${a.tenureStart} – ${a.tenureEnd ? a.tenureEnd : 'वर्तमान'}`;
+  const title = a.id === 1 ? "प्रवर्तक / प्रथम आचार्य" : a.isCurrent ? "वर्तमान अनुशास्ता" : `आचार्य (${a.id})`;
+  const desc = a.keyContributions.join(". ");
   const stats: { label: string; value: string }[] = [];
-  if (item.birthDetails?.date) {
-    stats.push({ label: "Date of Birth", value: item.birthDetails.date + (item.birthDetails.place ? ` in ${item.birthDetails.place}` : "") });
+
+  if (a.birthDetails?.date) {
+    stats.push({ label: "Date of Birth", value: a.birthDetails.date + (a.birthDetails.place ? ` in ${a.birthDetails.place}` : "") });
   }
-  if (item.dikshaDetails?.date) {
-    stats.push({ label: "Date of Initiation", value: item.dikshaDetails.date });
+  if (a.dikshaDetails?.date) {
+    stats.push({ label: "Date of Initiation", value: a.dikshaDetails.date });
   }
-  stats.push({ label: "Headship Period", value: item.period });
-  if (item.samadhiDetails?.date) {
-    stats.push({ label: "Heavenly Abode", value: item.samadhiDetails.date + (item.samadhiDetails.place ? ` in ${item.samadhiDetails.place}` : "") });
+  stats.push({ label: "Headship Period", value: period });
+  if (a.samadhiDetails?.date) {
+    stats.push({ label: "Heavenly Abode", value: a.samadhiDetails.date + (a.samadhiDetails.place ? ` in ${a.samadhiDetails.place}` : "") });
   }
 
   return {
-    ...item,
-    nr: item.id,
-    img: imagesMap[item.id] || "",
-    desc: item.description,
+    ...a,
+    nr: a.id,
+    title,
+    period,
+    startYear: a.tenureStart,
+    endYear: a.tenureEnd,
+    description: desc,
+    desc,
+    achievements: a.keyContributions,
+    notableWorks: a.keyContributions,
+    img: imagesMap[a.id] || "",
+    quote: quotesMap[a.id] || desc,
+    tags: ["acharya"],
+    chaturmas: chaturmasMap[a.id] || [],
     stats,
-    teachings: item.achievements,
-    quote: quotesMap[item.id] || item.description,
-    tags: tagsMap[item.id] || ["acharya"],
-    chaturmas: chaturmasMap[item.id] || [],
-    fullBio: item.description,
-    contributions: item.achievements
+    teachings: a.keyContributions,
+    fullBio: desc,
+    contributions: a.keyContributions
   };
 });
+
+// Alias export for backward compatibility
+export const acharyas = ACHARYAS;
+
+// Helper functions
+export const getCurrentAcharya = (): Acharya =>
+  ACHARYAS.find((a) => a.isCurrent && !a.isYuvacharya)!;
+
+export const getYuvacharya = (): Acharya | undefined =>
+  YUVACHARYA.isYuvacharya ? YUVACHARYA : undefined;
+
+export const getAcharyaById = (id: number): Acharya | undefined => {
+  if (id === 12) return YUVACHARYA;
+  return ACHARYAS.find((a) => a.id === id);
+};
+
+export const getAcharyaByName = (name: string): Acharya | undefined => {
+  if (name.toLowerCase().includes("mahaveer") || name.toLowerCase().includes("yuvacharya")) {
+    return YUVACHARYA;
+  }
+  return ACHARYAS.find(
+    (a) =>
+      a.name.toLowerCase().includes(name.toLowerCase()) ||
+      a.aliases?.some((alias) =>
+        alias.toLowerCase().includes(name.toLowerCase())
+      )
+  );
+};
+
+export const getTotalAcharyas = (): number => ACHARYAS.length;
+
+export const getAcharyaTimeline = (): string[] =>
+  ACHARYAS.map(
+    (a) =>
+      `${a.id}. ${a.name} (${a.tenureStart}–${a.tenureEnd ?? "present"})`
+  );
+
+export default ACHARYAS;

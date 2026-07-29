@@ -1,7 +1,7 @@
 import { memo, useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
-import { Clock, Play, Pause, RotateCcw, Sparkles, Volume2, VolumeX, ShieldCheck, Calendar, Plus, Trash2, CheckCircle2, ChevronRight, ChevronDown, Info, Coffee, Sun, Moon, BookOpen, TrendingUp, Download, FileText, Wind, Flame, Timer, RefreshCw, Mic, FlameKindling, CheckSquare, X, Loader2, Send, GripVertical, ArrowUp, ArrowDown, Tag, Filter, Bookmark, Search, BellRing, ArrowUpDown, Award, Compass, Users, Share2, Star, Copy, ListChecks, Check } from 'lucide-react';
+import { Clock, Play, Pause, RotateCcw, Sparkles, Volume2, VolumeX, ShieldCheck, Calendar, Plus, Trash2, CheckCircle2, ChevronRight, ChevronDown, Info, Coffee, Sun, Moon, BookOpen, TrendingUp, Download, FileText, Wind, Flame, Timer, RefreshCw, Mic, FlameKindling, CheckSquare, X, Loader2, Send, GripVertical, ArrowUp, ArrowDown, Tag, Filter, Bookmark, Search, BellRing, ArrowUpDown, Award, Compass, Users, Share2, Star, Copy, ListChecks, Check, History, Archive } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -3736,6 +3736,10 @@ const SadhanaGoalsSection = ({
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
   const [showArchivedModal, setShowArchivedModal] = useState<boolean>(false);
+  const [archiveSearchQuery, setArchiveSearchQuery] = useState<string>('');
+  const [archiveCategoryFilter, setArchiveCategoryFilter] = useState<string>('All');
+  const [archiveSortBy, setArchiveSortBy] = useState<'date_desc' | 'date_asc' | 'priority_desc' | 'alphabetical'>('date_desc');
+  const [archiveConfirmClear, setArchiveConfirmClear] = useState<boolean>(false);
   const [isDiscoursePlaying, setIsDiscoursePlaying] = useState<boolean>(false);
   const [subtaskInputs, setSubtaskInputs] = useState<Record<string, string>>({});
   const [expandedSubtasks, setExpandedSubtasks] = useState<Record<string, boolean>>({});
@@ -4482,6 +4486,179 @@ const SadhanaGoalsSection = ({
     }
     setTodos((prev: any[]) => [...prev, { ...item, completed: false, completedAt: undefined }]);
   };
+
+  const deleteArchivedItem = (archivedId: string) => {
+    if (setArchivedTodos) {
+      setArchivedTodos((prev: any[]) => prev.filter(a => a.id !== archivedId));
+    }
+  };
+
+  const clearAllArchived = () => {
+    if (setArchivedTodos) {
+      setArchivedTodos([]);
+    }
+    setArchiveConfirmClear(false);
+  };
+
+  const handleExportArchivedCSV = () => {
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const rows = [
+      ['Resolution / Task', 'Category', 'Tag', 'Impact Priority', 'Completion Date & Time', 'Notes']
+    ];
+    archivedTodos.forEach((t: any) => {
+      const completedAtStr = t.completedAt ? new Date(t.completedAt).toLocaleString() : 'Archived';
+      rows.push([
+        t.text || '',
+        t.category || 'Sadhana',
+        t.tag || 'Daily',
+        t.impact || 'Medium',
+        completedAtStr,
+        t.notes || ''
+      ]);
+    });
+    const csvContent = rows
+      .map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Terapanth_Archived_Resolutions_${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportArchivedJSON = () => {
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const dataToExport = {
+      app: 'Terapanth AI Hub - Sadhana Resolutions Archive',
+      exportedAt: now.toISOString(),
+      totalArchivedCount: archivedTodos.length,
+      resolutions: archivedTodos.map((t: any) => ({
+        id: t.id,
+        text: t.text || '',
+        category: t.category || 'Sadhana',
+        tag: t.tag || 'Daily',
+        impact: t.impact || 'Medium',
+        completedAt: t.completedAt ? new Date(t.completedAt).toISOString() : null,
+        notes: t.notes || ''
+      }))
+    };
+    const jsonStr = JSON.stringify(dataToExport, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Terapanth_Archived_Resolutions_Backup_${dateStr}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const filteredArchivedTodos = useMemo(() => {
+    return archivedTodos
+      .filter((item: any) => {
+        const matchesSearch =
+          !archiveSearchQuery.trim() ||
+          (item.text || '').toLowerCase().includes(archiveSearchQuery.toLowerCase()) ||
+          (item.notes || '').toLowerCase().includes(archiveSearchQuery.toLowerCase());
+        const matchesCat =
+          archiveCategoryFilter === 'All' ||
+          (item.category || 'Sadhana') === archiveCategoryFilter;
+        return matchesSearch && matchesCat;
+      })
+      .sort((a: any, b: any) => {
+        if (archiveSortBy === 'date_asc') {
+          return (a.completedAt || Number(a.id) || 0) - (b.completedAt || Number(b.id) || 0);
+        }
+        if (archiveSortBy === 'priority_desc') {
+          const getVal = (p: string) => (p === 'High' ? 3 : p === 'Medium' ? 2 : 1);
+          return getVal(b.impact || 'Medium') - getVal(a.impact || 'Medium');
+        }
+        if (archiveSortBy === 'alphabetical') {
+          return (a.text || '').localeCompare(b.text || '');
+        }
+        return (b.completedAt || Number(b.id) || 0) - (a.completedAt || Number(a.id) || 0);
+      });
+  }, [archivedTodos, archiveSearchQuery, archiveCategoryFilter, archiveSortBy]);
+
+  const groupedArchivedTodos = useMemo(() => {
+    const groupMap: Record<string, any[]> = {};
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+
+    const yesterday = new Date();
+    yesterday.setDate(now.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    filteredArchivedTodos.forEach((item: any) => {
+      let groupKey = language === 'hi' ? 'पूर्व दिवस (Earlier Days)' : 'Earlier Days';
+      if (item.completedAt) {
+        const d = new Date(item.completedAt);
+        const itemDateStr = d.toISOString().split('T')[0];
+        if (itemDateStr === todayStr) {
+          groupKey = language === 'hi' ? 'आज पूर्ण किए गए (Today)' : 'Completed Today';
+        } else if (itemDateStr === yesterdayStr) {
+          groupKey = language === 'hi' ? 'कल पूर्ण किए गए (Yesterday)' : 'Completed Yesterday';
+        } else {
+          groupKey = d.toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          });
+        }
+      }
+      if (!groupMap[groupKey]) {
+        groupMap[groupKey] = [];
+      }
+      groupMap[groupKey].push(item);
+    });
+
+    const groups: { title: string; items: any[] }[] = [];
+    Object.keys(groupMap).forEach(title => {
+      groups.push({ title, items: groupMap[title] });
+    });
+
+    return groups;
+  }, [filteredArchivedTodos, language]);
+
+  const archiveStats = useMemo(() => {
+    const total = archivedTodos.length;
+    const activeTotal = todos.length;
+    const grandTotal = total + activeTotal;
+    const completionRate = grandTotal > 0 ? Math.round((total / grandTotal) * 100) : 0;
+    const highImpact = archivedTodos.filter((a: any) => a.impact === 'High').length;
+    
+    // Historical archive frequency (last 7 days)
+    const now = new Date();
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(now.getDate() - 7);
+    
+    const recent7DaysCount = archivedTodos.filter((a: any) => {
+      if (!a.completedAt) return false;
+      return new Date(a.completedAt) >= sevenDaysAgo;
+    }).length;
+
+    const catCounts: Record<string, number> = {};
+    archivedTodos.forEach((a: any) => {
+      const c = a.category || 'Sadhana';
+      catCounts[c] = (catCounts[c] || 0) + 1;
+    });
+    let topCat = 'Sadhana';
+    let maxCount = 0;
+    Object.entries(catCounts).forEach(([cat, cnt]) => {
+      if (cnt > maxCount) {
+        maxCount = cnt;
+        topCat = cat;
+      }
+    });
+    return { total, activeTotal, grandTotal, completionRate, highImpact, topCat, maxCount, recent7DaysCount };
+  }, [archivedTodos, todos]);
 
   // --- 7-DAY CONSISTENCY TRACKER STATS ---
   const sevenDayStats = useMemo(() => {
@@ -5550,6 +5727,20 @@ const SadhanaGoalsSection = ({
         <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
+            onClick={() => setShowArchivedModal(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 hover:from-amber-500/25 hover:to-orange-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95"
+            title={language === 'hi' ? 'पूर्व दिनों के पूर्ण साधना संकल्पों का इतिहास देखें' : 'Review completed spiritual resolutions from previous days'}
+            id="view-archived-resolutions-history-btn"
+          >
+            <History size={14} className="text-amber-500" />
+            <span>{language === 'hi' ? 'आर्काइव्ड इतिहास' : 'Archived History'}</span>
+            <span className="px-1.5 py-0.2 text-[10px] font-mono font-black rounded-md bg-amber-500 text-white shadow-2xs">
+              {archivedTodos.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
             onClick={handleDownloadSadhanaCSV}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95"
             title={language === 'hi' ? 'साधना लॉग को CSV फ़ाइल के रूप में डाउनलोड करें' : 'Download Sadhana log and completed observations as a formatted CSV file'}
@@ -6528,61 +6719,412 @@ const SadhanaGoalsSection = ({
         </div>
       </div>
 
-      {/* Archived Todos Modal */}
+      {/* Enhanced Archived Tasks History Modal */}
       <AnimatePresence>
         {showArchivedModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-sm overflow-y-auto">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              initial={{ opacity: 0, scale: 0.94, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="relative w-full max-w-md bg-white dark:bg-zinc-900 border border-black/10 dark:border-zinc-800 rounded-3xl p-6 shadow-2xl space-y-4"
+              exit={{ opacity: 0, scale: 0.94, y: 20 }}
+              className="relative w-full max-w-2xl bg-white dark:bg-zinc-900 border border-black/10 dark:border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 my-8 max-h-[90vh] flex flex-col overflow-hidden"
+              id="archived-tasks-history-modal"
             >
-              <div className="flex items-center justify-between border-b border-black/5 dark:border-white/5 pb-3">
-                <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
-                  <Clock size={18} />
-                  <h3 className="font-bold text-sm">
-                    {language === 'hi' ? 'आर्काइव्ड साधना संकल्प' : 'Archived Sadhana Goals'}
-                  </h3>
+              {/* Sticky Modal Header & Progress Bar */}
+              <div className="sticky top-0 z-20 bg-white dark:bg-zinc-900 pt-1 pb-3 space-y-3 border-b border-black/5 dark:border-white/5 shrink-0">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                      <History size={22} className="shrink-0" />
+                      <h3 className="font-extrabold text-base sm:text-lg">
+                        {language === 'hi' ? 'पूर्व दिनों के साधना संकल्प इतिहास' : 'Archived Spiritual Resolutions History'}
+                      </h3>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {language === 'hi'
+                        ? '24 घंटे बाद स्वचालित रूप से आर्काइव किए गए पूर्ण संकल्पों की समीक्षा करें और उन्हें पुनः सक्रिय करें:'
+                        : 'Review, search, and restore completed spiritual resolutions archived from previous days.'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowArchivedModal(false);
+                      setArchiveConfirmClear(false);
+                    }}
+                    className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-white rounded-xl bg-black/5 dark:bg-white/5 cursor-pointer shrink-0 ml-2"
+                  >
+                    <X size={20} />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setShowArchivedModal(false)}
-                  className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-white rounded-lg"
-                >
-                  <X size={18} />
-                </button>
+
+                {/* Summary Metrics & Historical Archive Frequency Bar */}
+                <div className="p-3 rounded-2xl bg-gradient-to-br from-amber-500/10 via-orange-500/10 to-amber-500/15 border border-amber-500/25 space-y-2 shadow-xs">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        {language === 'hi' ? 'कुल पूर्ण संकल्प' : 'Total Completed'}
+                      </span>
+                      <div className="flex items-center gap-1.5 font-black text-base text-amber-700 dark:text-amber-300">
+                        <Archive size={16} className="text-amber-500" />
+                        <span>{archiveStats.total}</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        {language === 'hi' ? 'उच्च प्रभाव संकल्प' : 'High Impact Vows'}
+                      </span>
+                      <div className="flex items-center gap-1.5 font-black text-base text-amber-600 dark:text-amber-400">
+                        <Star size={16} className="fill-amber-500 text-amber-500" />
+                        <span>{archiveStats.highImpact}</span>
+                      </div>
+                    </div>
+
+                    <div className="col-span-2 sm:col-span-1 space-y-0.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        {language === 'hi' ? 'शीर्ष साधना श्रेणी' : 'Top Category'}
+                      </span>
+                      <div className="flex items-center gap-1.5 font-black text-xs text-orange-700 dark:text-orange-300 truncate">
+                        <Sparkles size={14} className="text-orange-500 shrink-0" />
+                        <span className="truncate">{archiveStats.topCat} ({archiveStats.maxCount})</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Historical Archive Frequency & Completion Progress Bar */}
+                  <div className="space-y-1 pt-1 border-t border-amber-500/15">
+                    <div className="flex items-center justify-between text-[11px] font-bold">
+                      <span className="text-amber-800 dark:text-amber-300 flex items-center gap-1">
+                        <TrendingUp size={12} className="text-amber-500" />
+                        <span>
+                          {language === 'hi' ? 'साधना सिद्धि एवं आर्काइव आवृत्ति' : 'Resolution Achievement & Archive Frequency'}
+                        </span>
+                      </span>
+                      <span className="font-mono text-amber-700 dark:text-amber-400">
+                        {archiveStats.total} / {archiveStats.grandTotal} ({archiveStats.completionRate}%)
+                      </span>
+                    </div>
+
+                    {/* Progress Bar Track */}
+                    <div className="w-full h-2 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden relative">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(100, archiveStats.completionRate)}%` }}
+                        transition={{ duration: 0.6, ease: 'easeOut' }}
+                        className="h-full bg-gradient-to-r from-amber-500 via-orange-500 to-emerald-500 rounded-full shadow-2xs"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between text-[10px] text-gray-500 dark:text-gray-400">
+                      <span>
+                        {language === 'hi'
+                          ? `विगत 7 दिनों में आर्काइव्ड: ${archiveStats.recent7DaysCount} संकल्प`
+                          : `Last 7 days archive count: ${archiveStats.recent7DaysCount} resolutions`}
+                      </span>
+                      <span className="font-semibold text-amber-600 dark:text-amber-400">
+                        {archiveStats.completionRate >= 80
+                          ? (language === 'hi' ? 'उत्कृष्ट निरन्तरता (Excellent)' : 'High Frequency')
+                          : archiveStats.completionRate >= 50
+                          ? (language === 'hi' ? 'उत्तम प्रगति (Steady)' : 'Steady Progress')
+                          : (language === 'hi' ? 'साधना जारी रखें (Active Sadhana)' : 'Active Practice')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <p className="text-xs text-gray-500">
-                {language === 'hi'
-                  ? '24 घंटे बाद स्वचालित रूप से आर्काइव किए गए पूर्ण संकल्प:'
-                  : 'Tasks marked completed >24 hours ago are archived to keep your active checklist clean.'}
-              </p>
+              {/* Scrollable Content Body */}
+              <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-thin">
+                {/* Search & Filter Toolbar */}
+                <div className="space-y-2.5">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="relative flex-1">
+                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        value={archiveSearchQuery}
+                        onChange={(e) => setArchiveSearchQuery(e.target.value)}
+                        placeholder={language === 'hi' ? 'संकल्प या नोट्स में खोजें...' : 'Search archived resolutions or notes...'}
+                        className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-xs text-gray-800 dark:text-gray-200 focus:outline-none focus:border-amber-500"
+                      />
+                      {archiveSearchQuery && (
+                        <button
+                          onClick={() => setArchiveSearchQuery('')}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-white"
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
+                    </div>
 
-              <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
-                {archivedTodos.length === 0 ? (
-                  <p className="text-xs text-gray-400 italic text-center py-6">
-                    {language === 'hi' ? 'कोई आर्काइव्ड संकल्प नहीं है।' : 'No archived items yet.'}
-                  </p>
-                ) : (
-                  archivedTodos.map((item) => (
-                    <div
-                      key={item.id}
-                      className="p-3 bg-black/5 dark:bg-white/5 rounded-2xl flex items-center justify-between gap-2 text-xs"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-gray-700 dark:text-gray-200 truncate">{item.text}</p>
-                        <span className="text-[10px] text-gray-400 font-mono">Tag: {item.tag || 'Daily'}</span>
-                      </div>
+                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                      {/* Chronological Toggle Button */}
                       <button
-                        onClick={() => restoreArchivedItem(item.id)}
-                        className="px-2.5 py-1 bg-green-500/10 hover:bg-green-500/20 text-green-600 dark:text-green-400 rounded-lg text-[10px] font-bold shrink-0 transition-colors cursor-pointer border border-green-500/20"
+                        type="button"
+                        onClick={() =>
+                          setArchiveSortBy((prev) => (prev === 'date_desc' ? 'date_asc' : 'date_desc'))
+                        }
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 text-xs font-bold transition-all cursor-pointer shadow-2xs active:scale-95 shrink-0"
+                        title={
+                          language === 'hi'
+                            ? 'कालानुक्रमिक क्रम बदलें (नवीनतम / पुराना)'
+                            : 'Toggle chronological sorting order (Newest / Oldest)'
+                        }
+                        id="chronological-sort-toggle-btn"
                       >
-                        {language === 'hi' ? 'पुनः सक्रिय करें' : 'Restore'}
+                        <ArrowUpDown size={14} className="text-amber-500" />
+                        <span>
+                          {archiveSortBy === 'date_desc'
+                            ? language === 'hi'
+                              ? 'कालानुक्रम: नवीन → पुराना'
+                              : 'Chronological: Newest First'
+                            : archiveSortBy === 'date_asc'
+                            ? language === 'hi'
+                              ? 'कालानुक्रम: पुराना → नवीन'
+                              : 'Chronological: Oldest First'
+                            : language === 'hi'
+                            ? 'कालानुक्रम बदलें'
+                            : 'Sort Chronologically'}
+                        </span>
+                      </button>
+
+                      <select
+                        value={archiveSortBy}
+                        onChange={(e: any) => setArchiveSortBy(e.target.value)}
+                        className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 focus:outline-none cursor-pointer"
+                      >
+                        <option value="date_desc">{language === 'hi' ? 'नवीनतम (Newest)' : 'Newest First'}</option>
+                        <option value="date_asc">{language === 'hi' ? 'पुराना (Oldest)' : 'Oldest First'}</option>
+                        <option value="priority_desc">{language === 'hi' ? 'उच्च प्राथमिकता (High Impact)' : 'High Impact First'}</option>
+                        <option value="alphabetical">{language === 'hi' ? 'वर्णमाला (A-Z)' : 'Alphabetical (A-Z)'}</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Category Filter Pills */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                    <span className="text-[10px] font-bold uppercase text-gray-400 shrink-0 mr-1 flex items-center gap-1">
+                      <Filter size={10} />
+                      <span>{language === 'hi' ? 'श्रेणी:' : 'Category:'}</span>
+                    </span>
+                    {SPIRITUAL_CATEGORIES.map((cat) => {
+                      const isActive = archiveCategoryFilter === cat.id;
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => setArchiveCategoryFilter(cat.id)}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold shrink-0 transition-all cursor-pointer flex items-center gap-1 ${
+                            isActive
+                              ? 'bg-amber-500 text-white shadow-xs'
+                              : 'bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-black/10'
+                          }`}
+                        >
+                          <span>{cat.emoji}</span>
+                          <span>{language === 'hi' ? cat.label.hi : cat.label.en}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Grouped History List */}
+                <div className="space-y-4">
+                  {filteredArchivedTodos.length === 0 ? (
+                    <div className="text-center py-10 space-y-2">
+                      <div className="w-12 h-12 mx-auto rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                        <History size={24} />
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                        {archivedTodos.length === 0
+                          ? (language === 'hi' ? 'अभी तक कोई आर्काइव्ड संकल्प नहीं है।' : 'No archived items yet. Completed resolutions will appear here after 24 hours.')
+                          : (language === 'hi' ? 'खोज या फ़िल्टर के अनुसार कोई परिणाम नहीं मिला।' : 'No archived items match your search or filter.')}
+                      </p>
+                    </div>
+                  ) : (
+                    groupedArchivedTodos.map((group) => (
+                      <div key={group.title} className="space-y-2">
+                        <div className="flex items-center gap-2 border-b border-black/5 dark:border-white/5 pb-1">
+                          <Calendar size={12} className="text-amber-500" />
+                          <h4 className="text-[11px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                            {group.title} ({group.items.length})
+                          </h4>
+                        </div>
+
+                        <div className="space-y-2">
+                          {group.items.map((item) => {
+                            const catObj = SPIRITUAL_CATEGORIES.find(c => c.id === (item.category || 'Sadhana'));
+                            const catColor = catObj?.color || item.categoryColor || '#10b981';
+                            const impactInfo = getImpactInfo(item.impact || 'Medium');
+                            const completedDateStr = item.completedAt
+                              ? new Date(item.completedAt).toLocaleString(language === 'hi' ? 'hi-IN' : 'en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })
+                              : null;
+
+                            return (
+                              <div
+                                key={item.id}
+                                className="p-3.5 bg-black/5 dark:bg-white/5 hover:bg-black/8 dark:hover:bg-white/8 rounded-2xl border border-black/5 dark:border-zinc-800/80 transition-all space-y-2"
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                                    <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                                      <CheckCircle2 size={13} className="fill-emerald-500 text-white" />
+                                    </div>
+
+                                    <div className="min-w-0 flex-1 space-y-1">
+                                      <p className="font-bold text-xs text-gray-800 dark:text-gray-150 leading-snug">
+                                        {item.text}
+                                      </p>
+
+                                      {/* Badges */}
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        {/* Category Badge */}
+                                        <span
+                                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border"
+                                          style={{
+                                            backgroundColor: `${catColor}18`,
+                                            color: catColor,
+                                            borderColor: `${catColor}40`
+                                          }}
+                                        >
+                                          <span>{catObj?.emoji || '✨'}</span>
+                                          <span>{catObj?.label[language === 'hi' ? 'hi' : 'en'] || (item.category || 'Sadhana')}</span>
+                                        </span>
+
+                                        {/* Tag Badge */}
+                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${getTagBadgeStyle(item.tag || 'Daily')}`}>
+                                          <Tag size={9} />
+                                          <span>{getTagLabel(item.tag || 'Daily')}</span>
+                                        </span>
+
+                                        {/* Impact Badge */}
+                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${impactInfo.badge}`}>
+                                          <span className={`w-1.5 h-1.5 rounded-full ${impactInfo.dot}`} />
+                                          <span>{impactInfo.label}</span>
+                                        </span>
+
+                                        {/* Completion Timestamp */}
+                                        {completedDateStr && (
+                                          <span className="text-[10px] text-gray-400 font-mono flex items-center gap-1 ml-auto">
+                                            <Clock size={10} />
+                                            <span>{completedDateStr}</span>
+                                          </span>
+                                        )}
+                                      </div>
+
+                                      {/* Notes if any */}
+                                      {item.notes && item.notes.trim() && (
+                                        <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-900 dark:text-amber-200 italic">
+                                          💬 "{item.notes.trim()}"
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Action Buttons */}
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                      onClick={() => restoreArchivedItem(item.id)}
+                                      className="px-2.5 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 rounded-xl text-[10px] font-bold shrink-0 transition-all cursor-pointer border border-emerald-500/30 flex items-center gap-1 active:scale-95 shadow-2xs"
+                                      title={language === 'hi' ? 'सक्रिय सूची में पुनः जोड़ें' : 'Restore to active checklist'}
+                                    >
+                                      <RotateCcw size={11} />
+                                      <span>{language === 'hi' ? 'पुनः चालू करें' : 'Restore'}</span>
+                                    </button>
+
+                                    <button
+                                      onClick={() => deleteArchivedItem(item.id)}
+                                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all cursor-pointer shrink-0"
+                                      title={language === 'hi' ? 'आर्काइव से हटाएं' : 'Delete from archive'}
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Modal Footer Actions */}
+              <div className="pt-3 border-t border-black/10 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+                <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+                  {/* Export CSV Button */}
+                  <button
+                    type="button"
+                    onClick={handleExportArchivedCSV}
+                    disabled={archivedTodos.length === 0}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 text-xs font-bold transition-all cursor-pointer border border-black/10 dark:border-zinc-800 disabled:opacity-40"
+                    title={language === 'hi' ? 'सभी आर्काइव्ड संकल्प CSV फ़ाइल के रूप में डाउनलोड करें' : 'Export archived resolutions history to CSV'}
+                  >
+                    <Download size={14} className="text-amber-500" />
+                    <span>{language === 'hi' ? 'CSV एक्सपोर्ट' : 'Export CSV'}</span>
+                  </button>
+
+                  {/* Export JSON Backup Button */}
+                  <button
+                    type="button"
+                    onClick={handleExportArchivedJSON}
+                    disabled={archivedTodos.length === 0}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-300 text-xs font-bold transition-all cursor-pointer border border-amber-500/25 disabled:opacity-40"
+                    title={language === 'hi' ? 'लोकल बैकअप के लिए आर्काइव्ड संकल्प JSON फ़ाइल के रूप में डाउनलोड करें' : 'Export completed resolutions as a JSON backup file'}
+                    id="export-archive-json-btn"
+                  >
+                    <FileText size={14} className="text-amber-500" />
+                    <span>{language === 'hi' ? 'JSON बैकअप' : 'Export JSON'}</span>
+                  </button>
+
+                  {archiveConfirmClear ? (
+                    <div className="flex items-center gap-1 bg-red-500/10 border border-red-500/30 p-1 rounded-xl text-xs">
+                      <span className="text-[10px] font-bold text-red-600 dark:text-red-400 px-1">
+                        {language === 'hi' ? 'सभी साफ़ करें?' : 'Clear all?'}
+                      </span>
+                      <button
+                        onClick={clearAllArchived}
+                        className="px-2 py-1 bg-red-500 text-white rounded-lg text-[10px] font-bold cursor-pointer"
+                      >
+                        {language === 'hi' ? 'हाँ' : 'Yes'}
+                      </button>
+                      <button
+                        onClick={() => setArchiveConfirmClear(false)}
+                        className="px-2 py-1 bg-black/10 dark:bg-white/10 text-gray-600 dark:text-gray-300 rounded-lg text-[10px] font-bold cursor-pointer"
+                      >
+                        {language === 'hi' ? 'नहीं' : 'No'}
                       </button>
                     </div>
-                  ))
-                )}
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setArchiveConfirmClear(true)}
+                      disabled={archivedTodos.length === 0}
+                      className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-xl text-xs font-bold text-red-500/80 hover:text-red-600 hover:bg-red-500/10 transition-all cursor-pointer disabled:opacity-40"
+                    >
+                      <Trash2 size={13} />
+                      <span>{language === 'hi' ? 'इतिहास साफ़ करें' : 'Clear All'}</span>
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowArchivedModal(false);
+                    setArchiveConfirmClear(false);
+                  }}
+                  className="w-full sm:w-auto px-5 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl text-xs shadow-md cursor-pointer transition-all active:scale-95"
+                >
+                  {language === 'hi' ? 'बंद करें' : 'Close History'}
+                </button>
               </div>
             </motion.div>
           </div>
