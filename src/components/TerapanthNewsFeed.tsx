@@ -42,8 +42,11 @@ export default function TerapanthNewsFeed({ onBack }: { onBack?: () => void }) {
     setLoading(true);
     setIsRefreshing(true);
     
-    // Check if offline
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    // Check if offline or simulation mode active
+    const isSimOffline = typeof window !== 'undefined' && window.localStorage.getItem('terapanth_offline_simulation') === 'true';
+    const isOffline = (typeof navigator !== 'undefined' && !navigator.onLine) || isSimOffline;
+
+    if (isOffline) {
       const cache = localStorage.getItem('terapanth_news_cache');
       if (cache) {
         try {
@@ -51,22 +54,19 @@ export default function TerapanthNewsFeed({ onBack }: { onBack?: () => void }) {
           const articles = parsed.articles;
           const cachedAt = parsed.cachedAt;
           
-          if (articles && Array.isArray(articles) && typeof cachedAt === 'number') {
-            // Only use cache if less than 6 hours old
-            if (Date.now() - cachedAt < 6 * 60 * 60 * 1000) {
-              setNewsItems(articles);
-              const d = new Date(cachedAt);
-              setLastRefreshedAt(d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) + ' (Offline Cache)');
-              setLoading(false);
-              setIsRefreshing(false);
-              return;
-            }
+          if (articles && Array.isArray(articles) && articles.length > 0) {
+            setNewsItems(articles);
+            const d = typeof cachedAt === 'number' ? new Date(cachedAt) : new Date();
+            setLastRefreshedAt(d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) + ' (Offline Cache)');
+            setLoading(false);
+            setIsRefreshing(false);
+            return;
           }
         } catch (e) {
-          console.error("News cache parsing failed", e);
+          console.error("Failed to parse cached news feed:", e);
         }
       }
-      // If offline with no cache (or cache is older than 6 hours), show an empty state with offline message
+      // If offline with no cache, show empty state
       setNewsItems([]);
       setLoading(false);
       setIsRefreshing(false);

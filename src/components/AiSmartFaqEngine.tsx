@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Search, 
@@ -56,7 +56,6 @@ export const AiSmartFaqEngine: React.FC<AiSmartFaqEngineProps> = ({ onBack }) =>
   // Caching & Recent Searches State
   const [cachedFaqs, setCachedFaqs] = useState<FaqItem[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   // AI Generation State
   const [aiGenerating, setAiGenerating] = useState(false);
@@ -65,6 +64,15 @@ export const AiSmartFaqEngine: React.FC<AiSmartFaqEngineProps> = ({ onBack }) =>
   // Journal Saving State
   const [journalAddingId, setJournalAddingId] = useState<string | null>(null);
   const [journalSuccessId, setJournalSuccessId] = useState<string | null>(null);
+
+  const checkOffline = useCallback(() => {
+    if (typeof window !== "undefined" && window.localStorage.getItem("terapanth_offline_simulation") === "true") {
+      return true;
+    }
+    return typeof navigator !== "undefined" ? !navigator.onLine : false;
+  }, []);
+
+  const [isOffline, setIsOffline] = useState(checkOffline);
 
   // Load from LocalStorage on mount
   useEffect(() => {
@@ -85,17 +93,18 @@ export const AiSmartFaqEngine: React.FC<AiSmartFaqEngineProps> = ({ onBack }) =>
 
   // Sync online status
   useEffect(() => {
-    const handleOnline = () => setIsOffline(false);
-    const handleOffline = () => setIsOffline(true);
+    const handleStatusChange = () => setIsOffline(checkOffline());
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleStatusChange);
+    window.addEventListener('offline', handleStatusChange);
+    window.addEventListener('offline-simulation-changed', handleStatusChange);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', handleStatusChange);
+      window.removeEventListener('offline', handleStatusChange);
+      window.removeEventListener('offline-simulation-changed', handleStatusChange);
     };
-  }, []);
+  }, [checkOffline]);
 
   const aiFaqCoreData = useMemo<FaqItem[]>(() => [
     {

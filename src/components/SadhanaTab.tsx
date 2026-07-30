@@ -2,7 +2,7 @@ import { memo, useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { Clock, Play, Pause, RotateCcw, Sparkles, Volume2, VolumeX, ShieldCheck, Calendar, Plus, Trash2, CheckCircle2, ChevronRight, ChevronDown, Info, Coffee, Sun, Moon, BookOpen, TrendingUp, Download, FileText, Wind, Flame, Timer, RefreshCw, Mic, FlameKindling, CheckSquare, X, Loader2, Send, GripVertical, ArrowUp, ArrowDown, Tag, Filter, Bookmark, Search, BellRing, ArrowUpDown, Award, Compass, Users, Share2, Star, Copy, ListChecks, Check, History, Archive } from 'lucide-react';
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from 'recharts';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line, BarChart, Bar, Cell } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { db } from '../lib/firebase';
@@ -3745,6 +3745,7 @@ const SadhanaGoalsSection = ({
   const [expandedSubtasks, setExpandedSubtasks] = useState<Record<string, boolean>>({});
   const [editingTimeId, setEditingTimeId] = useState<string | null>(null);
   const [copyToast, setCopyToast] = useState<boolean>(false);
+  const [showQuickReflectionModal, setShowQuickReflectionModal] = useState<boolean>(false);
 
   // --- USER-DEFINED CUSTOM CATEGORIES & COLOR CODING ---
   const [customCategories, setCustomCategories] = useState<Array<{ id: string; label: { en: string; hi: string }; emoji: string; color: string }>>(() => {
@@ -5382,38 +5383,58 @@ const SadhanaGoalsSection = ({
           </div>
         </div>
 
-        {/* 7-Day Day-by-Day Visual Breakdown */}
-        <div className="grid grid-cols-7 gap-1.5 pt-1">
-          {sevenDayStats.days.map((day, idx) => {
-            const isToday = idx === 6;
-            const maxCount = Math.max(...sevenDayStats.days.map(d => d.count), 1);
-            const heightPercent = Math.min(100, Math.max(15, (day.count / maxCount) * 100));
-
-            return (
-              <div key={day.dateStr} className="flex flex-col items-center gap-1.5">
-                <div className="text-[10px] font-mono font-bold text-orange-600 dark:text-orange-400">
-                  {day.count}
-                </div>
-                <div className="w-full h-16 bg-black/5 dark:bg-white/5 rounded-xl p-1 flex items-end justify-center relative overflow-hidden">
-                  <motion.div
-                    initial={{ height: 0 }}
-                    animate={{ height: `${heightPercent}%` }}
-                    transition={{ duration: 0.5, delay: idx * 0.05 }}
-                    className={`w-full rounded-lg ${
-                      day.count > 0
-                        ? isToday
-                          ? 'bg-gradient-to-t from-orange-500 to-amber-400 shadow-sm'
-                          : 'bg-orange-500/60 dark:bg-orange-400/60'
-                        : 'bg-gray-200 dark:bg-zinc-800'
-                    }`}
+        {/* Recharts 7-Day Completion Frequency Bar Chart */}
+        <div className="w-full h-44 mt-2 pt-1">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart 
+              data={sevenDayStats.days.map((d, idx) => ({
+                day: d.dayName,
+                count: d.count,
+                label: d.label,
+                isToday: idx === 6
+              }))} 
+              margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(156, 163, 175, 0.15)" />
+              <XAxis 
+                dataKey="day" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fontSize: 11, fontWeight: 700, fill: '#9ca3af' }} 
+              />
+              <YAxis 
+                allowDecimals={false} 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fontSize: 10, fill: '#9ca3af' }} 
+              />
+              <Tooltip 
+                cursor={{ fill: 'rgba(249, 115, 22, 0.08)' }}
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    const data = payload[0].payload;
+                    return (
+                      <div className="bg-zinc-900 border border-amber-500/30 text-white text-xs px-3 py-2 rounded-xl shadow-xl space-y-0.5">
+                        <p className="font-bold text-amber-400">{data.label} {data.isToday ? '• Today' : ''}</p>
+                        <p className="font-mono text-xs font-semibold text-gray-200">
+                          {data.count} {language === 'hi' ? 'संकल्प पूर्ण' : 'Tasks Completed'}
+                        </p>
+                      </div>
+                    );
+                  }
+                  return null;
+                }} 
+              />
+              <Bar dataKey="count" radius={[8, 8, 0, 0]} maxBarSize={32}>
+                {sevenDayStats.days.map((d, idx) => (
+                  <Cell 
+                    key={`cell-${idx}`} 
+                    fill={d.count > 0 ? (idx === 6 ? '#f97316' : '#fb923c') : '#d1d5db'} 
                   />
-                </div>
-                <span className={`text-[10px] font-bold ${isToday ? 'text-orange-600 dark:text-orange-400 font-black underline' : 'text-gray-400'}`}>
-                  {day.dayName}
-                </span>
-              </div>
-            );
-          })}
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
@@ -5531,6 +5552,55 @@ const SadhanaGoalsSection = ({
                 📅 {language === 'hi' ? 'तिथि: पुराना पहले' : 'Date: Oldest First'}
               </option>
             </select>
+          </div>
+        </div>
+
+        {/* Category Label Tab-Switching Bar */}
+        <div className="space-y-1.5 pt-1 border-t border-black/5 dark:border-white/5">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 flex items-center gap-1.5 ml-1">
+              <Tag size={12} className="text-orange-500" />
+              {language === 'hi' ? 'श्रेणी लेबल द्वारा फ़िल्टर करें' : 'Filter by Category Labels'}
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowAddCategoryModal(true)}
+              className="text-[10px] font-bold text-orange-500 hover:underline flex items-center gap-0.5"
+            >
+              <Plus size={10} />
+              <span>{language === 'hi' ? 'नई श्रेणी' : 'Add Category'}</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            {SPIRITUAL_CATEGORIES.map((cat) => {
+              const isCatActive = activeCategoryFilter === cat.id;
+              const catCount = cat.id === 'All'
+                ? todos.length
+                : todos.filter((t: any) => (t.category || 'Sadhana') === cat.id).length;
+
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setActiveCategoryFilter(cat.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 border ${
+                    isCatActive
+                      ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white border-amber-400 shadow-sm'
+                      : 'bg-white dark:bg-zinc-900 text-gray-600 dark:text-gray-300 border-black/10 dark:border-white/10 hover:bg-black/5'
+                  }`}
+                  id={`sadhana-cat-tab-${cat.id}`}
+                >
+                  <span className="text-xs">{cat.emoji}</span>
+                  <span>{language === 'hi' ? cat.label.hi : cat.label.en}</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-md ${
+                    isCatActive ? 'bg-white/20 text-white font-black' : 'bg-black/10 dark:bg-white/10 text-gray-500'
+                  }`}>
+                    {catCount}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -7131,8 +7201,36 @@ const SadhanaGoalsSection = ({
         )}
       </AnimatePresence>
 
-      {/* Floating 'Quick Prayer' Button */}
-      <div className="fixed bottom-24 right-5 z-40">
+      {/* Quick Entry Minimalist Reflection Modal */}
+      <QuickReflectionModal 
+        isOpen={showQuickReflectionModal} 
+        onClose={() => setShowQuickReflectionModal(false)} 
+      />
+
+      {/* Floating Action Buttons Stack: Quick Entry Reflection & Quick Prayer */}
+      <div className="fixed bottom-24 right-5 z-40 flex flex-col gap-2.5 items-end">
+        {/* Quick Entry Floating Button for Spiritual Reflection */}
+        <button
+          type="button"
+          onClick={() => setShowQuickReflectionModal(true)}
+          className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs px-3.5 py-2.5 rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all cursor-pointer border border-white/20 group"
+          title={language === 'hi' ? 'आज की साधना प्रगति पर एक वाक्य का विचार दर्ज करें' : 'Record a one-sentence reflection on today\'s spiritual progress'}
+          id="quick-reflection-fab-btn"
+        >
+          <div className="p-1 bg-white/20 rounded-full group-hover:rotate-12 transition-transform">
+            <FileText size={14} className="text-emerald-100" />
+          </div>
+          <div className="text-left">
+            <span className="block text-[9px] font-black leading-tight text-emerald-100 uppercase tracking-wider">
+              {language === 'hi' ? 'त्वरित विचार' : 'Quick Entry'}
+            </span>
+            <span className="block text-[11px] font-bold leading-tight">
+              {language === 'hi' ? 'साधना अनुभव' : 'Daily Reflection'}
+            </span>
+          </div>
+        </button>
+
+        {/* Floating 'Quick Prayer' Button */}
         <button
           type="button"
           onClick={() => onQuickPrayer?.()}

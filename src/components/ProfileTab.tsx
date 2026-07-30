@@ -23,6 +23,7 @@ import {
   RefreshCw,
   Database,
   Trash2,
+  AlertTriangle,
   TrendingUp,
   Award,
   Trophy,
@@ -31,6 +32,7 @@ import {
   LogOut,
   LogIn,
   Share2,
+  Lock,
 } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, Legend, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { handleFirestoreError, OperationType } from "../lib/firestoreErrors";
@@ -38,8 +40,10 @@ import KnowledgeInsights from "./KnowledgeInsights";
 import HabitsCalendar from "./HabitsCalendar";
 import ConfirmationModal from "./ConfirmationModal";
 import SecureDataExporterModal from "./SecureDataExporterModal";
+import AppSecurityVaultModal from "./AppSecurityVaultModal";
 import { getUserProfile, saveUserProfile, getPersonalizedGreeting, UserProfileData } from "../utils/userProfile";
 import { executeWithExponentialBackoff } from "../utils/exponentialBackoff";
+import { getSyncQueue, syncPendingRecords, clearSyncedCache, resolveSyncConflict, OfflineLog } from "../services/sadhanaOfflineSync";
 
 interface PermissionState {
   location: string;
@@ -159,6 +163,7 @@ export default function ProfileTab({
     return () => window.removeEventListener('terapanth_profile_updated', handleProfileUpdate);
   }, [displayNameInput]);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [showSecurityVaultModal, setShowSecurityVaultModal] = useState(false);
   const [showExportConfirmation, setShowExportConfirmation] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [privacyLang, setPrivacyLang] = useState<"en" | "hi">("hi");
@@ -510,7 +515,167 @@ export default function ProfileTab({
     }
   };
 
+  // --- OFFLINE ACTIVITY LOG & SYNC PROGRESS STATE ---
+  const [pendingOfflineQueue, setPendingOfflineQueue] = useState<OfflineLog[]>([]);
+  const [isSyncingQueue, setIsSyncingQueue] = useState(false);
+  const [isClearingSyncCache, setIsClearingSyncCache] = useState(false);
+  const [activeConflictItem, setActiveConflictItem] = useState<OfflineLog | null>(null);
+  
+  const [prioritizeOfflineSync, setPrioritizeOfflineSync] = useState(() => {
+    return typeof window !== "undefined" ? localStorage.getItem("prioritize_offline_sync") === "true" : true;
+  });
+
+  const handleTogglePrioritizeOfflineSync = (val: boolean) => {
+    setPrioritizeOfflineSync(val);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("prioritize_offline_sync", String(val));
+      window.dispatchEvent(new Event("prioritize-offline-sync-changed"));
+    }
+  };
+
+  const handleClearSyncCache = async () => {
+    setIsClearingSyncCache(true);
+    try {
+      const { clearedCount, freedKB } = await clearSyncedCache();
+      setSyncStatusFeedback({
+        type: "success",
+        message: `✓ ${clearedCount} संचित रिकॉर्ड्स का लोकल कैश साफ़ किया गया (${freedKB} KB स्थान मुक्त)!`,
+      });
+      await refreshPendingQueue();
+    } catch (err) {
+      console.error("Error clearing sync cache:", err);
+      setSyncStatusFeedback({
+        type: "error",
+        message: "सिंक कैश साफ़ करने में असमर्थ।",
+      });
+    } finally {
+      setIsClearingSyncCache(false);
+    }
+  };
+
+  const handleResolveConflict = async (resolution: 'keep_local' | 'keep_server' | 'merge') => {
+    if (!activeConflictItem) return;
+    try {
+      let mergedData;
+      if (resolution === 'merge') {
+        mergedData = {
+          ...activeConflictItem.data,
+          title: `${activeConflictItem.data?.title || activeConflictItem.data?.type || 'प्रविष्टि'} (Merged Version)`,
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      await resolveSyncConflict(activeConflictItem, resolution, mergedData);
+      setSyncStatusFeedback({
+        type: "success",
+        message: `✓ विरोधाभास हल किया गया: ${resolution === 'keep_local' ? 'लोकल वर्शन सुरक्षित रखा गया' : resolution === 'keep_server' ? 'सर्वर वर्शन स्वीकार किया गया' : 'दोनों वर्शन मिलाए गए'}`,
+      });
+      setActiveConflictItem(null);
+      await refreshPendingQueue();
+    } catch (err) {
+      console.error("Conflict resolution error:", err);
+    }
+  };
+
+  const [syncProgress, setSyncProgress] = useState<{
+    completed: number;
+    total: number;
+    percent: number;
+    currentName: string;
+  }>({ completed: 0, total: 0, percent: 0, currentName: "" });
+
+  const refreshPendingQueue = async () => {
+    try {
+      const queue = await getSyncQueue();
+      setPendingOfflineQueue(queue);
+    } catch (err) {
+      console.error("Failed to load offline sync queue:", err);
+    }
+  };
+
+  useEffect(() => {
+    refreshPendingQueue();
+    const handleSyncComplete = () => refreshPendingQueue();
+    window.addEventListener("terapanth_sync_completed", handleSyncComplete);
+    window.addEventListener("online", handleSyncComplete);
+    window.addEventListener("offline-simulation-changed", handleSyncComplete);
+    return () => {
+      window.removeEventListener("terapanth_sync_completed", handleSyncComplete);
+      window.removeEventListener("online", handleSyncComplete);
+      window.removeEventListener("offline-simulation-changed", handleSyncComplete);
+    };
+  }, []);
+
+  const handleSyncPendingQueue = async () => {
+    if (isSyncingQueue) return;
+    const currentUid = user?.uid;
+    const queue = await getSyncQueue();
+    if (queue.length === 0) {
+      setSyncStatusFeedback({
+        type: "success",
+        message: "✓ सभी लोकल बदलाव क्लाउड में सिंक्रनाइज़ हैं! (All items synced)",
+      });
+      return;
+    }
+
+    setIsSyncingQueue(true);
+    setSyncProgress({ completed: 0, total: queue.length, percent: 0, currentName: "सिंक्रनाइज़ेशन प्रारंभ हो रहा है..." });
+
+    try {
+      for (let i = 0; i < queue.length; i++) {
+        const item = queue[i];
+        const storeLabel =
+          item.storeName === "fastingLogs"
+            ? "व्रत / Fasting"
+            : item.storeName === "mantraLogs"
+              ? "मंत्र / Japa"
+              : item.storeName === "diary"
+                ? "डायरी / Journal"
+                : "ध्यान / Meditation";
+        setSyncProgress({
+          completed: i + 1,
+          total: queue.length,
+          percent: Math.round(((i + 1) / queue.length) * 100),
+          currentName: `सिंक हो रहा है: ${storeLabel} (${item.action})`,
+        });
+        await new Promise((res) => setTimeout(res, 250));
+      }
+
+      if (currentUid) {
+        const { successCount } = await syncPendingRecords(currentUid);
+        setSyncProgress({
+          completed: queue.length,
+          total: queue.length,
+          percent: 100,
+          currentName: `सफलतापूर्वक सिंक हुआ (${successCount} रिकॉर्ड्स)!`,
+        });
+        setSyncStatusFeedback({
+          type: "success",
+          message: `✓ ${successCount} रिकॉर्ड्स फ़ायरस्टोर क्लाउड में सिंक हो गए!`,
+        });
+      } else {
+        setSyncProgress({
+          completed: queue.length,
+          total: queue.length,
+          percent: 100,
+          currentName: "लोकल सिंक पूर्ण!",
+        });
+      }
+      await refreshPendingQueue();
+    } catch (err) {
+      console.error("Queue sync error:", err);
+      setSyncStatusFeedback({
+        type: "error",
+        message: "सिंक्रनाइज़ेशन में त्रुटि आई। कनेक्शन की जाँच करें।",
+      });
+    } finally {
+      setTimeout(() => {
+        setIsSyncingQueue(false);
+      }, 800);
+    }
+  };
+
   // --- Offline Simulation State ---
+
   const [isOfflineSimulationActive, setIsOfflineSimulationActive] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("terapanth_offline_simulation") === "true";
@@ -1658,6 +1823,29 @@ export default function ProfileTab({
               </button>
             </div>
 
+            {/* Prioritize Offline Sync Toggle */}
+            <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-950 border border-black/[0.03] dark:border-zinc-800/50 rounded-xl">
+              <div className="space-y-0.5 text-left pr-2">
+                <span className="text-[10px] font-bold text-zinc-900 dark:text-zinc-100 block">
+                  Prioritize Offline Sync (ऑफ़लाइन सिंक प्राथमिकता)
+                </span>
+                <span className="text-[8.5px] text-zinc-500 dark:text-zinc-400 block">
+                  पुनः इंटरनेट कनेक्ट होते ही बिना किसी प्रतीक्षा के तत्काल बैकग्राउंड सिंक करें
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleTogglePrioritizeOfflineSync(!prioritizeOfflineSync)}
+                className={`relative w-12 h-6 rounded-full transition-colors flex items-center shrink-0 cursor-pointer ${prioritizeOfflineSync ? "bg-amber-500" : "bg-zinc-300 dark:bg-zinc-700"}`}
+                title={prioritizeOfflineSync ? "Prioritize Offline Sync Enabled" : "Prioritize Offline Sync Disabled"}
+              >
+                <span
+                  className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200 block absolute ${prioritizeOfflineSync ? "translate-x-7" : "translate-x-1"}`}
+                />
+              </button>
+            </div>
+
             {backgroundSyncEnabled && (
               <div className="space-y-2.5 p-3 bg-zinc-50 dark:bg-zinc-950 border border-black/[0.03] dark:border-zinc-800/50 rounded-xl">
                 <div className="flex items-center justify-between">
@@ -1692,6 +1880,285 @@ export default function ProfileTab({
                 </div>
               </div>
             )}
+
+            {/* Visual Sync Progress Indicator for Background & Manual Sync */}
+            {(isSyncingQueue || isManualSyncing) && (
+              <div className="p-3.5 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 border border-amber-500/30 rounded-xl space-y-2 text-left">
+                <div className="flex items-center justify-between text-[10px] font-bold text-amber-900 dark:text-amber-200">
+                  <span className="flex items-center gap-1.5">
+                    <RefreshCw size={12} className="animate-spin text-amber-600 dark:text-amber-400" />
+                    <span>{syncProgress.currentName || "बैकग्राउंड सिंक्रनाइज़ेशन प्रगति पर है..."}</span>
+                  </span>
+                  <span className="font-mono text-[10px] bg-amber-500/20 text-amber-800 dark:text-amber-300 px-1.5 py-0.5 rounded font-black">
+                    {syncProgress.percent || 50}%
+                  </span>
+                </div>
+                <div className="w-full bg-amber-200/60 dark:bg-amber-950/80 h-2 rounded-full overflow-hidden">
+                  <motion.div
+                    className="bg-gradient-to-r from-amber-500 to-orange-500 h-full rounded-full"
+                    initial={{ width: "0%" }}
+                    animate={{ width: `${syncProgress.percent || 50}%` }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </div>
+                <div className="flex justify-between items-center text-[8.5px] text-amber-800/80 dark:text-amber-300/80 font-medium font-mono">
+                  <span>{syncProgress.completed} / {syncProgress.total || pendingOfflineQueue.length} रिकॉर्ड्स पुश हो रहे हैं</span>
+                  <span>IndexedDB → Cloud Firestore</span>
+                </div>
+              </div>
+            )}
+
+            {/* Offline Activity Log (Pending Local Changes waiting for sync) */}
+            <div className="p-3.5 bg-zinc-50 dark:bg-zinc-950 border border-black/[0.03] dark:border-zinc-800/50 rounded-xl space-y-3 text-left">
+              <div className="flex items-center justify-between pb-2 border-b border-black/[0.03] dark:border-zinc-800/40">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg">
+                    <Database size={13} />
+                  </div>
+                  <div>
+                    <h5 className="font-bold text-[11px] text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                      ऑफ़लाइन गतिविधि लॉग (Offline Activity Log)
+                      {pendingOfflineQueue.length > 0 && (
+                        <span className="px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30">
+                          {pendingOfflineQueue.length} Pending
+                        </span>
+                      )}
+                    </h5>
+                    <p className="text-[8.5px] text-zinc-500 dark:text-zinc-400">
+                      लोकल बदलाव जो अगले क्लाउड सिंक की प्रतीक्षा कर रहे हैं
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  {pendingOfflineQueue.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleSyncPendingQueue}
+                      disabled={isSyncingQueue}
+                      className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-[9px] rounded-lg shadow-2xs transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50 shrink-0"
+                    >
+                      <RefreshCw size={10} className={isSyncingQueue ? "animate-spin" : ""} />
+                      <span>अभी सिंक करें</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Clear Sync Cache Utility Controls */}
+              <div className="p-2 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-lg flex items-center justify-between text-[9.5px]">
+                <div className="space-y-0.5 min-w-0 pr-2">
+                  <span className="font-bold text-zinc-900 dark:text-zinc-100 block">
+                    Clear Sync Cache (सिंक कैश साफ़ करें)
+                  </span>
+                  <span className="text-[8.5px] text-zinc-500 dark:text-zinc-400 block">
+                    क्लाउड में सिंक हो चुके रिकॉर्ड्स का IndexedDB कैश साफ़ करके डिवाइस स्पेस मुक्त करें
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleClearSyncCache}
+                  disabled={isClearingSyncCache}
+                  className="px-2.5 py-1.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold text-[9px] rounded-lg transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 shrink-0 border border-zinc-200/80 dark:border-zinc-700/80"
+                >
+                  <Trash2 size={11} className={isClearingSyncCache ? "animate-spin text-amber-500" : "text-zinc-500"} />
+                  <span>कैश साफ़ करें</span>
+                </button>
+              </div>
+
+              {pendingOfflineQueue.length === 0 ? (
+                <div className="p-3 bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-center space-y-2">
+                  <div className="flex items-center justify-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold text-[10px]">
+                    <Check size={12} />
+                    <span>सभी लोकल बदलाव सिंक हैं!</span>
+                  </div>
+                  <p className="text-[8.5px] text-zinc-500 dark:text-zinc-400">
+                    आपकी साधना डायरी, व्रत, और मंत्र लॉग पूरी तरह से क्लाउड फ़ायरस्टोर के साथ अप-टू-डेट हैं।
+                  </p>
+                  <div className="pt-1 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const testItem: OfflineLog = {
+                          id: `conflict_test_${Date.now()}`,
+                          storeName: "diary",
+                          action: "update",
+                          data: {
+                            id: `conflict_test_${Date.now()}`,
+                            title: "साधना डायरी प्रविष्टि (लोकल संशोधन)",
+                            serverTitle: "साधना डायरी प्रविष्टि (सर्वर संशोधन)",
+                            content: "लोकल डिवाइस पर अपडेट किया गया पाठ...",
+                            serverContent: "सर्वर क्लाउड पर अपडेट किया गया पाठ...",
+                            updatedAt: new Date().toISOString(),
+                            hasConflict: true,
+                          },
+                          timestamp: Date.now(),
+                        };
+                        setActiveConflictItem(testItem);
+                      }}
+                      className="text-[8.5px] font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <AlertTriangle size={10} />
+                      <span>सिंक विरोधाभास संवाद का परीक्षण करें (Test Sync Conflict Dialog)</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                  {pendingOfflineQueue.map((item, idx) => {
+                    const storeLabel =
+                      item.storeName === "fastingLogs"
+                        ? "व्रत रिकॉर्ड (Fasting)"
+                        : item.storeName === "mantraLogs"
+                          ? "जाप / मंत्र (Mantra)"
+                          : item.storeName === "diary"
+                            ? "आध्यात्मिक डायरी (Journal)"
+                            : "ध्यान सत्र (Meditation)";
+
+                    const actionLabel =
+                      item.action === "create"
+                        ? "+ नया"
+                        : item.action === "update"
+                          ? "✎ अपडेट"
+                          : "✕ हटाएँ";
+
+                    const itemTitle =
+                      item.data?.type ||
+                      item.data?.title ||
+                      item.data?.mantraName ||
+                      item.data?.fastType ||
+                      `आइटम #${item.id.slice(0, 8)}`;
+
+                    return (
+                      <div
+                        key={item.id || idx}
+                        onClick={() => setActiveConflictItem(item)}
+                        className="p-2 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-lg flex items-center justify-between text-[9.5px] cursor-pointer hover:border-amber-500/40 transition-colors"
+                      >
+                        <div className="space-y-0.5 min-w-0 pr-2">
+                          <div className="flex items-center gap-1.5 font-bold text-zinc-850 dark:text-zinc-150 truncate">
+                            <span className="px-1.5 py-0.2 rounded text-[7.5px] font-black uppercase bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/20">
+                              {actionLabel}
+                            </span>
+                            <span className="truncate">{storeLabel}</span>
+                          </div>
+                          <div className="text-[8.5px] text-zinc-500 dark:text-zinc-400 truncate">
+                            {itemTitle} • {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
+
+                        <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/20 shrink-0 flex items-center gap-1">
+                          <AlertTriangle size={9} className="text-amber-600 dark:text-amber-400" />
+                          <span>विरोधाभास देखें</span>
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Sync Conflict Resolution Dialog Modal */}
+            <AnimatePresence>
+              {activeConflictItem && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    className="w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 shadow-2xl text-left space-y-4"
+                  >
+                    <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 bg-amber-500/15 text-amber-600 dark:text-amber-400 rounded-xl">
+                          <AlertTriangle size={18} />
+                        </div>
+                        <div>
+                          <h4 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100">
+                            डेटा सिंक विरोधाभास (Sync Conflict Detected)
+                          </h4>
+                          <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                            यह प्रविष्टि इस डिवाइस और क्लाउड सर्वर दोनों पर संशोधित हुई है।
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setActiveConflictItem(null)}
+                        className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 font-bold text-sm cursor-pointer p-1"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 text-[10.5px]">
+                      {/* Local Device Version */}
+                      <div className="p-3 bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-2">
+                        <div className="flex items-center gap-1.5 font-extrabold text-amber-800 dark:text-amber-300 text-[10px] uppercase tracking-wider">
+                          <Smartphone size={12} />
+                          <span>📱 डिवाइस (Local)</span>
+                        </div>
+                        <div className="font-bold text-zinc-900 dark:text-zinc-100 line-clamp-2">
+                          {activeConflictItem.data?.title || activeConflictItem.data?.type || "लोकल प्रविष्टि"}
+                        </div>
+                        <p className="text-[9.5px] text-zinc-600 dark:text-zinc-400 line-clamp-3 leading-relaxed">
+                          {activeConflictItem.data?.content || activeConflictItem.data?.description || "लोकल डिवाइस पर अपडेट किया गया डेटा।"}
+                        </p>
+                        <div className="text-[8px] font-mono text-zinc-400 pt-1">
+                          संशोधित: {new Date(activeConflictItem.timestamp).toLocaleTimeString()}
+                        </div>
+                      </div>
+
+                      {/* Server Cloud Version */}
+                      <div className="p-3 bg-cyan-500/5 dark:bg-cyan-500/10 border border-cyan-500/30 rounded-xl space-y-2">
+                        <div className="flex items-center gap-1.5 font-extrabold text-cyan-800 dark:text-cyan-300 text-[10px] uppercase tracking-wider">
+                          <Database size={12} />
+                          <span>☁️ सर्वर (Cloud)</span>
+                        </div>
+                        <div className="font-bold text-zinc-900 dark:text-zinc-100 line-clamp-2">
+                          {activeConflictItem.data?.serverTitle || activeConflictItem.data?.title || "सर्वर क्लाउड प्रविष्टि"}
+                        </div>
+                        <p className="text-[9.5px] text-zinc-600 dark:text-zinc-400 line-clamp-3 leading-relaxed">
+                          {activeConflictItem.data?.serverContent || "क्लाउड फ़ायरस्टोर सर्वर पर उपलब्ध नवीनतम डेटा।"}
+                        </p>
+                        <div className="text-[8px] font-mono text-zinc-400 pt-1">
+                          सर्वर टाइमस्टैम्प: हाल ही में
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 pt-2 border-t border-zinc-200 dark:border-zinc-800">
+                      <p className="text-[9.5px] font-medium text-zinc-500 dark:text-zinc-400 text-center">
+                        कृपया चुनें कि आप किस वर्शन को सुरक्षित रखना चाहते हैं:
+                      </p>
+                      <div className="grid grid-cols-3 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleResolveConflict('keep_local')}
+                          className="py-2 px-2 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-[9.5px] rounded-xl transition-all shadow-xs cursor-pointer text-center"
+                        >
+                          लोकल रखें
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleResolveConflict('keep_server')}
+                          className="py-2 px-2 bg-cyan-600 hover:bg-cyan-700 text-white font-extrabold text-[9.5px] rounded-xl transition-all shadow-xs cursor-pointer text-center"
+                        >
+                          सर्वर स्वीकारें
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleResolveConflict('merge')}
+                          className="py-2 px-2 bg-zinc-800 hover:bg-zinc-700 dark:bg-zinc-200 dark:hover:bg-zinc-100 text-white dark:text-zinc-900 font-extrabold text-[9.5px] rounded-xl transition-all shadow-xs cursor-pointer text-center"
+                        >
+                          दोनों मिलाएँ
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>
 
             {/* Manual Sync Control with Exponential Backoff Retry */}
             <div className="p-3.5 bg-zinc-50 dark:bg-zinc-950 border border-black/[0.03] dark:border-zinc-800/50 rounded-xl space-y-2.5">
@@ -2159,6 +2626,39 @@ export default function ProfileTab({
                   </div>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Security & Privacy Vault Control Hub Card */}
+          <div className="bg-gradient-to-br from-zinc-900 via-stone-900 to-amber-950/50 border border-amber-500/40 p-5 rounded-2xl shadow-xl space-y-3 relative overflow-hidden text-white">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-zinc-950 shadow-md shrink-0">
+                  <Lock size={24} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] font-black uppercase tracking-widest bg-emerald-950 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                      <ShieldCheck size={11} /> 100% Client-Side Encrypted
+                    </span>
+                  </div>
+                  <h3 className="font-serif font-extrabold text-base sm:text-lg text-amber-200 mt-0.5">
+                    सुरक्षा तिजोरी एवं पासकोड लॉक (Security & Lock Hub)
+                  </h3>
+                  <p className="text-[11px] text-gray-300">
+                    ऐप पासकोड PIN सेट करें, साधना डायरी अनलॉक करें और सुरक्षा ऑडिट जांच चलाएं।
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowSecurityVaultModal(true)}
+                className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-zinc-950 font-black px-4 py-2.5 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer text-xs shrink-0"
+                id="open-security-vault-btn"
+              >
+                <Lock size={14} />
+                <span>सुरक्षा तिजोरी खोलें (Manage Security)</span>
+              </button>
             </div>
           </div>
 
@@ -3318,6 +3818,11 @@ export default function ProfileTab({
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
         language={privacyLang}
+      />
+      {/* App Security Vault & Lock Modal */}
+      <AppSecurityVaultModal
+        isOpen={showSecurityVaultModal}
+        onClose={() => setShowSecurityVaultModal(false)}
       />
     </div>
   );

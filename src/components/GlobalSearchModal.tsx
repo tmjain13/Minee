@@ -14,7 +14,9 @@ import {
   Filter,
   Hash,
   ArrowUpDown,
+  Database,
 } from "lucide-react";
+
 import { motion, AnimatePresence } from "motion/react";
 import { KnowledgeItem } from "../hooks/useSyncKnowledgeBase";
 import { useFocusTrap } from "../hooks/useFocusTrap";
@@ -316,16 +318,23 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
               )}
 
               {!selectedItem ? (
-                <input
-                  ref={inputRef}
-                  type="text"
-                  placeholder="खोजें: दर्शन, आचार्य, सामायिक, व्रत नियम..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className={`flex-1 text-base font-medium outline-none border-none bg-transparent ${
-                    isDarkMode ? "placeholder-stone-500 text-white" : "placeholder-stone-400 text-stone-850"
-                  }`}
-                />
+                <div className="flex-1 flex items-center gap-2">
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    placeholder="खोजें: दर्शन, आचार्य, सामायिक, व्रत नियम..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className={`flex-1 text-base font-medium outline-none border-none bg-transparent ${
+                      isDarkMode ? "placeholder-stone-500 text-white" : "placeholder-stone-400 text-stone-850"
+                    }`}
+                  />
+                  {(!navigator.onLine || (typeof window !== "undefined" && localStorage.getItem("terapanth_offline_simulation") === "true")) && (
+                    <span className="shrink-0 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                      <Database size={9} /> IndexedDB Search
+                    </span>
+                  )}
+                </div>
               ) : (
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-semibold text-orange-500 uppercase tracking-wider">

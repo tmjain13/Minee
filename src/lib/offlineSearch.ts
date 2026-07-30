@@ -90,40 +90,37 @@ export const searchOfflineKnowledge = async (query: string) => {
     if (tokens.length === 0) return [];
     
     const db = await initSearchDB();
-    
-    let resultDocIds: Set<string> | null = null;
-    
-    // For each token, find matching documents and intersect them (AND operation)
+    const docScores = new Map<string, number>();
+
+    // Step 1: Accumulate match scores for each document across all query tokens
     for (const token of tokens) {
       const indexEntry = await db.get(INVERTED_INDEX_STORE, token);
-      
-      if (!indexEntry) {
-        // If any token has no matches in an AND search, return empty
-        return [];
-      }
-      
-      const docIds = new Set<string>(indexEntry.docIds);
-      
-      if (resultDocIds === null) {
-        resultDocIds = docIds;
-      } else {
-        const intersection = new Set<string>();
-        for (const id of Array.from(resultDocIds)) {
-          if (docIds.has(id)) {
-            intersection.add(id);
-          }
+      if (indexEntry && indexEntry.docIds) {
+        for (const docId of indexEntry.docIds) {
+          docScores.set(docId, (docScores.get(docId) || 0) + 1);
         }
-        resultDocIds = intersection;
       }
-      
-      if (resultDocIds.size === 0) break;
     }
-    
-    if (!resultDocIds || resultDocIds.size === 0) return [];
-    
-    // Fetch actual documents
+
+    if (docScores.size === 0) {
+      // Fallback: If inverted index tokens missed, perform a direct field scan on cached DOCS_STORE
+      const allDocs = await db.getAll(DOCS_STORE);
+      const queryLower = query.toLowerCase();
+      const results = allDocs.filter((doc: any) => {
+        const text = `${doc.title || ''} ${doc.description || ''} ${doc.details || ''} ${doc.tags?.join(' ') || ''}`.toLowerCase();
+        return text.includes(queryLower) || tokens.some(t => text.includes(t));
+      });
+      return results;
+    }
+
+    // Sort document IDs by score descending (documents matching the most query tokens first)
+    const sortedDocIds = Array.from(docScores.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(entry => entry[0]);
+
+    // Fetch actual documents in ranked order
     const results = [];
-    for (const id of Array.from(resultDocIds)) {
+    for (const id of sortedDocIds) {
       const doc = await db.get(DOCS_STORE, id);
       if (doc) results.push(doc);
     }

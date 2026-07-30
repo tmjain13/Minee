@@ -14,6 +14,14 @@ import {
   Globe,
   MapPin,
   Flame,
+  ShieldCheck,
+  Lock,
+  WifiOff,
+  Wifi,
+  CloudCheck,
+  CheckCircle2,
+  Database,
+  Info,
 } from "lucide-react";
 import { auth } from "../lib/firebase";
 import { useLanguage } from "../context/LanguageContext";
@@ -36,6 +44,7 @@ export interface TerapanthHeaderProps {
   zenElapsed?: number;
   activeTab?: string;
   onSearchClick?: () => void;
+  onOpenSecurityVault?: () => void;
   onLogoClick?: () => void;
   hasSignificantEvent?: boolean;
   unreadCount?: number;
@@ -48,6 +57,7 @@ export interface TerapanthHeaderProps {
   language?: "hi" | "en";
   onToggleLanguage?: () => void;
   hapticsEnabled?: boolean;
+  lastSyncTime?: string | null;
 }
 
 export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
@@ -65,6 +75,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
   zenElapsed = 0,
   activeTab,
   onSearchClick,
+  onOpenSecurityVault,
   onLogoClick,
   hasSignificantEvent = true,
   unreadCount = 3,
@@ -77,6 +88,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
   language: customLanguage,
   onToggleLanguage,
   hapticsEnabled = true,
+  lastSyncTime,
 }) => {
   const isDarkActive = isDarkMode !== undefined ? isDarkMode : theme === "dark";
   const activeStreak = streakDays !== undefined ? streakDays : streak;
@@ -93,6 +105,62 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
   const [scrollY, setScrollY] = useState(0);
   const [showOverflowMenu, setShowOverflowMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showOfflinePopover, setShowOfflinePopover] = useState(false);
+
+  // Sync Timestamp and Offline Status State
+  const [currentSyncTime, setCurrentSyncTime] = useState<string | null>(() => {
+    if (lastSyncTime !== undefined && lastSyncTime !== null) return lastSyncTime;
+    return typeof window !== "undefined" ? localStorage.getItem("last_sync_time") : null;
+  });
+
+  useEffect(() => {
+    if (lastSyncTime !== undefined && lastSyncTime !== null) {
+      setCurrentSyncTime(lastSyncTime);
+    }
+  }, [lastSyncTime]);
+
+  useEffect(() => {
+    const updateSyncTime = () => {
+      const stored = typeof window !== "undefined" ? localStorage.getItem("last_sync_time") : null;
+      if (stored) {
+        setCurrentSyncTime(stored);
+      }
+    };
+
+    window.addEventListener("storage", updateSyncTime);
+    window.addEventListener("terapanth_sync_completed", updateSyncTime);
+    const interval = setInterval(updateSyncTime, 10000);
+    return () => {
+      window.removeEventListener("storage", updateSyncTime);
+      window.removeEventListener("terapanth_sync_completed", updateSyncTime);
+      clearInterval(interval);
+    };
+  }, []);
+
+  const formatSyncTimestamp = (isoOrFormattedStr: string | null) => {
+    if (!isoOrFormattedStr) return null;
+    try {
+      const date = new Date(isoOrFormattedStr);
+      if (isNaN(date.getTime())) {
+        return isoOrFormattedStr;
+      }
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+
+      if (diffMins < 1) {
+        return activeLanguage === "hi" ? "अभी" : "Just now";
+      } else if (diffMins < 60) {
+        return activeLanguage === "hi" ? `${diffMins} मि. पहले` : `${diffMins}m ago`;
+      } else {
+        return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      }
+    } catch {
+      return isoOrFormattedStr;
+    }
+  };
+
+  const formattedSyncTime = formatSyncTimestamp(currentSyncTime);
 
   // Global Haptic Feedback Triggering
   const triggerHaptic = useCallback((pattern: number | number[] = 15) => {
@@ -164,9 +232,11 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
     };
     window.addEventListener("online", handleStatusChange);
     window.addEventListener("offline", handleStatusChange);
+    window.addEventListener("offline-simulation-changed", handleStatusChange);
     return () => {
       window.removeEventListener("online", handleStatusChange);
       window.removeEventListener("offline", handleStatusChange);
+      window.removeEventListener("offline-simulation-changed", handleStatusChange);
     };
   }, []);
 
@@ -342,17 +412,141 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
               className="flex flex-col text-left cursor-pointer group focus:outline-hidden"
               title={activeLanguage === "hi" ? "मुख्य पृष्ठ (Home)" : "Go to Home"}
             >
-              <span className="font-serif font-bold text-base sm:text-lg leading-none text-[#6E1F2A] dark:text-[#D4AF64] group-hover:opacity-80 transition-opacity">
-                Terapanth AI
-              </span>
-              <span className="text-[10px] font-extrabold text-amber-800 dark:text-amber-300 leading-tight tracking-tight mt-0.5 truncate max-w-[120px] sm:max-w-[180px]">
-                {getPersonalizedGreeting(activeLanguage, userProfileData.name || currentUser?.displayName || '')}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="font-serif font-bold text-base sm:text-lg leading-none text-[#6E1F2A] dark:text-[#D4AF64] group-hover:opacity-80 transition-opacity">
+                  Terapanth AI
+                </span>
+                {/* Dynamic Offline Badge */}
+                {!isOnline && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowOfflinePopover(!showOfflinePopover);
+                    }}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black tracking-wide bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 animate-pulse shrink-0 cursor-pointer hover:bg-amber-500/25 transition-colors"
+                    title={
+                      activeLanguage === "hi"
+                        ? `इंटरनेट कनेक्शन उपलब्ध नहीं है। अंतिम सिंक: ${formattedSyncTime || "N/A"}`
+                        : `No active network connection. Last synced: ${formattedSyncTime || "N/A"}`
+                    }
+                  >
+                    <WifiOff size={10} className="text-amber-600 dark:text-amber-400" />
+                    <span>{activeLanguage === "hi" ? "ऑफ़लाइन" : "Offline"}</span>
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-[10px] font-extrabold text-amber-800 dark:text-amber-300 leading-tight tracking-tight truncate max-w-[85px] sm:max-w-[130px]">
+                  {getPersonalizedGreeting(activeLanguage, userProfileData.name || currentUser?.displayName || '')}
+                </span>
+                {/* Last Synced Timestamp */}
+                {formattedSyncTime && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowOfflinePopover(!showOfflinePopover);
+                    }}
+                    className="text-[9px] font-medium text-stone-500 dark:text-stone-400 flex items-center gap-0.5 whitespace-nowrap hover:text-stone-700 dark:hover:text-stone-200 transition-colors cursor-pointer"
+                    title={
+                      activeLanguage === "hi"
+                        ? `अंतिम सिंक्रोनाइज़ेशन समय: ${currentSyncTime}`
+                        : `Last local sync time: ${currentSyncTime}`
+                    }
+                  >
+                    <span className="opacity-40">•</span>
+                    <span>{activeLanguage === "hi" ? "सिंक:" : "Synced:"} {formattedSyncTime}</span>
+                  </button>
+                )}
+              </div>
             </button>
+
+            {/* Offline Sync Information Popover */}
+            <AnimatePresence>
+              {showOfflinePopover && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                  className="absolute top-16 left-4 z-50 w-72 p-4 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-2xl text-left"
+                >
+                  <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-stone-100 dark:border-stone-800">
+                    <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-extrabold text-xs">
+                      <WifiOff size={14} />
+                      <span>{activeLanguage === "hi" ? "ऑफ़लाइन सिंक स्थिति" : "Offline Sync Status"}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowOfflinePopover(false)}
+                      className="p-1 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 text-xs font-bold rounded-lg cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="space-y-2.5 text-[11px] text-stone-600 dark:text-stone-300">
+                    <div className="flex justify-between items-center bg-stone-50 dark:bg-stone-800/60 p-2.5 rounded-xl border border-stone-100 dark:border-stone-800">
+                      <span className="font-semibold text-stone-500 dark:text-stone-400">
+                        {activeLanguage === "hi" ? "अंतिम सफल सिंक:" : "Last Successful Sync:"}
+                      </span>
+                      <span className="font-black text-amber-700 dark:text-amber-300 font-mono text-[10px]">
+                        {formattedSyncTime ? formattedSyncTime : (activeLanguage === "hi" ? "अभी तक नहीं" : "Not yet")}
+                      </span>
+                    </div>
+
+                    <p className="text-[10px] leading-relaxed text-stone-500 dark:text-stone-400">
+                      {activeLanguage === "hi"
+                        ? "आपकी साधना डायरी, व्रत और मंत्र प्रविष्टियाँ डिवाइस (IndexedDB) में सुरक्षित हैं। नेटवर्क वापस आते ही स्वचालित रूप से फ़ायरस्टोर क्लाउड में सिंक हो जाएँगी।"
+                        : "Your spiritual logs, fasting entries, and mantras are cached locally in IndexedDB. They will automatically sync to Firestore when connection resumes."}
+                    </p>
+
+                    <div className="pt-1.5 flex items-center justify-between border-t border-stone-100 dark:border-stone-800">
+                      <span className="text-[9px] font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                        <CheckCircle2 size={12} /> IndexedDB Protected
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsOnline(navigator.onLine);
+                          if (navigator.onLine) {
+                            localStorage.removeItem("terapanth_offline_simulation");
+                            window.dispatchEvent(new Event("online"));
+                            window.dispatchEvent(new Event("terapanth_sync_completed"));
+                          }
+                          setShowOfflinePopover(false);
+                        }}
+                        className="px-2.5 py-1 bg-amber-500/15 hover:bg-amber-500/25 text-amber-800 dark:text-amber-300 font-bold text-[9.5px] rounded-lg transition-colors cursor-pointer"
+                      >
+                        {activeLanguage === "hi" ? "कनेक्शन जांचें" : "Check Network"}
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Primary Action Buttons: Search, Profile & Overflow Menu */}
           <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Header Bar Offline Mode Badge (Desktop & Tablet) */}
+            {!isOnline && (
+              <motion.button
+                type="button"
+                onClick={() => setShowOfflinePopover(!showOfflinePopover)}
+                initial={{ opacity: 0, scale: 0.85 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs font-bold shrink-0 hover:bg-amber-500/25 transition-colors cursor-pointer"
+                title={
+                  activeLanguage === "hi"
+                    ? `ऑफ़लाइन मोड सक्रिय। अंतिम सिंक: ${formattedSyncTime || "N/A"}`
+                    : `Offline Mode Active. Last sync: ${formattedSyncTime || "N/A"}`
+                }
+              >
+                <WifiOff size={12} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                <span>{activeLanguage === "hi" ? "ऑफ़लाइन मोड" : "Offline Mode"}</span>
+              </motion.button>
+            )}
             {/* Streak Badge */}
             {activeStreak > 0 && (
               <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#6E1F2A]/10 text-[#6E1F2A] dark:text-[#D4AF64] text-xs font-semibold mr-1">
@@ -422,6 +616,16 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
                   <button
                     onClick={() => {
                       triggerHaptic();
+                      onOpenSecurityVault?.();
+                      setShowProfileMenu(false);
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs font-semibold text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30 rounded-xl flex items-center gap-2 cursor-pointer"
+                  >
+                    <ShieldCheck size={14} className="text-emerald-500" /> Security Vault & Lock
+                  </button>
+                  <button
+                    onClick={() => {
+                      triggerHaptic();
                       triggerOpenCustomizer?.();
                       setShowProfileMenu(false);
                     }}
@@ -461,6 +665,20 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
               {/* Overflow Menu */}
               {showOverflowMenu && (
                 <div className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-[#1C1014] rounded-2xl shadow-xl border border-[#ECE8E3] dark:border-[#2E1B22] p-2 z-50 animate-in fade-in zoom-in-95">
+                  <button
+                    onClick={() => {
+                      triggerHaptic();
+                      onOpenSecurityVault?.();
+                      setShowOverflowMenu(false);
+                    }}
+                    className="w-full px-3 py-2 text-left text-xs text-amber-800 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30 rounded-xl flex items-center justify-between cursor-pointer font-bold"
+                  >
+                    <span className="flex items-center gap-2">
+                      <ShieldCheck size={14} className="text-emerald-500" /> Security & Lock
+                    </span>
+                    <span className="text-[10px] bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded-md border border-emerald-500/30">100% Safe</span>
+                  </button>
+
                   <button
                     onClick={() => {
                       triggerHaptic();
@@ -504,6 +722,31 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
                     </span>
                     <span className="text-stone-500 font-medium">{activeCity?.name || "Delhi"}</span>
                   </button>
+
+                  {/* Network & Sync Status inside Overflow Menu */}
+                  <div className="px-3 py-2 my-1 rounded-xl bg-stone-100/80 dark:bg-stone-800/60 border border-stone-200/60 dark:border-stone-700/60 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      {isOnline ? (
+                        <Wifi size={13} className="text-emerald-500 shrink-0" />
+                      ) : (
+                        <WifiOff size={13} className="text-amber-500 shrink-0" />
+                      )}
+                      <span className="font-semibold text-stone-800 dark:text-stone-200 text-[11px]">
+                        {isOnline
+                          ? activeLanguage === "hi"
+                            ? "ऑनलाइन मोड"
+                            : "Online Mode"
+                          : activeLanguage === "hi"
+                          ? "ऑफ़लाइन मोड"
+                          : "Offline Mode"}
+                      </span>
+                    </div>
+                    {formattedSyncTime && (
+                      <span className="text-[10px] text-stone-500 dark:text-stone-400 font-mono">
+                        {formattedSyncTime}
+                      </span>
+                    )}
+                  </div>
 
                   <button
                     onClick={() => {

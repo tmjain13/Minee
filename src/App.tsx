@@ -65,10 +65,14 @@ import UnifiedPermissionsModal from "./components/UnifiedPermissionsModal";
 import { LazyWrapper } from "./integrations/ComponentRegistry";
 import { devLog } from "./lib/devLog";
 import LoginModal from "./components/LoginModal";
+import AppSecurityVaultModal from "./components/AppSecurityVaultModal";
+import AppSecurityLockScreen from "./components/AppSecurityLockScreen";
 import StaticUnifiedHomeDashboard from "./components/UnifiedHomeDashboard";
 import StaticThemeCustomizer from "./components/ThemeCustomizer";
 import * as Sentry from "@sentry/react";
 import StreakCelebration from "./components/StreakCelebration";
+import { syncPendingRecords } from "./services/sadhanaOfflineSync";
+import { OfflineStorage } from "./lib/offline-storage";
 
 // --- SAFE LAZY WRAPPER FOR CHUNK-LOAD SELF-HEALING ---
 const retryLoad = async <T,>(
@@ -511,6 +515,28 @@ export default function App() {
   const [sadhanaSubTab, setSadhanaSubTab] = useState<string>("timer");
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [showSecurityVault, setShowSecurityVault] = useState(false);
+  const [isAppLocked, setIsAppLocked] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    const isEnabled = localStorage.getItem("terapanth_app_lock_enabled") === "true";
+    const hasPin = !!localStorage.getItem("terapanth_app_lock_pin");
+    return isEnabled && hasPin;
+  });
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        const isEnabled = localStorage.getItem("terapanth_app_lock_enabled") === "true";
+        const hasPin = !!localStorage.getItem("terapanth_app_lock_pin");
+        const timeout = localStorage.getItem("terapanth_app_lock_timeout") || "1";
+        if (isEnabled && hasPin && timeout === "0") {
+          setIsAppLocked(true);
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
   const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
   const [activeArchiveNr, setActiveArchiveNr] = useState<number | null>(null);
@@ -1179,49 +1205,88 @@ export default function App() {
     }
   }, [activeTab, tabOrder, hasInteractedWithPagination]);
 
-  // --- NETWORK STATUS MONITOR ---
+  // --- NETWORK STATUS MONITOR & AUTOMATED OFFLINE RECOVERY ---
   useEffect(() => {
-    const handleOnline = () => {
-      setIsFullyOnline(true);
-      setIsFirestoreOffline(false);
-      setNetworkToastType("online");
-      setNetworkToastMessage(
-        language === 'hi'
-          ? "जय जिनेन्द्र! आप पुनः ऑनलाइन हैं। डेटा स्वतः सिंक्रनाइज़ हो गया है।"
-          : "Jai Jinendra! Back online. Data synchronized successfully."
-      );
-      setShowNetworkToast(true);
-    };
+    const handleStatusChange = () => {
+      const isSim = typeof window !== "undefined" && window.localStorage.getItem("terapanth_offline_simulation") === "true";
+      const isOnlineNow = !isSim && (typeof navigator !== "undefined" ? navigator.onLine : true);
 
-    const handleOffline = () => {
-      setIsFullyOnline(false);
-      setIsFirestoreOffline(true);
-      setNetworkToastType("offline");
-      setNetworkToastMessage(
-        language === 'hi'
-          ? "कनेक्शन टूट गया है। आप सुरक्षित ऑफलाइन मोड में हैं।"
-          : "Connection lost. Operating in secure offline mode."
-      );
-      setShowNetworkToast(true);
+      setIsFullyOnline(isOnlineNow);
+      setIsFirestoreOffline(!isOnlineNow);
+
+      if (isOnlineNow) {
+        setNetworkToastType("online");
+        setNetworkToastMessage(
+          language === 'hi'
+            ? "जय जिनेन्द्र! आप पुनः ऑनलाइन हैं। डेटा स्वतः सिंक्रनाइज़ हो गया है।"
+            : "Jai Jinendra! Back online. Data synchronized successfully."
+        );
+        setShowNetworkToast(true);
+
+        // Perform automated sync for pending offline logs
+        const currentUid = user?.uid;
+        if (currentUid) {
+          syncPendingRecords(currentUid)
+            .then(({ successCount }) => {
+              const now = new Date().toISOString();
+              setLastSyncTime(now);
+              localStorage.setItem('last_sync_time', now);
+              window.dispatchEvent(new Event('terapanth_sync_completed'));
+            })
+            .catch(console.error);
+        } else {
+          const now = new Date().toISOString();
+          setLastSyncTime(now);
+          localStorage.setItem('last_sync_time', now);
+          window.dispatchEvent(new Event('terapanth_sync_completed'));
+        }
+
+        // Re-warmup offline knowledge and vihar cache
+        OfflineStorage.warmupCache().catch(console.error);
+      } else {
+        setNetworkToastType("offline");
+        setNetworkToastMessage(
+          language === 'hi'
+            ? "कनेक्शन टूट गया है। आप सुरक्षित ऑफलाइन मोड में हैं।"
+            : "Connection lost. Operating in secure offline mode."
+        );
+        setShowNetworkToast(true);
+      }
     };
 
     if (typeof window !== "undefined") {
-      window.addEventListener("online", handleOnline);
-      window.addEventListener("offline", handleOffline);
+      window.addEventListener("online", handleStatusChange);
+      window.addEventListener("offline", handleStatusChange);
+      window.addEventListener("offline-simulation-changed", handleStatusChange);
 
-      // Check current connection state
-      if (!navigator.onLine) {
-        handleOffline();
+      // Listen for Service Worker background sync triggers
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'TRIGGER_BACKGROUND_SYNC') {
+            if (user?.uid) {
+              syncPendingRecords(user.uid).then(() => {
+                const now = new Date().toISOString();
+                setLastSyncTime(now);
+                localStorage.setItem('last_sync_time', now);
+                window.dispatchEvent(new Event('terapanth_sync_completed'));
+              }).catch(console.error);
+            }
+          }
+        });
       }
+
+      // Initial connection check
+      handleStatusChange();
     }
 
     return () => {
       if (typeof window !== "undefined") {
-        window.removeEventListener("online", handleOnline);
-        window.removeEventListener("offline", handleOffline);
+        window.removeEventListener("online", handleStatusChange);
+        window.removeEventListener("offline", handleStatusChange);
+        window.removeEventListener("offline-simulation-changed", handleStatusChange);
       }
     };
-  }, [language]);
+  }, [language, user?.uid]);
 
   // Auto-dismiss network toast after 5 seconds
   useEffect(() => {
@@ -1562,6 +1627,7 @@ export default function App() {
           toggleTheme={() => setTheme(isDarkActive ? "light" : "dark")}
           streak={sadhanaStreak}
           onRefreshClick={() => window.location.reload()}
+          onOpenSecurityVault={() => setShowSecurityVault(true)}
           onThemePreferencesClick={() => setIsCustomizerOpen(true)}
           onPenClick={() => {
             setActiveTab('home');
@@ -1576,6 +1642,7 @@ export default function App() {
           activeTab={activeTab}
           onSearchClick={() => setIsSearchModalOpen(true)}
           onLogoClick={() => setActiveTab('home')}
+          lastSyncTime={lastSyncTime}
         />
       )}
 
@@ -2630,6 +2697,19 @@ export default function App() {
 
       {/* --- ALL ACCESS MODAL LAYERS --- */}
       <Suspense fallback={null}>
+        {/* App Security PIN & Passcode Lock Screen Overlay */}
+        <AppSecurityLockScreen
+          isLocked={isAppLocked}
+          onUnlock={() => setIsAppLocked(false)}
+        />
+
+        {/* Security Vault & Privacy Control Hub Modal */}
+        <AppSecurityVaultModal
+          isOpen={showSecurityVault}
+          onClose={() => setShowSecurityVault(false)}
+          onLockAppNow={() => setIsAppLocked(true)}
+        />
+
         {/* Global Search Modal */}
         <GlobalSearchModal
           isOpen={isSearchModalOpen}

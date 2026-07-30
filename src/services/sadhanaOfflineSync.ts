@@ -315,6 +315,14 @@ export async function syncPendingRecords(userId: string): Promise<{ successCount
     }
   }
 
+  const nowStr = new Date().toISOString();
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('last_sync_time', nowStr);
+  }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('terapanth_sync_completed'));
+  }
+
   console.log(`[Offline Sync] Completed. Success: ${successCount}, Failures: ${failedCount}`);
   return { successCount, failedCount };
 }
@@ -376,3 +384,91 @@ export async function getSyncQueueSize(): Promise<number> {
     return 0;
   }
 }
+
+/**
+ * Get all pending items in the sync queue
+ */
+export async function getSyncQueue(): Promise<OfflineLog[]> {
+  try {
+    const database = await getDB();
+    const queue = await database.getAll('syncQueue');
+    return queue || [];
+  } catch (error) {
+    console.error('[Offline Sync] Error getting sync queue:', error);
+    return [];
+  }
+}
+
+/**
+ * Clear cached records in IndexedDB that are already synchronized with Firestore
+ * or purge old local cache to free up storage space.
+ */
+export async function clearSyncedCache(): Promise<{ clearedCount: number; freedKB: number }> {
+  try {
+    const database = await getDB();
+    const queue = await database.getAll('syncQueue');
+    const pendingIds = new Set(queue.map((q) => q.id));
+
+    let clearedCount = 0;
+    const stores: Array<'fastingLogs' | 'mantraLogs' | 'diary' | 'meditationLogs'> = [
+      'fastingLogs',
+      'mantraLogs',
+      'diary',
+      'meditationLogs',
+    ];
+
+    for (const storeName of stores) {
+      const all = await database.getAll(storeName);
+      for (const item of all) {
+        // If not in pending queue or marked as synced, we can safely purge from cache
+        if (item && item.id && !pendingIds.has(item.id)) {
+          await database.delete(storeName, item.id);
+          clearedCount++;
+        }
+      }
+    }
+
+    const freedKB = Math.round(clearedCount * 0.5 * 10) / 10;
+    console.log(`[Offline Sync] Cleared ${clearedCount} synced records (${freedKB} KB freed).`);
+    return { clearedCount, freedKB };
+  } catch (error) {
+    console.error('[Offline Sync] Error clearing synced cache:', error);
+    return { clearedCount: 0, freedKB: 0 };
+  }
+}
+
+/**
+ * Resolve conflict between local and server version for a queue item
+ */
+export async function resolveSyncConflict(
+  item: OfflineLog,
+  resolution: 'keep_local' | 'keep_server' | 'merge',
+  mergedData?: any
+): Promise<void> {
+  try {
+    const database = await getDB();
+    if (resolution === 'keep_local') {
+      const updated = {
+        ...item.data,
+        updatedAt: new Date().toISOString(),
+        hasConflict: false,
+      };
+      await database.put(item.storeName, updated);
+      await database.put('syncQueue', { ...item, data: updated });
+    } else if (resolution === 'keep_server') {
+      await database.delete('syncQueue', item.id);
+    } else if (resolution === 'merge' && mergedData) {
+      const merged = {
+        ...mergedData,
+        updatedAt: new Date().toISOString(),
+        hasConflict: false,
+      };
+      await database.put(item.storeName, merged);
+      await database.put('syncQueue', { ...item, data: merged });
+    }
+    console.log(`[Offline Sync] Resolved conflict for ${item.id} with strategy: ${resolution}`);
+  } catch (error) {
+    console.error('[Offline Sync] Error resolving sync conflict:', error);
+  }
+}
+

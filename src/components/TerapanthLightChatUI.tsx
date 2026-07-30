@@ -479,11 +479,6 @@ export const TerapanthLightChatUI: React.FC<TerapanthLightChatUIProps> = ({
       setMessages(prev => [...prev, userMsg]);
     }
     
-    if (isOffline) {
-      setOfflineQueue(prev => [...prev, rawQuery]);
-      return;
-    }
-
     setIsAiLoading(true);
 
     try {
@@ -499,8 +494,12 @@ export const TerapanthLightChatUI: React.FC<TerapanthLightChatUIProps> = ({
 
       setMessages(prev => [...prev, aiMsgPlaceholder]);
 
-      // 📡 CHECK INTERNET CONNECTION
-      if (!navigator.onLine) {
+      // Check if network is offline or offline simulation is active
+      const isForceOffline = isOffline || !navigator.onLine || (typeof window !== "undefined" && window.localStorage.getItem("terapanth_offline_simulation") === "true");
+
+      // 📡 OFFLINE RAG RESPONSE GENERATION
+      if (isForceOffline) {
+        setOfflineQueue(prev => [...prev, rawQuery]);
         // 🛑 HYBRID OFFLINE RAG ENGINE: Structured Scoring Search across Q&As and cached Knowledge items
         const query = rawQuery.toLowerCase().trim();
         const stopwords = new Set(['what', 'is', 'a', 'the', 'of', 'in', 'and', 'to', 'for', 'on', 'with', 'at', 'by', 'from', 'an', 'how', 'who', 'where', 'why', 'can', 'you', 'your', 'me', 'my', 'यह', 'क्या', 'है', 'की', 'का', 'को', 'में', 'और', 'से', 'पर', 'के', 'का', 'को']);

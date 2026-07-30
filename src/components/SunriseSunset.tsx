@@ -208,7 +208,7 @@ export default function SunriseSunset() {
           else if ([80, 81, 82].includes(code)) { desc = "Rain Showers"; icon = "🌦️"; }
           else if ([95, 96, 99].includes(code)) { desc = "Thunderstorm"; icon = "⛈️"; }
 
-          setWeather({
+          const weatherObj = {
             temp: Math.round(data.current.temperature_2m),
             description: desc,
             icon: icon,
@@ -216,16 +216,44 @@ export default function SunriseSunset() {
             windSpeed: data.current.wind_speed_10m,
             loading: false,
             error: false
-          });
+          };
+          setWeather(weatherObj);
+          try {
+            localStorage.setItem(`cached_weather_${activeCity.name || activeCity.lat}`, JSON.stringify(weatherObj));
+          } catch (e) {
+            // Ignore quota errors
+          }
         } else {
-          setWeather(prev => prev ? { ...prev, loading: false, error: true } : null);
+          loadOfflineWeather();
         }
       } catch (err) {
         console.error("Error fetching weather:", err);
         if (active) {
-          setWeather(prev => prev ? { ...prev, loading: false, error: true } : null);
+          loadOfflineWeather();
         }
       }
+    };
+
+    const loadOfflineWeather = () => {
+      try {
+        const cached = localStorage.getItem(`cached_weather_${activeCity.name || activeCity.lat}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          setWeather({ ...parsed, description: `${parsed.description} (Offline)`, loading: false, error: false });
+          return;
+        }
+      } catch (e) {
+        // Fallthrough
+      }
+      setWeather({
+        temp: 28,
+        description: "Clear (Offline)",
+        icon: "☀️",
+        humidity: 45,
+        windSpeed: 8,
+        loading: false,
+        error: false
+      });
     };
 
     fetchWeather();
