@@ -7,6 +7,7 @@ import {
 import { db, auth } from '../lib/firebase';
 import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import FullScreenImageViewer from './FullScreenImageViewer';
+import { IllustratedEmptyState } from './IllustratedEmptyState';
 import { devLog } from '../lib/devLog';
 
 interface MonasticMember {
@@ -400,17 +401,13 @@ const GalleryTab = memo(({ setShareToast, isDarkMode = false }: GalleryTabProps)
             </div>
           </div>
         ) : filteredMembers.length === 0 ? (
-          <div className="text-center py-20 bg-[var(--card-bg)] rounded-[2rem] border border-[var(--border-color)] p-6">
-            <AlertCircle className="w-10 h-10 mx-auto text-yellow-500 mb-2" />
-            <p className="text-sm font-semibold">कोई साधक नहीं मिले</p>
-            <p className="text-xs text-gray-400 mt-1">कृपया कोई अन्य नाम या श्रेणी चुनें।</p>
-            <button
-              onClick={() => { setSearchQuery(''); setActiveCategory('All'); }}
-              className="mt-3 px-4 py-1.5 bg-neutral-900 dark:bg-neutral-800 text-white text-xs font-bold rounded-lg"
-            >
-              फ़िल्टर रीसेट करें
-            </button>
-          </div>
+          <IllustratedEmptyState
+            type="media"
+            title="कोई साधक नहीं मिले (No Ascetics Found)"
+            description="चयनित श्रेणी अथवा खोज नाम के अनुसार कोई प्रविष्टि नहीं मिली। कृपया पुनः खोजें या फ़िल्टर साफ़ करें।"
+            actionLabel="फ़िल्टर रीसेट करें"
+            onAction={() => { setSearchQuery(''); setActiveCategory('All'); }}
+          />
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
             {filteredMembers.map((member) => {

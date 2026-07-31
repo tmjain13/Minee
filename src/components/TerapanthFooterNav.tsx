@@ -253,7 +253,7 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({
                     }
                     setActiveTab(item.id);
                   }}
-                  className="flex flex-col items-center justify-center py-1 cursor-pointer group focus:outline-none transition-colors"
+                  className="flex flex-col items-center justify-center py-1 px-1 min-h-[48px] min-w-[48px] cursor-pointer group focus:outline-none transition-colors"
                   aria-label={language === 'hi' ? item.labelHi : item.labelEn}
                   aria-current={Active ? 'page' : undefined}
                 >
@@ -299,7 +299,7 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({
                     }
                     setActiveTab(item.id);
                   }}
-                  className="flex flex-col items-center justify-center py-1 cursor-pointer group focus:outline-none transition-colors relative"
+                  className="flex flex-col items-center justify-center py-1 px-1 min-h-[48px] min-w-[48px] cursor-pointer group focus:outline-none transition-colors relative"
                   aria-label={language === 'hi' ? item.labelHi : item.labelEn}
                   aria-current={Active ? 'page' : undefined}
                 >

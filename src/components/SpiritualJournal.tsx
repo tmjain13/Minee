@@ -25,7 +25,9 @@ import {
   ChevronLeft,
   Mic,
   MicOff,
-  Heart
+  Heart,
+  Share2,
+  Check
 } from 'lucide-react';
 import SadhanaGratitude from './SadhanaGratitude';
 import {
@@ -121,6 +123,31 @@ export default function SpiritualJournal({ onBack }: SpiritualJournalProps) {
   const [aiReflection, setAiReflection] = useState("");
   const [loadingAI, setLoadingAI] = useState(false);
   const [pastEntries, setPastEntries] = useState<JournalEntry[]>([]);
+  const [shareToast, setShareToast] = useState(false);
+
+  const handleShareReflection = async (contentToShare: string, titleStr: string = "Terapanth Daily Reflection") => {
+    if (!contentToShare || !contentToShare.trim()) return;
+    const fullMsg = `🙏 Terapanth Spiritual Reflection\n\n"${contentToShare.trim()}"\n\n- Terapanth AI Hub`;
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: titleStr,
+          text: fullMsg,
+        });
+      } catch (err) {
+        console.log("Share action canceled or failed:", err);
+      }
+    } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(fullMsg);
+        setShareToast(true);
+        setTimeout(() => setShareToast(false), 3000);
+      } catch (err) {
+        console.error("Clipboard copy failed:", err);
+      }
+    }
+  };
 
   // Web Speech API Speech Recognition Integration
   const [isListening, setIsListening] = useState(false);
@@ -1241,24 +1268,57 @@ export default function SpiritualJournal({ onBack }: SpiritualJournalProps) {
           </div>
         </div>
 
-        {/* Reflection submit action */}
-        <button
-          onClick={handleGetReflection}
-          disabled={loadingAI || !text.trim()}
-          className="w-full py-4 bg-gradient-to-r from-red-600 to-rose-500 hover:opacity-90 disabled:opacity-40 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest transition-all shadow-md shadow-rose-500/10 flex items-center justify-center gap-2 cursor-pointer"
-        >
-          {loadingAI ? (
-            <>
-              <Loader2 className="animate-spin" size={16} />
-              <span>आत्मिक मंथन चालू है...</span>
-            </>
-          ) : (
-            <>
-              <Sparkles className="animate-pulse" size={16} />
-              <span>AI से प्रतिबिंब पाएं</span>
-            </>
+        {/* Reflection submit & share actions */}
+        <div className="flex flex-col sm:flex-row gap-2">
+          <button
+            onClick={handleGetReflection}
+            disabled={loadingAI || !text.trim()}
+            className="flex-1 py-4 bg-gradient-to-r from-red-600 to-rose-500 hover:opacity-90 disabled:opacity-40 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest transition-all shadow-md shadow-rose-500/10 flex items-center justify-center gap-2 cursor-pointer"
+          >
+            {loadingAI ? (
+              <>
+                <Loader2 className="animate-spin" size={16} />
+                <span>आत्मिक मंथन चालू है...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="animate-pulse" size={16} />
+                <span>AI से प्रतिबिंब पाएं</span>
+              </>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleShareReflection(text, "आज का आत्मिक चिंतन (Daily Reflection)")}
+            disabled={!text.trim()}
+            className="py-4 px-5 bg-rose-500/10 hover:bg-rose-500/20 disabled:opacity-40 text-rose-600 dark:text-rose-400 border border-rose-500/20 rounded-[1.5rem] font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
+            title="आज के चिंतन को अन्य ऐप्स के साथ साझा करें"
+          >
+            <Share2 size={16} />
+            <span>साझा करें (Share)</span>
+          </button>
+        </div>
+
+        {/* Share Toast feedback */}
+        <AnimatePresence>
+          {shareToast && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              className="p-3 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center justify-between shadow-xs"
+            >
+              <div className="flex items-center gap-2">
+                <Check size={14} className="text-emerald-500" />
+                <span>📋 आपका चिंतन क्लिपबोर्ड पर कॉपी हो गया है! (Copied to clipboard)</span>
+              </div>
+              <button onClick={() => setShareToast(false)} className="text-emerald-600 dark:text-emerald-400">
+                <Trash2 size={12} className="rotate-45" />
+              </button>
+            </motion.div>
           )}
-        </button>
+        </AnimatePresence>
       </div>
 
       {/* Modern Card Output Panel with Live Stream Content */}
@@ -1270,11 +1330,25 @@ export default function SpiritualJournal({ onBack }: SpiritualJournalProps) {
             exit={{ scale: 0.95, opacity: 0 }}
             className="bg-rose-500/[0.02] dark:bg-white/[0.01] border border-rose-500/15 rounded-3xl p-5 sm:p-6 space-y-4 text-left"
           >
-            <div className="flex items-center gap-2 text-rose-500 border-b border-rose-500/10 pb-3">
-              <Sparkles size={16} className="animate-spin" />
-              <h4 className="serif-text font-black text-gray-900 dark:text-white text-sm">
-                🌟 आत्मिक प्रतिबिंब
-              </h4>
+            <div className="flex items-center justify-between text-rose-500 border-b border-rose-500/10 pb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles size={16} className="animate-spin" />
+                <h4 className="serif-text font-black text-gray-900 dark:text-white text-sm">
+                  🌟 आत्मिक प्रतिबिंब
+                </h4>
+              </div>
+
+              {aiReflection && (
+                <button
+                  type="button"
+                  onClick={() => handleShareReflection(aiReflection, "Terapanth AI Spiritual Reflection")}
+                  className="px-2.5 py-1 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-300 text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                  title="AI प्रतिबिंब साझा करें"
+                >
+                  <Share2 size={12} />
+                  <span>साझा करें</span>
+                </button>
+              )}
             </div>
 
             {loadingAI && !aiReflection ? (
@@ -1378,7 +1452,18 @@ export default function SpiritualJournal({ onBack }: SpiritualJournalProps) {
                         className="px-4 pb-4 pt-1 border-t border-dashed border-black/5 dark:border-white/5 space-y-3"
                       >
                         <div className="space-y-1.5">
-                          <span className="text-[8.5px] font-black text-gray-400 uppercase tracking-widest block">आपका लेखन</span>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[8.5px] font-black text-gray-400 uppercase tracking-widest block">आपका लेखन</span>
+                            <button
+                              type="button"
+                              onClick={() => handleShareReflection(entry.text, `Terapanth Reflection (${formattedDateString})`)}
+                              className="px-2 py-0.5 rounded-lg bg-black/5 dark:bg-white/5 hover:bg-black/10 text-gray-600 dark:text-gray-300 text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                              title="इस प्रविष्टि को साझा करें"
+                            >
+                              <Share2 size={11} />
+                              <span>साझा करें</span>
+                            </button>
+                          </div>
                           <p className="text-xs text-gray-600 dark:text-gray-300 font-medium leading-relaxed bg-black/[0.02] dark:bg-white/[0.02] p-3 rounded-xl border border-black/5">
                             {entry.text}
                           </p>

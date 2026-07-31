@@ -31,6 +31,7 @@ import {
   Square
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { IllustratedEmptyState } from './IllustratedEmptyState';
 import { 
   collection, 
   query, 
@@ -1053,13 +1054,13 @@ Guidelines:
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Accessing digital cache...</p>
         </div>
       ) : filteredBooks.length === 0 ? (
-        <div className="flex flex-col items-center justify-center p-8 bg-white dark:bg-zinc-900/40 rounded-xl border border-dashed border-slate-300 dark:border-zinc-800 text-center">
-          <FileText size={40} className="text-slate-300 dark:text-slate-700 mb-2" />
-          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">No Manuscripts Found</h4>
-          <p className="text-xs text-slate-400 mt-1 max-w-xs">
-            We couldn't find any scripture matches for your query. Try broadening your keywords or filters.
-          </p>
-        </div>
+        <IllustratedEmptyState
+          type="media"
+          title="कोई आगम ग्रन्थ नहीं मिले (No Manuscripts Found)"
+          description="आपकी खोज या फ़िल्टर के अनुसार कोई आगम ग्रन्थ अथवा साहित्य नहीं मिला। कृपया फ़िल्टर साफ़ करें या अन्य कीवर्ड से खोजें।"
+          actionLabel="फ़िल्टर साफ़ करें"
+          onAction={() => { setSearchTerm(''); setSelectedCategory('all'); setSelectedLanguage('all'); }}
+        />
       ) : (
         <div className="book-grid" id="book-grid-items">
           {filteredBooks.map((book) => (

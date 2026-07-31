@@ -407,8 +407,16 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
               </div>
             </motion.div>
 
-            <button
+            <div
               onClick={handleLogoTap}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleLogoTap();
+                }
+              }}
               className="flex flex-col text-left cursor-pointer group focus:outline-hidden"
               title={activeLanguage === "hi" ? "मुख्य पृष्ठ (Home)" : "Go to Home"}
             >
@@ -460,7 +468,7 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
                   </button>
                 )}
               </div>
-            </button>
+            </div>
 
             {/* Offline Sync Information Popover */}
             <AnimatePresence>

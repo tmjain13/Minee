@@ -231,7 +231,7 @@ export const SharedFooterNav: React.FC<SharedFooterNavProps> = ({
                     }
                     onNavClick(item.id);
                   }}
-                  className="flex flex-col items-center justify-center py-1 cursor-pointer group focus:outline-none transition-colors"
+                  className="flex flex-col items-center justify-center py-1 px-1 min-h-[48px] min-w-[48px] cursor-pointer group focus:outline-none transition-colors"
                 >
                   <IconComp active={Active} />
                   <span
@@ -272,7 +272,7 @@ export const SharedFooterNav: React.FC<SharedFooterNavProps> = ({
                     }
                     onNavClick(item.id);
                   }}
-                  className="flex flex-col items-center justify-center py-1 cursor-pointer group focus:outline-none transition-colors"
+                  className="flex flex-col items-center justify-center py-1 px-1 min-h-[48px] min-w-[48px] cursor-pointer group focus:outline-none transition-colors"
                 >
                   <IconComp active={Active} />
                   <span

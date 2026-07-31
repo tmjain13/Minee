@@ -4255,6 +4255,19 @@ const SadhanaGoalsSection = ({
     if (todo && !todo.completed) {
       setActiveConfettiId(id);
       setTimeout(() => setActiveConfettiId(null), 1500);
+
+      // Trigger celebratory confetti if completing this task finishes all daily tasks
+      const remaining = todos.filter(t => !t.completed && t.id !== id).length;
+      if (remaining === 0 && todos.length > 0) {
+        if (typeof confetti === 'function') {
+          confetti({
+            particleCount: 160,
+            spread: 90,
+            origin: { y: 0.55 },
+            colors: ['#f97316', '#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6']
+          });
+        }
+      }
     }
     handleToggleTodo(id);
   };
@@ -4412,7 +4425,13 @@ const SadhanaGoalsSection = ({
   };
 
   const toggleSubtasksExpanded = (todoId: string) => {
-    setExpandedSubtasks(prev => ({ ...prev, [todoId]: !prev[todoId] }));
+    setExpandedSubtasks(prev => {
+      const current = prev[todoId];
+      if (current === undefined) {
+        return { ...prev, [todoId]: false };
+      }
+      return { ...prev, [todoId]: !current };
+    });
   };
 
   const handleCopyTasksToClipboard = () => {
@@ -5851,6 +5870,60 @@ const SadhanaGoalsSection = ({
         )}
       </AnimatePresence>
 
+      {/* Subtle Celebratory Animation Banner when All Daily Tasks Are Completed */}
+      <AnimatePresence>
+        {totalCount > 0 && completedCount === totalCount && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92, y: -8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92, y: -8 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-orange-500/15 to-emerald-500/15 border border-amber-500/30 text-center space-y-2.5 shadow-lg shadow-amber-500/5 relative overflow-hidden my-3"
+          >
+            <motion.div
+              animate={{ rotate: [0, 8, -8, 0], scale: [1, 1.1, 1] }}
+              transition={{ repeat: Infinity, duration: 2.8, ease: "easeInOut" }}
+              className="inline-flex items-center justify-center p-3 rounded-2xl bg-amber-500/20 text-amber-500 border border-amber-500/30 shadow-xs"
+            >
+              <Award size={26} />
+            </motion.div>
+
+            <div className="space-y-1">
+              <h4 className="text-sm font-black text-amber-800 dark:text-amber-200 uppercase tracking-wide flex items-center justify-center gap-1.5">
+                <Sparkles size={16} className="text-amber-500 animate-spin" />
+                <span>{language === 'hi' ? '🎉 बधाई! आज की समस्त साधना पूर्ण हुई!' : '🎉 Celebration! All Daily Tasks Completed!'}</span>
+                <Sparkles size={16} className="text-amber-500 animate-spin" />
+              </h4>
+              <p className="text-xs text-amber-700 dark:text-amber-300 font-medium max-w-md mx-auto leading-relaxed">
+                {language === 'hi'
+                  ? 'आपने आज के सभी साधना संकल्पों को सफलतापूर्वक पूर्ण कर लिया है। आपकी आत्म-विशुद्धि एवं साधना यात्रा मङ्गलमय हो।'
+                  : 'You have completed all daily spiritual resolutions. May your path of self-purification bring deep peace.'}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof confetti === 'function') {
+                    confetti({
+                      particleCount: 180,
+                      spread: 100,
+                      origin: { y: 0.6 },
+                      colors: ['#f97316', '#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6']
+                    });
+                  }
+                }}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black text-xs shadow-md shadow-orange-500/20 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+              >
+                <Sparkles size={14} />
+                <span>{language === 'hi' ? 'उत्सव पुष्प बरसाएं (Re-Celebrate)' : 'Re-Celebrate'}</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Custom Category Creation Modal */}
       <AnimatePresence>
         {showAddCategoryModal && (
@@ -6305,11 +6378,11 @@ const SadhanaGoalsSection = ({
                                         ? `${todo.subtasks.filter((s: any) => s.completed).length}/${todo.subtasks.length} ${language === 'hi' ? 'उप-कार्य' : 'Subtasks'}`
                                         : (language === 'hi' ? '+ उप-कार्य जोड़ें (Subtasks)' : '+ Add Subtask Step')}
                                     </span>
-                                    <ChevronDown size={10} className={`transition-transform duration-200 ${expandedSubtasks[todo.id] ? 'rotate-180' : ''}`} />
+                                    <ChevronDown size={10} className={`transition-transform duration-200 ${(expandedSubtasks[todo.id] ?? (todo.subtasks && todo.subtasks.length > 0)) ? 'rotate-180' : ''}`} />
                                   </button>
                                 </div>
 
-                                {(expandedSubtasks[todo.id] || (todo.subtasks && todo.subtasks.length > 0)) && (
+                                {(expandedSubtasks[todo.id] ?? (todo.subtasks && todo.subtasks.length > 0)) && (
                                   <div className="space-y-1.5 pl-2 border-l-2 border-orange-500/20 dark:border-orange-500/30 ml-1 py-1">
                                     {/* Subtask list */}
                                     {todo.subtasks && todo.subtasks.map((sub: any) => (
