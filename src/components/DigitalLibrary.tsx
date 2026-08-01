@@ -1695,7 +1695,7 @@ Guidelines:
                     <div className="flex items-center justify-between border-b border-black/[0.06] dark:border-white/[0.06] pb-3 shrink-0">
                       <div>
                         <span className="text-[9px] uppercase tracking-wider font-bold text-orange-600 flex items-center gap-0.5">
-                          <Sparkles size={10} /> Powered by Gemini
+                          <Sparkles size={10} /> Powered by Terapanth AI
                         </span>
                         <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1">
                           Ask AI about "{viewingBook.title}"

@@ -45,7 +45,7 @@ class OfflineAIEngine {
     if (highestScore > 0.5 && bestMatch) {
       return bestMatch.explanation || bestMatch.answer; // Assuming answer or explanation
     }
-    return "I am currently offline and cannot find a high-confidence semantic match locally. Please connect to the internet to consult the full Gemini Engine.";
+    return "I am currently offline and cannot find a high-confidence semantic match locally. Please connect to the internet to consult the full Terapanth AI Engine.";
   }
 }
 

@@ -46,8 +46,8 @@ export default function AppTour({ activeTab, setActiveTab, language, onTourCompl
       icon: <MessageSquare className="w-8 h-8 text-emerald-500" />,
       titleEn: "Ask Terapanth Mitra",
       titleHi: "तेरापंथ मित्र से पूछें",
-      descEn: "Powered by Gemini 2.0 Flash, this secure server-side assistant answers all your questions on Jain history, philosophy, and Gyanshala syllabus in complete privacy.",
-      descHi: "जेमिनी 2.0 फ़्लैश द्वारा संचालित यह सुरक्षित असिस्टेंट जैन इतिहास, दर्शन और ज्ञानशाला पाठ्यक्रम के आपके सभी प्रश्नों के सही उत्तर देता है।",
+      descEn: "Powered by Terapanth AI, this secure server-side assistant answers all your questions on Jain history, philosophy, and Gyanshala syllabus in complete privacy.",
+      descHi: "तेरापंथ एआई द्वारा संचालित यह सुरक्षित असिस्टेंट जैन इतिहास, दर्शन और ज्ञानशाला पाठ्यक्रम के आपके सभी प्रश्नों के सही उत्तर देता है।",
       pointerPosition: "50%",
     },
     {

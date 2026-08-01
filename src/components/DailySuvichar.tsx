@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Share2, Heart, RefreshCw, Bookmark, Calendar, ArrowRight, Quote, Trash2, Check, Users, Send, MessageCircle } from 'lucide-react';
+import { Share2, Heart, RefreshCw, Bookmark, Calendar, ArrowRight, Quote, Trash2, Check, Users, Send, MessageCircle, Volume2, VolumeX } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db } from '../lib/firebase';
 import { collection, addDoc, query, orderBy, limit, onSnapshot, doc, deleteDoc, serverTimestamp } from 'firebase/firestore';
@@ -71,8 +71,39 @@ export default function DailySuvichar({ onBack }: { onBack?: () => void }) {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
   const [justSaved, setJustSaved] = useState<boolean>(false);
+  const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
 
   const activeQuote = SUVICHAR[currentIndex];
+
+  // Stop speech when changing quote or unmounting
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  const handleSpeakQuote = () => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      alert("Speech synthesis is not supported in this browser.");
+      return;
+    }
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const textToSpeak = `${activeQuote.text} - ${activeQuote.author}`;
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+    utterance.lang = 'hi-IN';
+    utterance.rate = 0.88; // Peaceful pace
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    setIsSpeaking(true);
+    window.speechSynthesis.speak(utterance);
+  };
 
   // Retrieve saved quotes in real-time
   useEffect(() => {
@@ -147,6 +178,10 @@ export default function DailySuvichar({ onBack }: { onBack?: () => void }) {
 
   // Manual cyclic navigations
   const handleNextQuote = () => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setIsSpeaking(false);
     setCurrentIndex((prev) => (prev + 1) % SUVICHAR.length);
   };
 
@@ -198,11 +233,28 @@ ${window.location.origin}`;
     <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto p-4 sm:p-6" id="daily-suvichar-container">
       
       {/* Date Header Title */}
-      <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-        <Calendar size={18} />
-        <span className="text-xs font-extrabold uppercase tracking-widest">
-          आज का सुविचार — {getFormattedDateString()}
-        </span>
+      <div className="flex items-center justify-between gap-2 text-emerald-600 dark:text-emerald-400">
+        <div className="flex items-center gap-2">
+          <Calendar size={18} />
+          <span className="text-xs font-extrabold uppercase tracking-widest">
+            आज का सुविचार — {getFormattedDateString()}
+          </span>
+        </div>
+
+        {/* Listen / TTS Button */}
+        <button
+          type="button"
+          onClick={handleSpeakQuote}
+          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs ${
+            isSpeaking
+              ? 'bg-amber-500 text-white animate-pulse'
+              : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20'
+          }`}
+          title={isSpeaking ? "रोकें (Stop Reading)" : "सुविचार सुनें (Listen Suvichar)"}
+        >
+          {isSpeaking ? <VolumeX size={14} /> : <Volume2 size={14} />}
+          <span>{isSpeaking ? 'रोकें (Stop)' : 'सुनें (Listen)'}</span>
+        </button>
       </div>
 
       {/* Primary Decorative Quote Card Container */}

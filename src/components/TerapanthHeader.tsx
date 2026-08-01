@@ -28,6 +28,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { useLocation } from "../context/LocationContext";
 import { motion, AnimatePresence } from "motion/react";
 import { getUserProfile, getPersonalizedGreeting, UserProfileData } from "../utils/userProfile";
+import { getSyncQueueSize } from "../services/sadhanaOfflineSync";
 
 export interface TerapanthHeaderProps {
   theme?: string;
@@ -206,8 +207,33 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
   };
 
   const [isOnline, setIsOnline] = useState(checkOnlineStatus);
+  const [unsyncedChangesCount, setUnsyncedChangesCount] = useState<number>(0);
   const [greeting, setGreeting] = useState("");
   const [userProfileData, setUserProfileData] = useState<UserProfileData>(getUserProfile());
+
+  useEffect(() => {
+    const checkUnsyncedQueue = async () => {
+      try {
+        const count = await getSyncQueueSize();
+        setUnsyncedChangesCount(count);
+      } catch (err) {
+        console.error("Error reading sync queue size in header:", err);
+      }
+    };
+
+    checkUnsyncedQueue();
+    const queueInterval = setInterval(checkUnsyncedQueue, 3500);
+
+    const handleSyncEvent = () => checkUnsyncedQueue();
+    window.addEventListener("terapanth_sync_completed", handleSyncEvent);
+    window.addEventListener("offline-simulation-changed", handleSyncEvent);
+
+    return () => {
+      clearInterval(queueInterval);
+      window.removeEventListener("terapanth_sync_completed", handleSyncEvent);
+      window.removeEventListener("offline-simulation-changed", handleSyncEvent);
+    };
+  }, []);
 
   useEffect(() => {
     const handleProfileSync = () => {
@@ -441,6 +467,25 @@ export const TerapanthHeader: React.FC<TerapanthHeaderProps> = ({
                   >
                     <WifiOff size={10} className="text-amber-600 dark:text-amber-400" />
                     <span>{activeLanguage === "hi" ? "ऑफ़लाइन" : "Offline"}</span>
+                  </button>
+                )}
+                {/* Subtle Unsynced Local Changes Indicator in Navigation Bar */}
+                {unsyncedChangesCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowOfflinePopover(!showOfflinePopover);
+                    }}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black tracking-wide bg-amber-500/20 text-amber-900 dark:text-amber-200 border border-amber-500/40 animate-pulse shrink-0 cursor-pointer hover:bg-amber-500/30 transition-colors"
+                    title={
+                      activeLanguage === "hi"
+                        ? `${unsyncedChangesCount} स्थानीय बदलाव सिंक हेतु लंबित हैं (ऑफ़लाइन मोड)`
+                        : `${unsyncedChangesCount} unsynced local changes pending in offline mode`
+                    }
+                  >
+                    <RefreshCcw size={9} className="animate-spin text-amber-600 dark:text-amber-400" />
+                    <span>{unsyncedChangesCount} {activeLanguage === "hi" ? "असिंक" : "Unsynced"}</span>
                   </button>
                 )}
               </div>

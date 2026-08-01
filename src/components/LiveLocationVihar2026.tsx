@@ -462,7 +462,7 @@ _साभार: दिल्ली जैन महासभा रियल-�
   });
 
   return (
-    <div className="bg-[#050716] text-white rounded-[2.5rem] overflow-hidden border border-white/5 shadow-2xl relative flex flex-col w-full max-w-2xl mx-auto h-auto my-auto max-h-[92vh] font-sans">
+    <div className="bg-[var(--card-bg)] text-[var(--text-spiritual)] rounded-[2.5rem] overflow-hidden border border-[var(--border-color)] shadow-2xl relative flex flex-col w-full max-w-2xl mx-auto h-auto my-auto max-h-[92vh] font-sans">
       
       {/* Absolute Global Viewport Layout Style Injection */}
       <style>{`

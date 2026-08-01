@@ -163,7 +163,7 @@ export const LiveViharLedger2026: React.FC<{ onClose?: () => void }> = ({ onClos
   }
 
   return (
-    <div className="bg-[#060814] text-white rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl relative flex flex-col w-full max-w-2xl mx-auto h-auto my-auto max-h-[92vh] font-sans" id="live-vihar-ledger-card">
+    <div className="bg-[var(--card-bg)] text-[var(--text-spiritual)] rounded-[2.5rem] overflow-hidden border border-[var(--border-color)] shadow-2xl relative flex flex-col w-full max-w-2xl mx-auto h-auto my-auto max-h-[92vh] font-sans" id="live-vihar-ledger-card">
       
       {/* Absolute Global Viewport Layout Style Injection Mandate */}
       <style>{`

@@ -78,13 +78,13 @@ export default function SadhviVaryaPortal({ onClose }: { onClose?: () => void })
   };
 
   return (
-    <div className="bg-[#060814] text-white rounded-[2.5rem] overflow-hidden border border-white/5 shadow-2xl relative flex flex-col w-full max-w-2xl mx-auto h-auto my-auto max-h-[92vh] font-sans">
+    <div className="bg-[var(--card-bg)] text-[var(--text-spiritual)] rounded-[2.5rem] overflow-hidden border border-[var(--border-color)] shadow-2xl relative flex flex-col w-full max-w-2xl mx-auto h-auto my-auto max-h-[92vh] font-sans">
       {/* Background radial neon glows */}
       <div className="absolute top-0 right-0 w-44 h-44 bg-amber-500/10 rounded-full blur-3xl pointer-events-none z-0" />
       <div className="absolute -bottom-10 -left-10 w-44 h-44 bg-yellow-500/10 rounded-full blur-3xl pointer-events-none z-0" />
 
       {/* HEADER BAR */}
-      <div className="bg-slate-950/80 backdrop-blur-xl border-b border-white/10 p-5 flex items-center justify-between sticky top-0 z-40 shrink-0 gap-3">
+      <div className="bg-[var(--card-bg)]/90 backdrop-blur-xl border-b border-[var(--border-color)] p-5 flex items-center justify-between sticky top-0 z-40 shrink-0 gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-600 flex items-center justify-center text-white shadow-lg shadow-amber-500/10 shrink-0">
             <Sparkles size={20} className="text-white" />

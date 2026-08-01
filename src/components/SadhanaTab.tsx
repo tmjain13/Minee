@@ -9,6 +9,12 @@ import { db } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp, query, orderBy, limit, onSnapshot, doc, setDoc } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../lib/firebase-utils';
 import { 
+  checkAndTriggerScheduledTaskNotifications, 
+  requestTaskNotificationPermission, 
+  getScheduledTaskSummary, 
+  fireTaskNotification 
+} from '../utils/localNotificationScheduler';
+import { 
   getLocalData, 
   saveLocalData, 
   createSadhanaRecord, 
@@ -20,6 +26,7 @@ import { KNOWLEDGE_BASE } from '../data/knowledge';
 import ArticleReader from './ArticleReader';
 import { LeshyaDhyanVisualizer, ShvasPrekshaGuidedBreathing } from './PrekshaGuidedPractices';
 import SadhanaGoalsAndPoints from './SadhanaGoalsAndPoints';
+import SadhanaWeeklyProgress from './SadhanaWeeklyProgress';
 import { 
   SpiritualMilestoneModal, 
   Sadhana24HourCircularDial, 
@@ -429,7 +436,7 @@ const SadhanaTab = memo(({
     }
   };
 
-  const [activeSubTab, setActiveSubTab] = useState<'timer' | 'fasting' | 'mantra' | 'breathwork' | 'diary' | 'swadhya' | 'gratitude' | 'suvichar' | 'pratikraman' | 'audio' | 'seva' | 'notifications' | 'salah' | 'streaks' | 'habits' | 'goals' | 'timeline' | 'soundscapes'>('timer');
+  const [activeSubTab, setActiveSubTab] = useState<'timer' | 'fasting' | 'mantra' | 'breathwork' | 'diary' | 'swadhya' | 'gratitude' | 'suvichar' | 'pratikraman' | 'audio' | 'seva' | 'notifications' | 'salah' | 'streaks' | 'habits' | 'goals' | 'weekly_progress' | 'timeline' | 'soundscapes'>('timer');
   const [showQuickReflectionModal, setShowQuickReflectionModal] = useState(false);
 
   useEffect(() => {
@@ -2072,7 +2079,7 @@ ${window.location.origin}`;
       </div>
 
       <div className="flex gap-1.5 p-0.5 bg-black/5 dark:bg-white/5 rounded-2xl sticky top-0 z-20 backdrop-blur-md overflow-x-auto no-scrollbar scroll-smooth">
-        {(['timer', 'goals', 'salah', 'breathwork', 'mantra', 'fasting', 'diary', 'swadhya', 'gratitude', 'suvichar', 'pratikraman', 'audio', 'seva', 'notifications', 'streaks', 'habits', 'timeline', 'soundscapes'] as const).map((tab) => (
+        {(['timer', 'goals', 'weekly_progress', 'salah', 'breathwork', 'mantra', 'fasting', 'diary', 'swadhya', 'gratitude', 'suvichar', 'pratikraman', 'audio', 'seva', 'notifications', 'streaks', 'habits', 'timeline', 'soundscapes'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveSubTab(tab)}
@@ -2080,6 +2087,7 @@ ${window.location.origin}`;
           >
             {tab === 'timer' && 'Samayik'}
             {tab === 'goals' && (language === 'hi' ? 'दैनिक लक्ष्य' : 'Daily Goals')}
+            {tab === 'weekly_progress' && (language === 'hi' ? 'साप्ताहिक प्रगति' : 'Weekly Progress')}
             {tab === 'salah' && 'रोज की सलाह'}
             {tab === 'breathwork' && 'Breathwork'}
             {tab === 'mantra' && 'Jaap'}
@@ -2603,6 +2611,23 @@ ${window.location.origin}`;
               archivedTodos={archivedTodos}
               setArchivedTodos={setArchivedTodos}
               setShareToast={setShareToast}
+            />
+          </motion.div>
+        )}
+
+        {activeSubTab === 'weekly_progress' && (
+          <motion.div
+            key="weekly_progress"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="pb-10"
+          >
+            <SadhanaWeeklyProgress
+              todos={todos}
+              archivedTodos={archivedTodos}
+              language={language}
+              onNavigateToGoals={() => setActiveSubTab('goals')}
             />
           </motion.div>
         )}
@@ -3689,6 +3714,76 @@ ${window.location.origin}`;
 
 SadhanaTab.displayName = 'SadhanaTab';
 
+const ACHARYA_DAILY_REFLECTIONS = [
+  {
+    authorEn: "Acharya Bhikshu",
+    authorHi: "आचार्य भिक्षु",
+    quoteEn: "Self-discipline (Samyam) is the true path to inner liberation. Every small spiritual resolution weakens the bonds of Karma.",
+    quoteHi: "संयम ही आत्म-विशुद्धि का वास्तविक मार्ग है। प्रत्येक छोटा साधना संकल्प कर्म-निर्जरा का मार्ग प्रशस्त करता है।",
+    source: "Bhikshu Granthawali"
+  },
+  {
+    authorEn: "Acharya Tulsi",
+    authorHi: "आचार्य तुलसी",
+    quoteEn: "Self-restraint is life (संयमः खलु जीवनम्). Change begins with the individual, and true transformation arises from quiet daily Sadhana.",
+    quoteHi: "संयमः खलु जीवनम्। व्यक्ति सुधार से ही समाज सुधार संभव है, और प्रत्येक दैनिक साधना आत्म-रूपांतरण की कुंजी है।",
+    source: "Anuvrat Darshan"
+  },
+  {
+    authorEn: "Acharya Mahapragya",
+    authorHi: "आचार्य महाप्रज्ञ",
+    quoteEn: "Truth is experienced in silent awareness, not in external noise. Let Preksha Dhyan guide your mind to equanimity today.",
+    quoteHi: "सत्य का अनुभव मौन प्रेक्षा में होता है, कोलाहल में नहीं। समता एवं श्वास प्रेक्षा आपके चित्त को निर्मल करे।",
+    source: "Preksha Dhyan Sutra"
+  },
+  {
+    authorEn: "Acharya Mahashraman",
+    authorHi: "आचार्य महाश्रमण",
+    quoteEn: "Purity of intention, harmony in action, and compassion for all living beings are the three pillars of true Terapanth Sadhana.",
+    quoteHi: "सद्भावना, नैतिकता और नशा मुक्ति - यही जीवन को उन्नत बनाने के त्रिवेणी सूत्र हैं। साधना में निरंतरता बनाए रखें।",
+    source: "Ahinsa Yatra Discourses"
+  },
+  {
+    authorEn: "Acharya Bhikshu",
+    authorHi: "आचार्य भिक्षु",
+    quoteEn: "Control your mind like a disciplined chariot. Equanimity in happiness and sorrow frees the soul from agitation.",
+    quoteHi: "जैसे चतुर सारथी घोड़ों को वश में रखता है, वैसे ही विवेक द्वारा मन को संयमित करें। सुख-दुख में समभाव ही सच्ची साधना है।",
+    source: "Jain Agam Traditions"
+  },
+  {
+    authorEn: "Acharya Tulsi",
+    authorHi: "आचार्य तुलसी",
+    quoteEn: "Small daily vows (Anuvrats) lead to profound inner peace. Be truthful to your vows and steadfast in your resolve.",
+    quoteHi: "छोटे-छोटे अणुव्रत ही महान जीवन का निर्माण करते हैं। अपने संकल्पों के प्रति निष्ठावान रहें।",
+    source: "Anuvrat Code"
+  }
+];
+
+const PRESET_SUBTASKS: Record<string, { textHi: string; textEn: string }[]> = {
+  'Evening Pratikraman': [
+    { textHi: '1. करेमि भंते (सामायिक संकल्प पाठ)', textEn: '1. Karemi Bhante (Samayik Vow)' },
+    { textHi: '2. इरियावहियं सुत्त एवं तस्स उत्तरी (इरियावहिया)', textEn: '2. Iryavahi Sutra (Seeking Forgiveness)' },
+    { textHi: '3. आलोचना एवं सर्व-जीव क्षमापना (खामणा)', textEn: '3. Alochana & Khamana (Universal Forgiveness)' },
+    { textHi: '4. नवकार मंत्र एवं लोगस्स पाठ', textEn: '4. Navkar Mantra & Logassa Chanting' },
+    { textHi: '5. पच्चक्खाण (चौविहार/उपवास संकल्प) एवं विसर्जन', textEn: '5. Pachakkan Vow & Visarjan' }
+  ],
+  '15 mins Meditation': [
+    { textHi: '1. कायोत्सर्ग (शरीर शिथिलीकरण)', textEn: '1. Kayotsarga (Body Relaxation)' },
+    { textHi: '2. दीर्घ श्वास प्रेक्षा (गहरा श्वास मनन)', textEn: '2. Deep Breathing (Shvas Preksha)' },
+    { textHi: '3. ज्योति केंद्र प्रेक्षा (आनंद केंद्र ध्यान)', textEn: '3. Jyoti Kendra Focus' }
+  ],
+  'Mantra Chanting': [
+    { textHi: '1. आसन एवं मुद्रा धारण', textEn: '1. Asana & Mudra Setup' },
+    { textHi: '2. 108 नवकार मंत्र जाप मनन', textEn: '2. 108 Navkar Mantra Chanting' },
+    { textHi: '3. शांति पाठ एवं सर्व जीव मंगल भावना', textEn: '3. Shanti Path & Blessings' }
+  ],
+  'Silence Practice': [
+    { textHi: '1. मौन साधना संकल्प ग्रहण', textEn: '1. Silence Resolution Vow' },
+    { textHi: '2. अंतर-यात्रा एवं आत्म-निरीक्षण', textEn: '2. Inner Journey & Self-Observation' },
+    { textHi: '3. मौन विसर्जन एवं शांति पाठ', textEn: '3. Silence Completion' }
+  ]
+};
+
 const SadhanaGoalsSection = ({
   todos = [],
   setTodos,
@@ -3722,6 +3817,8 @@ const SadhanaGoalsSection = ({
   const [activeTagFilter, setActiveTagFilter] = useState<string>('All');
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('All');
   const [activePriorityFilter, setActivePriorityFilter] = useState<'All' | 'High' | 'Medium' | 'Low'>('All');
+  const [statusFilter, setStatusFilter] = useState<'All' | 'Pending' | 'Completed'>('All');
+  const [firstTaskReflectionQuote, setFirstTaskReflectionQuote] = useState<{ authorEn: string; authorHi: string; quoteEn: string; quoteHi: string; source: string } | null>(null);
   const [searchKeyword, setSearchKeyword] = useState<string>('');
   const [sortBy, setSortBy] = useState<
     'date_desc' | 'date_asc' | 'impact_desc' | 'impact_asc' | 'alphabetical_asc' | 'alphabetical_desc' | 'status_pending_first' | 'status_completed_first'
@@ -3884,38 +3981,41 @@ const SadhanaGoalsSection = ({
     { hi: 'सायं प्रतिक्रमण (Evening Pratikraman)', en: 'Evening Pratikraman', tag: 'Evening', category: 'Samayik', impact: 'High' as const },
   ];
 
-  // --- 6:00 PM SPECIAL RITUAL BROWSER NOTIFICATION ENGINE ---
+  // --- LOCAL SCHEDULING HELPER FOR 'EVENING' AND 'DAILY' TASK NOTIFICATIONS ---
   useEffect(() => {
-    const check6PMNotification = () => {
+    const runSchedulerCheck = () => {
       if (typeof window === 'undefined') return;
-      const now = new Date();
-      const hours = now.getHours();
+      
+      // 1. Check all 'Evening' and 'Daily' tasks with scheduled times
+      checkAndTriggerScheduledTaskNotifications(todos, language);
 
-      if (hours >= 18) {
+      // 2. Special 6:00 PM Ritual Check
+      const now = new Date();
+      if (now.getHours() >= 18) {
         const todayStr = now.toISOString().split('T')[0];
         const notifKey = `terapanth_ritual_6pm_notified_${todayStr}`;
-        if (localStorage.getItem(notifKey)) return;
+        if (!localStorage.getItem(notifKey)) {
+          const pendingRituals = todos.filter(
+            (t: any) => (t.tag === 'Special Ritual' || t.tag === 'विशेष अनुष्ठान') && !t.completed
+          );
 
-        const pendingRituals = todos.filter(
-          (t: any) => (t.tag === 'Special Ritual' || t.tag === 'विशेष अनुष्ठान') && !t.completed
-        );
-
-        if (pendingRituals.length > 0) {
-          if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('Terapanth Sadhana Alert 🌅', {
-              body: language === 'hi'
-                ? `सायं 6 बजे विशेष रिमाइंडर: आपके ${pendingRituals.length} अनुष्ठान संकल्प अभी शेष हैं!`
-                : `6 PM Special Reminder: You have ${pendingRituals.length} incomplete Special Ritual task(s) for today!`,
-              icon: '/media/logos/terapanth_logo.png'
-            });
-            localStorage.setItem(notifKey, 'true');
+          if (pendingRituals.length > 0) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification('Terapanth Sadhana Alert 🌅', {
+                body: language === 'hi'
+                  ? `सायं 6 बजे विशेष रिमाइंडर: आपके ${pendingRituals.length} अनुष्ठान संकल्प अभी शेष हैं!`
+                  : `6 PM Special Reminder: You have ${pendingRituals.length} incomplete Special Ritual task(s) for today!`,
+                icon: '/media/logos/terapanth_logo.png'
+              });
+              localStorage.setItem(notifKey, 'true');
+            }
           }
         }
       }
     };
 
-    check6PMNotification();
-    const interval = setInterval(check6PMNotification, 60000);
+    runSchedulerCheck();
+    const interval = setInterval(runSchedulerCheck, 25000); // Check every 25s
     return () => clearInterval(interval);
   }, [todos, language]);
 
@@ -4007,60 +4107,89 @@ const SadhanaGoalsSection = ({
     return () => clearInterval(interval);
   }, [swadhyayaReminderTime, swadhyayaReminderEnabled, todos, language]);
 
-  // --- SADHANA EXPERIENCE POINTS (XP) SYSTEM ---
+  // --- SADHANA EXPERIENCE POINTS (XP) & MILESTONE REWARD SYSTEM ---
   const sadhanaXP = useMemo(() => {
     let xp = 0;
     let samayikCount = 0;
     let japaCount = 0;
     let swadhyayaCount = 0;
     let otherCount = 0;
+    let subtasksCount = 0;
 
     const allCompleted = [...todos, ...(archivedTodos || [])].filter((t: any) => t.completed);
 
     allCompleted.forEach((t: any) => {
       const text = (t.text || '').toLowerCase();
       const category = (t.category || '').toLowerCase();
+      let basePts = 20;
 
       if (text.includes('samayik') || text.includes('सामायिक') || category.includes('samayik')) {
-        xp += 50;
+        basePts = 50;
         samayikCount++;
       } else if (text.includes('japa') || text.includes('जाप') || text.includes('navkar') || text.includes('मंत्र') || category.includes('japa')) {
-        xp += 40;
+        basePts = 40;
         japaCount++;
       } else if (text.includes('swadhyaya') || text.includes('स्वाध्याय') || text.includes('tap') || text.includes('तप') || category.includes('swadhyaya') || category.includes('tap')) {
-        xp += 30;
+        basePts = 30;
         swadhyayaCount++;
       } else {
-        xp += 20;
         otherCount++;
+      }
+
+      // Priority/Impact Bonus
+      if (t.impact === 'High') basePts += 15;
+      else if (t.impact === 'Low') basePts -= 5;
+
+      xp += Math.max(10, basePts);
+    });
+
+    // Award bonus XP for completed subtasks
+    [...todos, ...(archivedTodos || [])].forEach((t: any) => {
+      if (t.subtasks && Array.isArray(t.subtasks)) {
+        t.subtasks.forEach((s: any) => {
+          if (s.completed) {
+            xp += 10; // +10 XP per subtask completed
+            subtasksCount++;
+          }
+        });
       }
     });
 
+    // Sync points to localStorage for cross-component continuity
+    try {
+      localStorage.setItem('terapanth_sadhana_points', String(xp));
+    } catch (e) {}
+
     let level = 1;
-    let titleHi = 'साधक (Sadhak)';
-    let titleEn = 'Sadhak (Practitioner)';
+    let titleHi = 'प्रारंभिक साधक (Seeker)';
+    let titleEn = 'Seeker (Prarambhik Sadhak)';
     let nextLevelXP = 100;
+    let icon = '🌱';
 
     if (xp >= 1000) {
       level = 5;
       titleHi = 'परम साधक (Param Sadhak)';
-      titleEn = 'Param Sadhak (Master)';
+      titleEn = 'Param Sadhak (Spiritual Master)';
       nextLevelXP = 2000;
+      icon = '👑';
     } else if (xp >= 600) {
       level = 4;
-      titleHi = 'ज्ञानी (Gyani Sadhak)';
+      titleHi = 'ज्ञानी साधक (Gyani Sadhak)';
       titleEn = 'Gyani (Wise Sadhak)';
       nextLevelXP = 1000;
+      icon = '🪷';
     } else if (xp >= 300) {
       level = 3;
-      titleHi = 'ध्यानी (Dhyani Sadhak)';
+      titleHi = 'ध्यानी साधक (Dhyani Sadhak)';
       titleEn = 'Dhyani (Meditator)';
       nextLevelXP = 600;
+      icon = '☸️';
     } else if (xp >= 100) {
       level = 2;
-      titleHi = 'तपस्वी (Tapasvi Sadhak)';
-      titleEn = 'Tapasvi (Dedicated)';
+      titleHi = 'तपस्वी साधक (Tapasvi Sadhak)';
+      titleEn = 'Tapasvi (Devotee)';
       nextLevelXP = 300;
+      icon = '🕯️';
     }
 
     return {
@@ -4069,12 +4198,52 @@ const SadhanaGoalsSection = ({
       japaCount,
       swadhyayaCount,
       otherCount,
+      subtasksCount,
       level,
       titleHi,
       titleEn,
-      nextLevelXP
+      nextLevelXP,
+      icon
     };
   }, [todos, archivedTodos]);
+
+  // Level Up Milestone Detection & Celebratory Trigger
+  const [showLevelUpModal, setShowLevelUpModal] = useState<boolean>(false);
+  const [unlockedLevelInfo, setUnlockedLevelInfo] = useState<{ level: number; titleHi: string; titleEn: string; totalXP: number; nextLevelXP: number; icon: string } | null>(null);
+  const prevLevelRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (prevLevelRef.current === null) {
+      prevLevelRef.current = sadhanaXP.level;
+    } else if (sadhanaXP.level > prevLevelRef.current) {
+      // LEVEL UP MILESTONE REACHED!
+      setUnlockedLevelInfo({
+        level: sadhanaXP.level,
+        titleHi: sadhanaXP.titleHi,
+        titleEn: sadhanaXP.titleEn,
+        totalXP: sadhanaXP.totalXP,
+        nextLevelXP: sadhanaXP.nextLevelXP,
+        icon: sadhanaXP.icon
+      });
+      setShowLevelUpModal(true);
+      prevLevelRef.current = sadhanaXP.level;
+
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 180,
+          spread: 90,
+          origin: { y: 0.5 },
+          colors: ['#f97316', '#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6', '#eab308']
+        });
+      }
+
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate([100, 50, 100, 50, 200]);
+      }
+    } else if (sadhanaXP.level < prevLevelRef.current) {
+      prevLevelRef.current = sadhanaXP.level;
+    }
+  }, [sadhanaXP.level, sadhanaXP.titleHi, sadhanaXP.titleEn, sadhanaXP.totalXP, sadhanaXP.nextLevelXP, sadhanaXP.icon]);
 
   const totalCount = todos.length;
   const completedCount = todos.filter((t: any) => t.completed).length;
@@ -4256,6 +4425,19 @@ const SadhanaGoalsSection = ({
       setActiveConfettiId(id);
       setTimeout(() => setActiveConfettiId(null), 1500);
 
+      // Check if this is the FIRST daily task completed today
+      const todayStr = new Date().toISOString().split('T')[0];
+      const completedTodayCount = todos.filter(t => t.completed).length;
+      const quoteShownKey = `terapanth_first_task_quote_shown_${todayStr}`;
+
+      if (completedTodayCount === 0 || !localStorage.getItem(quoteShownKey)) {
+        const randomIndex = Math.floor(Math.random() * ACHARYA_DAILY_REFLECTIONS.length);
+        setFirstTaskReflectionQuote(ACHARYA_DAILY_REFLECTIONS[randomIndex]);
+        try {
+          localStorage.setItem(quoteShownKey, 'true');
+        } catch (e) {}
+      }
+
       // Trigger celebratory confetti if completing this task finishes all daily tasks
       const remaining = todos.filter(t => !t.completed && t.id !== id).length;
       if (remaining === 0 && todos.length > 0) {
@@ -4278,6 +4460,19 @@ const SadhanaGoalsSection = ({
       navigator.vibrate(30);
     }
     const selectedCatObj = SPIRITUAL_CATEGORIES.find(c => c.id === (newGoalCategory || 'Sadhana'));
+    
+    let initialSubtasks: any[] = [];
+    if (todoInput.toLowerCase().includes('pratikraman') || todoInput.includes('प्रतिक्रमण')) {
+      const found = PRESET_SUBTASKS['Evening Pratikraman'];
+      if (found) {
+        initialSubtasks = found.map((s, idx) => ({
+          id: `${Date.now()}_sub_${idx}`,
+          text: language === 'hi' ? s.textHi : s.textEn,
+          completed: false
+        }));
+      }
+    }
+
     const newTodo = {
       id: Date.now().toString(),
       text: todoInput.trim(),
@@ -4288,6 +4483,7 @@ const SadhanaGoalsSection = ({
       dueTime: dueTimeInput.trim() ? dueTimeInput.trim() : undefined,
       impact: newImpact,
       notes: '',
+      subtasks: initialSubtasks
     };
     setTodos((prev: any[]) => [...prev, newTodo]);
     setTodoInput("");
@@ -4301,6 +4497,16 @@ const SadhanaGoalsSection = ({
     const label = language === 'hi' ? preset.hi : preset.en;
     const cat = preset.category || 'Sadhana';
     const selectedCatObj = SPIRITUAL_CATEGORIES.find(c => c.id === cat);
+    
+    const foundSub = PRESET_SUBTASKS[preset.en] || PRESET_SUBTASKS[preset.hi];
+    const initialSubtasks = foundSub
+      ? foundSub.map((s, idx) => ({
+          id: `${Date.now()}_sub_${idx}`,
+          text: language === 'hi' ? s.textHi : s.textEn,
+          completed: false
+        }))
+      : [];
+
     const newTodo = {
       id: Date.now().toString(),
       text: label,
@@ -4310,6 +4516,7 @@ const SadhanaGoalsSection = ({
       categoryColor: selectedCatObj?.color || '#10b981',
       impact: preset.impact || 'Medium',
       notes: '',
+      subtasks: initialSubtasks
     };
     setTodos((prev: any[]) => [...prev, newTodo]);
   };
@@ -4737,7 +4944,11 @@ const SadhanaGoalsSection = ({
       const matchesCategory = activeCategoryFilter === 'All' || (t.category || 'Sadhana') === activeCategoryFilter;
       const matchesPriority = activePriorityFilter === 'All' || (t.impact || 'Medium') === activePriorityFilter;
       const matchesKeyword = !searchKeyword.trim() || t.text.toLowerCase().includes(searchKeyword.toLowerCase().trim());
-      return matchesTag && matchesCategory && matchesPriority && matchesKeyword;
+      const matchesStatus =
+        statusFilter === 'All' ||
+        (statusFilter === 'Pending' && !t.completed) ||
+        (statusFilter === 'Completed' && t.completed);
+      return matchesTag && matchesCategory && matchesPriority && matchesKeyword && matchesStatus;
     });
 
     const getImpactVal = (impact?: string) => {
@@ -4747,31 +4958,32 @@ const SadhanaGoalsSection = ({
     };
 
     return [...result].sort((a: any, b: any) => {
+      if (sortBy === 'status_completed_first') {
+        if (a.completed === b.completed) return (Number(b.id) || 0) - (Number(a.id) || 0);
+        return a.completed ? -1 : 1;
+      }
+
+      // Default & required behavior: Completed tasks move to the bottom of the list
+      if (a.completed !== b.completed) {
+        return a.completed ? 1 : -1;
+      }
+
+      // Priority sort for pending (and completed) tasks: High > Medium > Low
+      const valA = getImpactVal(a.impact);
+      const valB = getImpactVal(b.impact);
+      if (valB !== valA) {
+        return valB - valA;
+      }
+
+      // Fallback sorting criteria
       if (sortBy === 'alphabetical_asc') {
         return (a.text || '').localeCompare(b.text || '');
       }
       if (sortBy === 'alphabetical_desc') {
         return (b.text || '').localeCompare(a.text || '');
       }
-      if (sortBy === 'status_pending_first') {
-        if (a.completed === b.completed) return (Number(b.id) || 0) - (Number(a.id) || 0);
-        return a.completed ? 1 : -1;
-      }
-      if (sortBy === 'status_completed_first') {
-        if (a.completed === b.completed) return (Number(b.id) || 0) - (Number(a.id) || 0);
-        return a.completed ? -1 : 1;
-      }
-      if (sortBy === 'impact_desc') {
-        const valA = getImpactVal(a.impact);
-        const valB = getImpactVal(b.impact);
-        if (valB !== valA) return valB - valA;
-        return (Number(b.id) || 0) - (Number(a.id) || 0);
-      }
       if (sortBy === 'impact_asc') {
-        const valA = getImpactVal(a.impact);
-        const valB = getImpactVal(b.impact);
-        if (valA !== valB) return valA - valB;
-        return (Number(b.id) || 0) - (Number(a.id) || 0);
+        return valA - valB;
       }
       if (sortBy === 'date_asc') {
         return (Number(a.id) || 0) - (Number(b.id) || 0);
@@ -4779,7 +4991,7 @@ const SadhanaGoalsSection = ({
       // date_desc
       return (Number(b.id) || 0) - (Number(a.id) || 0);
     });
-  }, [todos, activeTagFilter, activeCategoryFilter, activePriorityFilter, searchKeyword, sortBy]);
+  }, [todos, activeTagFilter, activeCategoryFilter, activePriorityFilter, statusFilter, searchKeyword, sortBy]);
 
   const getCategoryColor = (category?: string, categoryColor?: string) => {
     if (categoryColor) return categoryColor;
@@ -4844,6 +5056,25 @@ const SadhanaGoalsSection = ({
         items: unassigned
       });
     }
+
+    // Ensure items in each group are strictly ordered: Completed to bottom, Pending by High -> Medium -> Low priority
+    const getImpactVal = (impact?: string) => {
+      if (impact === 'High') return 3;
+      if (impact === 'Low') return 1;
+      return 2;
+    };
+
+    groups.forEach(g => {
+      g.items.sort((a: any, b: any) => {
+        if (a.completed !== b.completed) {
+          return a.completed ? 1 : -1;
+        }
+        const valA = getImpactVal(a.impact);
+        const valB = getImpactVal(b.impact);
+        if (valB !== valA) return valB - valA;
+        return (Number(b.id) || 0) - (Number(a.id) || 0);
+      });
+    });
 
     return groups.filter(g => g.items.length > 0);
   }, [filteredTodos]);
@@ -4981,62 +5212,174 @@ const SadhanaGoalsSection = ({
         )}
       </div>
 
-      {/* Decorative Brand Header & Sadhana Experience (XP) Points Badge */}
-      <div className="p-6 bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-transparent rounded-[2rem] border border-orange-500/10 relative overflow-hidden text-left space-y-4">
+      {/* Decorative Brand Header & Sadhana Points Reward System Card */}
+      <div className="p-6 bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-purple-500/5 rounded-[2rem] border border-orange-500/20 relative overflow-hidden text-left space-y-4 shadow-sm">
         <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 rotate-12 opacity-5 pointer-events-none">
           <CheckSquare size={160} />
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-4 relative z-10">
           <div>
-            <span className="text-[10px] bg-orange-500/10 text-orange-600 dark:text-orange-400 px-3 py-1 rounded-full font-black uppercase tracking-widest leading-none inline-block">
-              {language === 'hi' ? 'दैनिक साधना लक्ष्य' : 'DAILY SADHANA GOALS'}
+            <span className="text-[10px] bg-orange-500/15 text-orange-600 dark:text-orange-400 px-3 py-1 rounded-full font-black uppercase tracking-widest leading-none inline-block border border-orange-500/20">
+              {language === 'hi' ? 'दैनिक साधना पुरस्कार प्रणाली' : 'DAILY REWARD SYSTEM'}
             </span>
             <h3 className="serif-text text-2xl font-bold mt-2 text-spiritual">
-              {language === 'hi' ? 'आध्यात्मिक संकल्प सूची' : 'Spiritual Priority Checklist'}
+              {language === 'hi' ? 'आध्यात्मिक संकल्प एवं अंक' : 'Spiritual Priority Checklist'}
             </h3>
-            <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
               {language === 'hi' 
-                ? 'अपने संकल्पों को श्रेणियों में वर्गीकृत करें, स्वाध्याय एवं सामायिक बिंदु अर्जित करें।' 
-                : 'Categorize your goals, earn Sadhana XP for Samayik & Japa practices.'}
+                ? 'दैनिक सामायिक, जाप एवं संकल्प पूर्ण कर अंक अर्जित करें एवं नया स्तर प्राप्त करें।' 
+                : 'Complete daily Samayik, Japa, and tasks to earn Points & level up.'}
             </p>
           </div>
 
-          {/* SADHANA EXPERIENCE POINTS BADGE */}
-          <div className="p-3.5 bg-gradient-to-br from-amber-500/20 via-orange-500/15 to-yellow-500/10 rounded-2xl border border-amber-500/40 shadow-lg flex items-center gap-3 shrink-0">
-            <div className="p-2.5 bg-amber-500 text-white rounded-xl shadow-md animate-pulse">
-              <Award size={22} />
+          {/* SADHANA POINTS & LEVEL BADGE */}
+          <div className="p-4 bg-gradient-to-br from-amber-500/20 via-orange-500/15 to-amber-500/10 rounded-2xl border-2 border-amber-500/40 shadow-lg flex items-center gap-3.5 shrink-0">
+            <div className="w-12 h-12 bg-gradient-to-tr from-amber-500 to-orange-500 text-white rounded-2xl shadow-md flex items-center justify-center text-2xl shrink-0">
+              {sadhanaXP.icon}
             </div>
             <div>
-              <div className="flex items-center gap-1.5 font-black text-base text-amber-800 dark:text-amber-200 font-mono">
-                <span>✨ {sadhanaXP.totalXP} XP</span>
-                <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-900 dark:text-amber-100 border border-amber-500/30">
-                  Lvl {sadhanaXP.level}
+              <span className="text-[9px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300 block">
+                {language === 'hi' ? 'अर्जित कुल अंक' : 'Points Earned'}
+              </span>
+              <div className="flex items-center gap-2 font-mono font-black text-lg text-amber-800 dark:text-amber-200">
+                <span>✨ {sadhanaXP.totalXP} PTS</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-900 dark:text-amber-100 border border-amber-500/30 font-extrabold">
+                  LVL {sadhanaXP.level}
                 </span>
               </div>
-              <p className="text-[11px] font-bold text-gray-700 dark:text-gray-300">
+              <p className="text-[11px] font-extrabold text-gray-700 dark:text-gray-200 mt-0.5">
                 {language === 'hi' ? sadhanaXP.titleHi : sadhanaXP.titleEn}
               </p>
             </div>
           </div>
         </div>
 
-        {/* XP Progress Bar to Next Level */}
-        <div className="space-y-1.5 pt-2 border-t border-orange-500/10">
-          <div className="flex justify-between text-[10px] font-black text-gray-500 dark:text-gray-400">
-            <span>{language === 'hi' ? 'साधना अनुभव प्रगति (Sadhana XP)' : 'Sadhana XP Level Progress'}</span>
-            <span className="font-mono text-amber-600 dark:text-amber-400">
-              {sadhanaXP.totalXP} / {sadhanaXP.nextLevelXP} XP
+        {/* Milestone Levels Badges Bar */}
+        <div className="pt-2 border-t border-orange-500/15 space-y-2">
+          <div className="flex justify-between items-center text-[10px] font-extrabold text-gray-500 dark:text-gray-400">
+            <span className="flex items-center gap-1">
+              <Award size={12} className="text-amber-500" />
+              {language === 'hi' ? 'साधना स्तर एवं पड़ाव (Milestone Levels)' : 'Milestone Levels & Achievements'}
+            </span>
+            <span className="font-mono text-amber-600 dark:text-amber-400 font-bold">
+              {sadhanaXP.totalXP} / {sadhanaXP.nextLevelXP} PTS
             </span>
           </div>
-          <div className="w-full h-2 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500 rounded-full"
-              style={{ width: `${Math.min(100, Math.round((sadhanaXP.totalXP / sadhanaXP.nextLevelXP) * 100))}%` }}
+
+          <div className="grid grid-cols-5 gap-1.5 pt-1">
+            {[
+              { level: 1, name: 'Seeker', icon: '🌱', pts: 0 },
+              { level: 2, name: 'Devotee', icon: '🕯️', pts: 100 },
+              { level: 3, name: 'Meditator', icon: '☸️', pts: 300 },
+              { level: 4, name: 'Wise', icon: '🪷', pts: 600 },
+              { level: 5, name: 'Master', icon: '👑', pts: 1000 }
+            ].map((m) => {
+              const isUnlocked = sadhanaXP.totalXP >= m.pts;
+              const isCurrent = sadhanaXP.level === m.level;
+              return (
+                <div
+                  key={m.level}
+                  className={`p-2 rounded-xl text-center border transition-all ${
+                    isCurrent
+                      ? 'bg-amber-500/20 border-amber-500 text-amber-900 dark:text-amber-200 shadow-xs font-bold scale-102'
+                      : isUnlocked
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-200'
+                      : 'bg-black/5 dark:bg-white/5 border-black/5 dark:border-white/5 text-gray-400 opacity-60'
+                  }`}
+                  title={`Level ${m.level}: ${m.name} (${m.pts} PTS)`}
+                >
+                  <div className="text-sm">{m.icon}</div>
+                  <div className="text-[9px] font-extrabold mt-0.5 truncate font-mono">
+                    L{m.level}
+                  </div>
+                  <div className="text-[8px] font-mono text-gray-400 hidden sm:block">
+                    {m.pts}pts
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Level Progress Bar */}
+          <div className="w-full h-2.5 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden p-0.5 mt-2">
+            <motion.div 
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.min(100, Math.round((sadhanaXP.totalXP / sadhanaXP.nextLevelXP) * 100))}%` }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="h-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-400 rounded-full shadow-xs"
             />
           </div>
         </div>
       </div>
+
+      {/* LEVEL UP MILESTONE CELEBRATORY MODAL */}
+      <AnimatePresence>
+        {showLevelUpModal && unlockedLevelInfo && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: 30 }}
+              className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-3xl p-6 border-2 border-amber-500/50 shadow-2xl space-y-5 text-center relative overflow-hidden"
+            >
+              <div className="absolute -top-16 -right-16 w-36 h-36 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-orange-500/20 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="relative pt-2">
+                <motion.div
+                  animate={{ rotate: [0, 8, -8, 0], scale: [1, 1.08, 1] }}
+                  transition={{ repeat: Infinity, duration: 2.5 }}
+                  className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-amber-500 via-orange-500 to-yellow-400 text-white flex items-center justify-center text-4xl shadow-xl mx-auto border-2 border-amber-300/40"
+                >
+                  {unlockedLevelInfo.icon || '🏆'}
+                </motion.div>
+                <span className="inline-block mt-3 px-3 py-1 rounded-full bg-amber-500 text-slate-950 font-black text-[11px] font-mono shadow-sm border border-amber-300">
+                  LEVEL {unlockedLevelInfo.level} UNLOCKED!
+                </span>
+              </div>
+
+              <div className="space-y-1.5 pt-1">
+                <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 inline-block">
+                  🎉 LEVEL UP / स्तर वृद्धि!
+                </span>
+                <h3 className="text-xl font-black text-gray-900 dark:text-white pt-1">
+                  {language === 'hi' ? unlockedLevelInfo.titleHi : unlockedLevelInfo.titleEn}
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xs mx-auto leading-relaxed">
+                  {language === 'hi'
+                    ? `बधाई हो! आपने दैनिक साधना संकल्पों द्वारा कुल ${unlockedLevelInfo.totalXP} साधना अंक अर्जित कर नया स्तर प्राप्त किया है।`
+                    : `Congratulations! You have reached Level ${unlockedLevelInfo.level} with ${unlockedLevelInfo.totalXP} Sadhana Points earned!`}
+                </p>
+              </div>
+
+              <div className="p-4 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-amber-500/10 rounded-2xl border border-amber-500/20 text-xs font-bold space-y-2">
+                <div className="flex justify-between items-center text-gray-700 dark:text-gray-200">
+                  <span>{language === 'hi' ? 'अर्जित कुल साधना अंक:' : 'Total Points Earned:'}</span>
+                  <span className="font-mono text-amber-600 dark:text-amber-400 font-extrabold text-sm">
+                    ✨ {unlockedLevelInfo.totalXP} PTS
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-gray-500 text-[11px]">
+                  <span>{language === 'hi' ? 'अगला पड़ाव लक्ष्य:' : 'Next Milestone Target:'}</span>
+                  <span className="font-mono font-bold text-gray-600 dark:text-gray-300">
+                    {unlockedLevelInfo.nextLevelXP} PTS
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowLevelUpModal(false)}
+                className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-black text-xs uppercase tracking-wider rounded-2xl transition-all shadow-lg cursor-pointer active:scale-95"
+                id="close-level-up-modal-btn"
+              >
+                {language === 'hi' ? 'साधना जारी रखें (Continue)' : 'Accept Reward & Continue'}
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Swadhyaya & Samayik Daily Local Reminder Settings Card */}
       <div className="p-4 bg-gradient-to-br from-purple-500/10 via-amber-500/5 to-orange-500/10 rounded-2xl border border-purple-500/20 space-y-3">
@@ -5433,9 +5776,9 @@ const SadhanaGoalsSection = ({
                   if (active && payload && payload.length) {
                     const data = payload[0].payload;
                     return (
-                      <div className="bg-zinc-900 border border-amber-500/30 text-white text-xs px-3 py-2 rounded-xl shadow-xl space-y-0.5">
-                        <p className="font-bold text-amber-400">{data.label} {data.isToday ? '• Today' : ''}</p>
-                        <p className="font-mono text-xs font-semibold text-gray-200">
+                      <div className="bg-white dark:bg-zinc-900 border border-black/10 dark:border-amber-500/30 text-gray-800 dark:text-white text-xs px-3 py-2 rounded-xl shadow-xl space-y-0.5">
+                        <p className="font-bold text-amber-600 dark:text-amber-400">{data.label} {data.isToday ? '• Today' : ''}</p>
+                        <p className="font-mono text-xs font-semibold text-gray-700 dark:text-gray-200">
                           {data.count} {language === 'hi' ? 'संकल्प पूर्ण' : 'Tasks Completed'}
                         </p>
                       </div>
@@ -5456,6 +5799,75 @@ const SadhanaGoalsSection = ({
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* Local Notification Scheduler Control Helper Banner */}
+      {(() => {
+        const schedSummary = getScheduledTaskSummary(todos);
+        return (
+          <div className="bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/30 rounded-3xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-2xl bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
+                <BellRing size={18} className="animate-pulse" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="text-xs font-extrabold text-amber-900 dark:text-amber-200">
+                    {language === 'hi' ? 'स्थानीय सूचना शेड्यूलर (Local Task Scheduler)' : 'Local Notification Scheduler'}
+                  </h4>
+                  <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                    {language === 'hi' ? 'सक्रिय (Active)' : 'Active'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-amber-800/80 dark:text-amber-300/80 mt-0.5">
+                  {language === 'hi'
+                    ? `दैनिक (Daily: ${schedSummary.dailyCount}) एवं सायंकालीन (Evening: ${schedSummary.eveningCount}) संकल्पों हेतु स्वचालित रिमाइंडर`
+                    : `Auto notifications scheduled for Daily (${schedSummary.dailyCount}) & Evening (${schedSummary.eveningCount}) tasks`}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end">
+              <button
+                type="button"
+                onClick={async () => {
+                  const perm = await requestTaskNotificationPermission();
+                  if (perm === 'granted') {
+                    alert(language === 'hi' ? 'ब्राउज़र सूचनाएं सक्रिय कर दी गई हैं!' : 'Browser task notifications activated!');
+                  } else {
+                    alert(language === 'hi' ? 'सूचना अनुमति अस्वीकृत या पहले से सेट है।' : 'Notification permission requested.');
+                  }
+                }}
+                className="px-3 py-1.5 rounded-xl text-xs font-extrabold bg-amber-500 hover:bg-amber-600 text-slate-950 transition-all active:scale-95 cursor-pointer shadow-xs flex items-center gap-1.5"
+              >
+                <BellRing size={13} />
+                <span>{language === 'hi' ? 'अनुमति दें' : 'Enable Alerts'}</span>
+              </button>
+
+              {schedSummary.eveningCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const eveningTask = todos.find((t: any) => {
+                      const tag = (t.tag || '').toLowerCase();
+                      return !t.completed && (tag.includes('evening') || tag.includes('सायं'));
+                    });
+                    if (eveningTask) {
+                      fireTaskNotification(eveningTask, language);
+                    } else if (todos.length > 0) {
+                      fireTaskNotification(todos[0], language);
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-900 dark:text-amber-200 border border-amber-500/30 transition-all active:scale-95 cursor-pointer flex items-center gap-1"
+                  title="Trigger a test Evening task browser alert"
+                >
+                  <Moon size={13} />
+                  <span>{language === 'hi' ? 'परीक्षण सायं अलार्म' : 'Test Evening Alert'}</span>
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Tag & Keyword Filtering Bar */}
       <div className="space-y-3 p-4 bg-black/5 dark:bg-white/5 rounded-3xl border border-black/5 dark:border-white/5">
@@ -5571,6 +5983,77 @@ const SadhanaGoalsSection = ({
                 📅 {language === 'hi' ? 'तिथि: पुराना पहले' : 'Date: Oldest First'}
               </option>
             </select>
+          </div>
+        </div>
+
+        {/* Status Pill Filter Bar (All / Pending / Completed Toggle) */}
+        <div className="space-y-1.5 pt-1 border-t border-black/5 dark:border-white/5">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 flex items-center gap-1.5 ml-1">
+              <Filter size={12} className="text-orange-500" />
+              {language === 'hi' ? 'कार्य स्थिति (Pending vs Completed)' : 'Task Status Filter'}
+            </span>
+            <span className="text-[10px] font-mono font-bold text-gray-400">
+              {filteredTodos.length} {language === 'hi' ? 'संकल्प प्रदर्शित' : 'tasks shown'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            <button
+              type="button"
+              onClick={() => setStatusFilter('All')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2 border ${
+                statusFilter === 'All'
+                  ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white border-amber-400 shadow-sm'
+                  : 'bg-white dark:bg-zinc-900 text-gray-600 dark:text-gray-300 border-black/10 dark:border-white/10 hover:bg-black/5'
+              }`}
+              id="sadhana-status-filter-all"
+            >
+              <span>{language === 'hi' ? 'सभी संकल्प' : 'All Tasks'}</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${
+                statusFilter === 'All' ? 'bg-white/20 text-white font-black' : 'bg-black/10 dark:bg-white/10 text-gray-500'
+              }`}>
+                {totalCount}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setStatusFilter('Pending')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2 border ${
+                statusFilter === 'Pending'
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-amber-400 shadow-sm'
+                  : 'bg-white dark:bg-zinc-900 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/10'
+              }`}
+              id="sadhana-status-filter-pending"
+            >
+              <Clock size={12} className={statusFilter === 'Pending' ? 'text-white' : 'text-amber-500'} />
+              <span>{language === 'hi' ? 'शेष (Pending)' : 'Pending'}</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${
+                statusFilter === 'Pending' ? 'bg-white/20 text-white font-black' : 'bg-amber-500/15 text-amber-800 dark:text-amber-200'
+              }`}>
+                {totalCount - completedCount}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setStatusFilter('Completed')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-2 border ${
+                statusFilter === 'Completed'
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-emerald-400 shadow-sm'
+                  : 'bg-white dark:bg-zinc-900 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/10'
+              }`}
+              id="sadhana-status-filter-completed"
+            >
+              <CheckCircle2 size={12} className={statusFilter === 'Completed' ? 'text-white' : 'text-emerald-500'} />
+              <span>{language === 'hi' ? 'पूर्ण (Completed)' : 'Completed'}</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono ${
+                statusFilter === 'Completed' ? 'bg-white/20 text-white font-black' : 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-200'
+              }`}>
+                {completedCount}
+              </span>
+            </button>
           </div>
         </div>
 
@@ -6162,13 +6645,30 @@ const SadhanaGoalsSection = ({
                               }
                               transition={{ duration: 0.3, type: "spring", stiffness: 350, damping: 15 }}
                               onClick={() => onToggle(todo.id)}
-                              className={`w-6 h-6 rounded-lg border flex items-center justify-center shrink-0 transition-all cursor-pointer shadow-2xs ${
+                              className={`relative w-6 h-6 rounded-lg border flex items-center justify-center shrink-0 transition-all cursor-pointer shadow-2xs overflow-visible ${
                                 todo.completed 
                                   ? 'bg-gradient-to-r from-emerald-500 to-teal-500 border-emerald-500 text-white shadow-emerald-500/30 shadow-xs' 
                                   : 'border-gray-300 dark:border-zinc-700 hover:border-orange-500 bg-white/50 dark:bg-zinc-800/50'
                               }`}
                               id={`task-toggle-${todo.id}`}
                             >
+                              {/* Checkmark Ripple Effect animation */}
+                              {activeConfettiId === todo.id && (
+                                <>
+                                  <motion.span
+                                    initial={{ scale: 0.8, opacity: 0.9 }}
+                                    animate={{ scale: 2.6, opacity: 0 }}
+                                    transition={{ duration: 0.6, ease: "easeOut" }}
+                                    className="absolute inset-0 rounded-lg border-2 border-emerald-400 bg-emerald-400/30 pointer-events-none z-10"
+                                  />
+                                  <motion.span
+                                    initial={{ scale: 0.5, opacity: 0.7 }}
+                                    animate={{ scale: 3.4, opacity: 0 }}
+                                    transition={{ duration: 0.8, ease: "easeOut", delay: 0.08 }}
+                                    className="absolute inset-0 rounded-lg border border-teal-300 bg-teal-300/20 pointer-events-none z-10"
+                                  />
+                                </>
+                              )}
                               {todo.completed && (
                                 <motion.div
                                   initial={{ scale: 0, rotate: -45 }}
@@ -6451,31 +6951,70 @@ const SadhanaGoalsSection = ({
                                     <FileText size={12} className={todo.notes ? "text-orange-500" : "text-gray-400"} />
                                     <span>
                                       {todo.notes
-                                        ? (language === 'hi' ? 'आध्यात्मिक चिंतन / टिप्पणी' : 'Spiritual Reflection')
+                                        ? (language === 'hi' ? 'आध्यात्मिक चिंतन / टिप्पणी (Reflection Note)' : 'Spiritual Reflection Note')
                                         : (language === 'hi' ? '+ टिप्पणी / अनुभव जोड़ें' : '+ Add Quick Reflection Note')}
                                     </span>
                                     {todo.notes && <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />}
                                   </button>
 
                                   {todo.notes && (
-                                    <span className="text-[9px] font-mono text-gray-400 italic">
-                                      {language === 'hi' ? 'सहेजा गया' : 'Saved to localStorage'}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[9px] font-mono text-gray-400 italic">
+                                        {todo.notes.length} chars
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdateNotes(todo.id, '')}
+                                        className="text-[9px] text-red-500 hover:underline cursor-pointer font-bold"
+                                        title={language === 'hi' ? 'नोट हटाएँ' : 'Clear Note'}
+                                      >
+                                        {language === 'hi' ? 'हटाएँ' : 'Clear'}
+                                      </button>
+                                    </div>
                                   )}
                                 </div>
 
                                 {(expandedNotes[todo.id] || todo.notes) && (
-                                  <textarea
-                                    rows={2}
-                                    value={todo.notes || ''}
-                                    onChange={(e) => handleUpdateNotes(todo.id, e.target.value)}
-                                    placeholder={
-                                      language === 'hi'
-                                        ? 'इस साधना संकल्प से जुड़ा आध्यात्मिक अनुभव या मन की शांति का चिंतन लिखें...'
-                                        : 'Record your spiritual reflections, insights, or inner peace for this task...'
-                                    }
-                                    className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-zinc-800 rounded-xl p-2 text-xs text-gray-800 dark:text-gray-200 focus:outline-none focus:border-orange-500/50 resize-none font-sans"
-                                  />
+                                  <div className="space-y-1.5 mt-1">
+                                    {/* Quick Reflection Chips */}
+                                    <div className="flex items-center gap-1 flex-wrap">
+                                      <span className="text-[9px] text-gray-400 font-bold mr-1">
+                                        {language === 'hi' ? 'क्विक टैग:' : 'Quick Tag:'}
+                                      </span>
+                                      {[
+                                        { label: language === 'hi' ? '☮️ शांति' : '☮️ Peace', val: '☮️ Peace & Harmony' },
+                                        { label: language === 'hi' ? '🙏 कृतज्ञता' : '🙏 Gratitude', val: '🙏 Heartfelt Gratitude' },
+                                        { label: language === 'hi' ? '🧘 एकाग्रता' : '🧘 Focus', val: '🧘 Deep Focus' },
+                                        { label: language === 'hi' ? '✨ पवित्रता' : '✨ Purity', val: '✨ Inner Purity' },
+                                        { label: language === 'hi' ? '🕊️ मौन' : '🕊️ Silence', val: '🕊️ Peaceful Silence' }
+                                      ].map((chip, idx) => (
+                                        <button
+                                          key={idx}
+                                          type="button"
+                                          onClick={() => {
+                                            const current = todo.notes || '';
+                                            const newNotes = current ? `${current} | ${chip.val}` : chip.val;
+                                            handleUpdateNotes(todo.id, newNotes);
+                                          }}
+                                          className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/20 cursor-pointer transition-all active:scale-95"
+                                        >
+                                          {chip.label}
+                                        </button>
+                                      ))}
+                                    </div>
+
+                                    <textarea
+                                      rows={2}
+                                      value={todo.notes || ''}
+                                      onChange={(e) => handleUpdateNotes(todo.id, e.target.value)}
+                                      placeholder={
+                                        language === 'hi'
+                                          ? 'इस साधना संकल्प से जुड़ा आध्यात्मिक अनुभव या मन की शांति का चिंतन लिखें...'
+                                          : 'Record your spiritual reflections, insights, or inner peace for this task...'
+                                      }
+                                      className="w-full bg-amber-500/5 dark:bg-white/5 border border-amber-500/20 dark:border-zinc-800 rounded-xl p-2.5 text-xs text-gray-800 dark:text-gray-200 focus:outline-none focus:border-amber-500/50 resize-none font-sans leading-relaxed"
+                                    />
+                                  </div>
                                 )}
                               </div>
                             </div>
@@ -6525,6 +7064,107 @@ const SadhanaGoalsSection = ({
           })
         )}
       </div>
+
+      {/* Recently Completed Section (Fades away after 24 hours) */}
+      {(() => {
+        const now = Date.now();
+        const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+        
+        const recentlyCompleted = todos.filter((t: any) => {
+          if (!t.completed) return false;
+          if (!t.completedAt) return true; // fallback to recently completed
+          return (now - t.completedAt) <= TWENTY_FOUR_HOURS_MS;
+        });
+
+        if (recentlyCompleted.length === 0) return null;
+
+        return (
+          <div className="my-6 space-y-3 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent dark:from-emerald-500/15 rounded-3xl p-5 border border-emerald-500/30 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-500/20 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-xs">
+                  <CheckCircle2 size={18} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-emerald-900 dark:text-emerald-200 uppercase tracking-wider flex items-center gap-2 font-mono">
+                    <span>{language === 'hi' ? 'हाल ही में पूर्ण संकल्प (गत 24 घंटे)' : 'Recently Completed Tasks (Last 24 Hours)'}</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500 text-white font-bold">
+                      {recentlyCompleted.length}
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-emerald-700 dark:text-emerald-300">
+                    {language === 'hi' 
+                      ? '24 घंटे पश्चात ये पूर्ण कार्य स्वचालित रूप से ओझल होकर आर्काइव में सुरक्षित हो जाएंगे।' 
+                      : 'Completed tasks remain visible here for 24 hours before automatically fading to history.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 text-[10px] font-mono font-bold self-start sm:self-auto border border-emerald-500/30">
+                <Clock size={12} className="text-emerald-500 animate-pulse" />
+                <span>{language === 'hi' ? '24h ऑटो-ओझल सक्रिय' : '24h Auto-Fade Active'}</span>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-1">
+              {recentlyCompleted.map((todo: any) => {
+                const completedAgeHours = todo.completedAt 
+                  ? Math.floor((now - todo.completedAt) / (1000 * 60 * 60)) 
+                  : 0;
+                const remainingHours = Math.max(0, 24 - completedAgeHours);
+
+                return (
+                  <motion.div
+                    key={todo.id}
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="flex items-center justify-between p-3 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xs rounded-2xl border border-emerald-500/20 shadow-xs hover:border-emerald-500/40 transition-colors"
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      {/* Checkmark Ripple Toggle Button */}
+                      <motion.button
+                        type="button"
+                        whileTap={{ scale: 0.8 }}
+                        onClick={() => handleToggleTodo(todo.id)}
+                        className="relative w-6 h-6 rounded-lg bg-emerald-500 text-white flex items-center justify-center shrink-0 cursor-pointer shadow-xs"
+                        title={language === 'hi' ? 'पुनः सक्रिय करें' : 'Click to uncheck / reactivate'}
+                      >
+                        <CheckCircle2 size={13} className="text-white fill-white" />
+                      </motion.button>
+
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="text-xs font-medium text-gray-500 line-through truncate">
+                          {todo.text}
+                        </span>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                            {completedAgeHours < 1 
+                              ? (language === 'hi' ? 'हाल ही में पूर्ण ✓' : 'Completed just now ✓') 
+                              : (language === 'hi' ? `${completedAgeHours} घंटे पूर्व पूर्ण ✓` : `Completed ${completedAgeHours}h ago ✓`)}
+                          </span>
+                          <span className="text-[9px] text-gray-400 font-mono">
+                            • {language === 'hi' ? `${remainingHours} घंटे में स्वतः ओझल` : `Fades in ${remainingHours}h`}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteTodo(todo.id)}
+                      className="p-1.5 text-gray-400 hover:text-red-500 shrink-0 cursor-pointer transition-colors"
+                      title={language === 'hi' ? 'हटाएं' : 'Delete'}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Guided Meditations & Spiritual Discourses (Pravachans) Portal */}
       <div className="p-6 bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-amber-500/10 rounded-[2rem] border border-orange-500/20 space-y-6">
@@ -7269,6 +7909,64 @@ const SadhanaGoalsSection = ({
                   {language === 'hi' ? 'बंद करें' : 'Close History'}
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* First Daily Task Completion Reflection Modal */}
+      <AnimatePresence>
+        {firstTaskReflectionQuote && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="w-full max-w-lg bg-white dark:bg-zinc-900 rounded-3xl p-6 border-2 border-amber-500/40 shadow-2xl space-y-5 text-center relative overflow-hidden"
+            >
+              <div className="absolute -top-12 -right-12 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+              <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-orange-500/10 rounded-full blur-2xl pointer-events-none" />
+
+              <div className="inline-flex items-center justify-center p-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md mx-auto">
+                <Sparkles size={28} className="animate-spin" style={{ animationDuration: '8s' }} />
+              </div>
+
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                  {language === 'hi' ? '🌟 प्रथम साधना संकल्प पूर्ण!' : '🌟 First Daily Task Completed!'}
+                </span>
+                <h3 className="text-lg font-black text-gray-900 dark:text-white pt-2">
+                  {language === 'hi' ? 'आज का दैनिक आध्यात्मिक चिंतन' : 'Daily Spiritual Reflection'}
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {language === 'hi'
+                    ? 'आचार्यवर का पावन विचार आपके दिन को आध्यात्मिक ऊर्जा से प्रकाशित करे:'
+                    : 'Inspiring Acharya quote to enlighten your spiritual practice today:'}
+                </p>
+              </div>
+
+              <div className="p-5 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-amber-500/10 rounded-2xl border border-amber-500/20 space-y-3 text-left">
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 leading-relaxed italic">
+                  "{language === 'hi' ? firstTaskReflectionQuote.quoteHi : firstTaskReflectionQuote.quoteEn}"
+                </p>
+                <div className="flex items-center justify-between pt-2 border-t border-amber-500/15 text-xs font-bold">
+                  <span className="text-amber-800 dark:text-amber-300 font-mono">
+                    — {language === 'hi' ? firstTaskReflectionQuote.authorHi : firstTaskReflectionQuote.authorEn}
+                  </span>
+                  <span className="text-[10px] text-gray-400">
+                    {firstTaskReflectionQuote.source}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setFirstTaskReflectionQuote(null)}
+                className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-all shadow-md cursor-pointer active:scale-95"
+                id="close-reflection-modal-btn"
+              >
+                {language === 'hi' ? 'प्रेरणा स्वीकारें (Proceed)' : 'Accept Reflection & Continue'}
+              </button>
             </motion.div>
           </div>
         )}

@@ -283,25 +283,44 @@ export default function ProfileTab({
       doc.line(15, y, 195, y);
       y += 8;
 
-      // SECTION 1: OVERVIEW & STREAKS
-      checkPageOverflow(40);
+      // SECTION 1: OVERVIEW & STREAKS SUMMARY
+      checkPageOverflow(50);
       doc.setFillColor(245, 245, 240);
-      doc.rect(15, y, 180, 25, "F");
+      doc.rect(15, y, 180, 38, "F");
       
       doc.setTextColor(110, 31, 42);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
-      doc.text("1. STREAKS & OVERVIEW SUMMARY", 20, y + 6);
+      doc.text("1. WEEKLY STREAKS & ACTIVITY STATISTICS SUMMARY", 20, y + 6);
       
       const currentStreak = localStorage.getItem('terapanth_sadhana_streak_count') || "0";
       const totalPoints = localStorage.getItem('terapanth_sadhana_points_count') || "0";
 
-      doc.setTextColor(80, 80, 80);
+      const medStreak = calculateStreakFromLogs('meditation');
+      const japaStreak = calculateStreakFromLogs('japa');
+
+      // Calculate weekly sums from weeklyBarData
+      const totalWeeklyMedMinutes = weeklyBarData.reduce((acc, curr) => acc + (curr.meditation || 0), 0);
+      const totalWeeklyMantraCount = weeklyBarData.reduce((acc, curr) => acc + (curr.mantra || 0), 0);
+      const activeDaysCount = weeklyBarData.filter(d => (d.meditation && d.meditation >= 15) || (d.mantra && d.mantra >= 108)).length;
+      const weeklyConsistencyPct = Math.round((activeDaysCount / Math.max(weeklyBarData.length, 1)) * 100);
+
+      doc.setTextColor(60, 60, 60);
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(9.5);
-      doc.text(`Current Daily Sadhana Streak: ${currentStreak} Days`, 20, y + 14);
-      doc.text(`Total Spiritual Points: ${totalPoints} Points`, 20, y + 19);
-      y += 30;
+      doc.setFontSize(9);
+      doc.text(`Active Daily Sadhana Streak: ${currentStreak} Days`, 20, y + 14);
+      doc.text(`Weekly Meditation Streak: ${medStreak} Days`, 110, y + 14);
+
+      doc.text(`Weekly Japa/Chanting Streak: ${japaStreak} Days`, 20, y + 20);
+      doc.text(`Weekly Consistency Rate: ${weeklyConsistencyPct}% (${activeDaysCount}/7 Days)`, 110, y + 20);
+
+      doc.text(`Total Weekly Meditation Time: ${totalWeeklyMedMinutes} Minutes`, 20, y + 26);
+      doc.text(`Total Weekly Mantra Repetitions: ${totalWeeklyMantraCount} Japas`, 110, y + 26);
+
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(110, 31, 42);
+      doc.text(`Cumulative Spiritual Points: ${totalPoints} Points`, 20, y + 32);
+      y += 44;
 
       // SECTION 2: MEDITATION MOOD HISTORY (Last 7 Days)
       checkPageOverflow(60);
@@ -1581,13 +1600,35 @@ export default function ProfileTab({
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => setIsShareModalOpen(true)}
-              className="w-full sm:w-auto px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 shrink-0"
-            >
-              <Share2 size={15} />
-              <span>शेयर/एक्सपोर्ट खोलें</span>
-            </button>
+            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 flex-wrap sm:flex-nowrap">
+              <button
+                id="btn-download-sadhana-report-card"
+                onClick={exportToPDF}
+                disabled={isExportingPDF}
+                className="w-full sm:w-auto px-4 py-2.5 bg-[#6E1F2A] hover:bg-[#8B2232] text-white font-extrabold text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 shrink-0 border border-[#8B2232]/20"
+                title="Download PDF summary of weekly Sadhana streak and activity statistics"
+              >
+                {isExportingPDF ? (
+                  <>
+                    <Loader2 className="animate-spin" size={15} />
+                    <span>रिपोर्ट बन रही है...</span>
+                  </>
+                ) : (
+                  <>
+                    <FileText size={15} />
+                    <span>Download Sadhana Report</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={() => setIsShareModalOpen(true)}
+                className="w-full sm:w-auto px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 shrink-0"
+              >
+                <Share2 size={15} />
+                <span>शेयर/एक्सपोर्ट खोलें</span>
+              </button>
+            </div>
           </div>
 
           {/* Visual Weekly Sadhana Consistency Progress Bar Card */}
@@ -3468,11 +3509,10 @@ export default function ProfileTab({
 
                   <div className="space-y-2 mt-4">
                     <h5 className="font-black text-zinc-950 dark:text-zinc-50 text-xs flex items-center gap-1.5 border-b border-black/[0.05] dark:border-white/10 pb-1 uppercase tracking-tight text-orange-600 dark:text-orange-400">
-                      3. एआई प्रोसेसिंग नीति (AI Processing & Gemini Cloud
-                      Limits)
+                      3. एआई प्रोसेसिंग नीति (AI Processing & Terapanth AI Engine)
                     </h5>
                     <p>
-                      ऐप में जेमिनी मॉडल (Gemini AI API) का उपयोग करके धर्म शंका
+                      ऐप में तेरापंथ एआई मॉडल (Terapanth AI Engine) का उपयोग करके धर्म शंका
                       समाधान और Gyanshala पाठ्यक्रम की जानकारी दी जाती है। यह
                       पूरी तरह से सुरक्षित सर्वर-साइड प्रॉक्सी द्वारा किया जाता
                       है। यूजर की एपीआई चाबियां या गुप्त साख डेटा
@@ -3603,7 +3643,7 @@ export default function ProfileTab({
 
                   <div className="space-y-2 mt-4">
                     <h5 className="font-black text-zinc-950 dark:text-zinc-50 text-xs flex items-center gap-1.5 border-b border-black/[0.05] dark:border-white/10 pb-1 uppercase tracking-tight text-orange-600 dark:text-orange-400">
-                      3. Server-Side AI Protections (Gemini SDK API)
+                      3. Server-Side AI Protections (Terapanth AI Engine)
                     </h5>
                     <p>
                       All model completions for Amritvani explanations,

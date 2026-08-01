@@ -30,7 +30,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     },
     {
       title: "Ask Terapanth Mitra",
-      description: "हमारा सुरक्षित एआई इंजन (Gemini API द्वारा संचालित) जैन दर्शन, आगमों और आचार्य परंपरा से जुड़े आपके हर सवाल का सही जवाब देगा।",
+      description: "हमारा सुरक्षित एआई इंजन (Terapanth AI द्वारा संचालित) जैन दर्शन, आगमों और आचार्य परंपरा से जुड़े आपके हर सवाल का सही जवाब देगा।",
       icon: <MessageSquare className="w-14 h-14 text-emerald-600" />,
       color: "from-emerald-500/10 to-teal-500/10"
     },
