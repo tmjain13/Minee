@@ -27,6 +27,12 @@ import ArticleReader from './ArticleReader';
 import { LeshyaDhyanVisualizer, ShvasPrekshaGuidedBreathing } from './PrekshaGuidedPractices';
 import SadhanaGoalsAndPoints from './SadhanaGoalsAndPoints';
 import SadhanaWeeklyProgress from './SadhanaWeeklyProgress';
+import PointsActivityModal, { logPointsActivity } from './PointsActivityModal';
+import SadhanaLeaderboard from './SadhanaLeaderboard';
+import SpiritualBadges from './SpiritualBadges';
+import Sadhana7DayPointsChart from './Sadhana7DayPointsChart';
+import QuickMeditationTimer from './QuickMeditationTimer';
+import AddReflectionModal from './AddReflectionModal';
 import { 
   SpiritualMilestoneModal, 
   Sadhana24HourCircularDial, 
@@ -4209,6 +4215,10 @@ const SadhanaGoalsSection = ({
 
   // Level Up Milestone Detection & Celebratory Trigger
   const [showLevelUpModal, setShowLevelUpModal] = useState<boolean>(false);
+  const [showPointsActivityModal, setShowPointsActivityModal] = useState<boolean>(false);
+  const [showAddReflectionModal, setShowAddReflectionModal] = useState<boolean>(false);
+  const [pointsGainEvent, setPointsGainEvent] = useState<{ id: string; points: number; taskText: string } | null>(null);
+  const pointsPopupTimerRef = useRef<any>(null);
   const [unlockedLevelInfo, setUnlockedLevelInfo] = useState<{ level: number; titleHi: string; titleEn: string; totalXP: number; nextLevelXP: number; icon: string } | null>(null);
   const prevLevelRef = useRef<number | null>(null);
 
@@ -4301,20 +4311,23 @@ const SadhanaGoalsSection = ({
         return {
           dot: 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.7)] ring-2 ring-red-500/20',
           badge: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
-          label: language === 'hi' ? 'उच्च प्रभाव' : 'High Impact'
+          cardStyle: 'border-l-4 border-l-red-500 border-red-500/30 bg-red-500/[0.03] dark:bg-red-500/[0.05] shadow-md shadow-red-500/10',
+          label: language === 'hi' ? 'उच्च प्राथमिकता (High)' : 'High Priority'
         };
       case 'Low':
         return {
           dot: 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)] ring-2 ring-emerald-500/20',
           badge: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-          label: language === 'hi' ? 'निम्न प्रभाव' : 'Low Impact'
+          cardStyle: 'border-l-4 border-l-emerald-500 border-emerald-500/25 bg-emerald-500/[0.01] dark:bg-emerald-500/[0.03] shadow-xs',
+          label: language === 'hi' ? 'निम्न प्राथमिकता (Low)' : 'Low Priority'
         };
       case 'Medium':
       default:
         return {
           dot: 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)] ring-2 ring-amber-500/20',
           badge: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
-          label: language === 'hi' ? 'मध्यम प्रभाव' : 'Medium Impact'
+          cardStyle: 'border-l-4 border-l-amber-500 border-amber-500/30 bg-amber-500/[0.01] dark:bg-amber-500/[0.03] shadow-xs',
+          label: language === 'hi' ? 'मध्यम प्राथमिकता (Medium)' : 'Medium Priority'
         };
     }
   };
@@ -4419,9 +4432,39 @@ const SadhanaGoalsSection = ({
     URL.revokeObjectURL(url);
   };
 
+  const playSubtleTempleBellSound = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const freqs = [528, 1056, 1584];
+      const gains = [0.22, 0.1, 0.04];
+
+      freqs.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+
+        gain.gain.setValueAtTime(gains[idx], ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.8);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 1.9);
+      });
+    } catch (e) {
+      console.warn('Temple bell audio error', e);
+    }
+  };
+
   const onToggle = (id: string) => {
     const todo = todos.find(t => t.id === id);
     if (todo && !todo.completed) {
+      playSubtleTempleBellSound();
       setActiveConfettiId(id);
       setTimeout(() => setActiveConfettiId(null), 1500);
 
@@ -4437,6 +4480,26 @@ const SadhanaGoalsSection = ({
           localStorage.setItem(quoteShownKey, 'true');
         } catch (e) {}
       }
+
+      // Log Points Activity for History
+      const text = todo.text || 'Sadhana Goal';
+      const category = todo.category || 'Sadhana';
+      let pts = 20;
+      if (text.toLowerCase().includes('samayik') || text.includes('सामायिक')) pts = 50;
+      else if (text.toLowerCase().includes('japa') || text.includes('जाप') || text.includes('navkar')) pts = 40;
+      else if (text.toLowerCase().includes('swadhyaya') || text.includes('स्वाध्याय')) pts = 30;
+      logPointsActivity(text, pts, category);
+
+      // Trigger Points Gain Popup Overlay
+      setPointsGainEvent({
+        id: `pts_popup_${Date.now()}`,
+        points: pts,
+        taskText: text
+      });
+      if (pointsPopupTimerRef.current) clearTimeout(pointsPopupTimerRef.current);
+      pointsPopupTimerRef.current = setTimeout(() => {
+        setPointsGainEvent(null);
+      }, 2600);
 
       // Trigger celebratory confetti if completing this task finishes all daily tasks
       const remaining = todos.filter(t => !t.completed && t.id !== id).length;
@@ -5234,23 +5297,47 @@ const SadhanaGoalsSection = ({
           </div>
 
           {/* SADHANA POINTS & LEVEL BADGE */}
-          <div className="p-4 bg-gradient-to-br from-amber-500/20 via-orange-500/15 to-amber-500/10 rounded-2xl border-2 border-amber-500/40 shadow-lg flex items-center gap-3.5 shrink-0">
-            <div className="w-12 h-12 bg-gradient-to-tr from-amber-500 to-orange-500 text-white rounded-2xl shadow-md flex items-center justify-center text-2xl shrink-0">
-              {sadhanaXP.icon}
-            </div>
-            <div>
-              <span className="text-[9px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300 block">
-                {language === 'hi' ? 'अर्जित कुल अंक' : 'Points Earned'}
-              </span>
-              <div className="flex items-center gap-2 font-mono font-black text-lg text-amber-800 dark:text-amber-200">
-                <span>✨ {sadhanaXP.totalXP} PTS</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-900 dark:text-amber-100 border border-amber-500/30 font-extrabold">
-                  LVL {sadhanaXP.level}
-                </span>
+          <div className="p-4 bg-gradient-to-br from-amber-500/20 via-orange-500/15 to-amber-500/10 rounded-2xl border-2 border-amber-500/40 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shrink-0">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 bg-gradient-to-tr from-amber-500 to-orange-500 text-white rounded-2xl shadow-md flex items-center justify-center text-2xl shrink-0">
+                {sadhanaXP.icon}
               </div>
-              <p className="text-[11px] font-extrabold text-gray-700 dark:text-gray-200 mt-0.5">
-                {language === 'hi' ? sadhanaXP.titleHi : sadhanaXP.titleEn}
-              </p>
+              <div>
+                <span className="text-[9px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300 block">
+                  {language === 'hi' ? 'अर्जित कुल अंक' : 'Points Earned'}
+                </span>
+                <div className="flex items-center gap-2 font-mono font-black text-lg text-amber-800 dark:text-amber-200">
+                  <span>✨ {sadhanaXP.totalXP} PTS</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-900 dark:text-amber-100 border border-amber-500/30 font-extrabold">
+                    LVL {sadhanaXP.level}
+                  </span>
+                </div>
+                <p className="text-[11px] font-extrabold text-gray-700 dark:text-gray-200 mt-0.5">
+                  {language === 'hi' ? sadhanaXP.titleHi : sadhanaXP.titleEn}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-2 shrink-0 self-stretch sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setShowAddReflectionModal(true)}
+                className="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-black text-[11px] uppercase tracking-wider rounded-xl shadow-sm flex items-center gap-1.5 transition-all cursor-pointer w-full sm:w-auto justify-center"
+                id="add-reflection-btn"
+              >
+                <span>✍️</span>
+                <span>{language === 'hi' ? 'चिंतन जोड़ें (+20)' : 'Add Reflection (+20)'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowPointsActivityModal(true)}
+                className="px-3 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-900 dark:text-amber-100 font-bold text-[11px] uppercase tracking-wider rounded-xl border border-amber-500/30 flex items-center gap-1.5 transition-all cursor-pointer w-full sm:w-auto justify-center"
+                id="view-points-activity-btn"
+              >
+                <History size={14} />
+                <span>{language === 'hi' ? 'अंक इतिहास' : 'Points Activity'}</span>
+              </button>
             </div>
           </div>
         </div>
@@ -5313,6 +5400,81 @@ const SadhanaGoalsSection = ({
         </div>
       </div>
 
+      {/* QUICK MEDITATION TIMER WIDGET */}
+      <QuickMeditationTimer
+        language={language === 'hi' ? 'hi' : 'en'}
+      />
+
+      {/* MINI-LEADERBOARD COMPONENT */}
+      <SadhanaLeaderboard
+        userXP={sadhanaXP.totalXP}
+        userTitle={language === 'hi' ? sadhanaXP.titleHi : sadhanaXP.titleEn}
+        userIcon={sadhanaXP.icon}
+        language={language === 'hi' ? 'hi' : 'en'}
+      />
+
+      {/* RECHARTS 7-DAY POINTS BAR CHART */}
+      <Sadhana7DayPointsChart
+        userXP={sadhanaXP.totalXP}
+        language={language === 'hi' ? 'hi' : 'en'}
+      />
+
+      {/* SPIRITUAL BADGES & MILESTONES */}
+      <SpiritualBadges
+        userXP={sadhanaXP.totalXP}
+        language={language === 'hi' ? 'hi' : 'en'}
+      />
+
+      {/* POPUP OVERLAY ANIMATION FOR POINTS GAINED */}
+      <AnimatePresence>
+        {pointsGainEvent && (
+          <motion.div
+            key={pointsGainEvent.id}
+            initial={{ opacity: 0, scale: 0.5, y: 60 }}
+            animate={{ opacity: 1, scale: 1.05, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: -40 }}
+            transition={{ type: "spring", stiffness: 450, damping: 25 }}
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 pointer-events-none px-4 w-full max-w-sm"
+            id="points-gained-popup-overlay"
+          >
+            <div className="p-3.5 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-slate-950 font-black rounded-2xl shadow-2xl border-2 border-amber-200/80 flex items-center justify-between gap-3 backdrop-blur-md">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-white/25 flex items-center justify-center text-xl font-extrabold shadow-inner shrink-0">
+                  ✨
+                </div>
+                <div className="min-w-0 text-left">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-950/80 block">
+                    {language === 'hi' ? 'साधना अंक प्राप्त!' : 'SADHANA POINTS GAINED!'}
+                  </span>
+                  <p className="text-xs font-bold text-slate-950 truncate">
+                    {pointsGainEvent.taskText}
+                  </p>
+                </div>
+              </div>
+
+              <div className="px-3 py-1.5 bg-slate-950 text-amber-400 font-black font-mono text-sm rounded-xl border border-amber-400/40 shrink-0 shadow-md">
+                +{pointsGainEvent.points} PTS
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* POINTS ACTIVITY MODAL */}
+      <PointsActivityModal
+        isOpen={showPointsActivityModal}
+        onClose={() => setShowPointsActivityModal(false)}
+        language={language === 'hi' ? 'hi' : 'en'}
+        totalPoints={sadhanaXP.totalXP}
+      />
+
+      {/* ADD REFLECTION MODAL */}
+      <AddReflectionModal
+        isOpen={showAddReflectionModal}
+        onClose={() => setShowAddReflectionModal(false)}
+        language={language === 'hi' ? 'hi' : 'en'}
+      />
+
       {/* LEVEL UP MILESTONE CELEBRATORY MODAL */}
       <AnimatePresence>
         {showLevelUpModal && unlockedLevelInfo && (
@@ -5368,14 +5530,33 @@ const SadhanaGoalsSection = ({
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setShowLevelUpModal(false)}
-                className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-black text-xs uppercase tracking-wider rounded-2xl transition-all shadow-lg cursor-pointer active:scale-95"
-                id="close-level-up-modal-btn"
-              >
-                {language === 'hi' ? 'साधना जारी रखें (Continue)' : 'Accept Reward & Continue'}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof confetti === 'function') {
+                      confetti({
+                        particleCount: 150,
+                        spread: 80,
+                        origin: { y: 0.6 },
+                        colors: ['#f97316', '#f59e0b', '#10b981', '#3b82f6', '#ec4899']
+                      });
+                    }
+                  }}
+                  className="flex-1 py-3 bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 font-bold text-xs rounded-2xl border border-amber-500/30 flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <span>🎉 {language === 'hi' ? 'उत्सव की बौछार' : 'Celebrate Again'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowLevelUpModal(false)}
+                  className="flex-1 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-black text-xs uppercase tracking-wider rounded-2xl transition-all shadow-lg cursor-pointer active:scale-95"
+                  id="close-level-up-modal-btn"
+                >
+                  {language === 'hi' ? 'साधना जारी रखें' : 'Continue'}
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
@@ -6587,9 +6768,9 @@ const SadhanaGoalsSection = ({
                           onDragOver={(e) => handleDragOver(e, masterIndex)}
                           onDragEnd={handleDragEnd}
                           className={`relative flex items-center justify-between p-3.5 bg-white dark:bg-zinc-900 hover:bg-orange-500/5 dark:hover:bg-orange-500/5 rounded-2xl border transition-all duration-200 cursor-grab active:cursor-grabbing ${
-                            todo.impact === 'High'
-                              ? 'border-amber-500/60 shadow-md shadow-amber-500/15 ring-1 ring-amber-500/30 dark:border-amber-400/70'
-                              : 'border-black/5 dark:border-zinc-800 shadow-sm'
+                            todo.completed
+                              ? 'opacity-65 border-gray-200 dark:border-zinc-800 shadow-xs'
+                              : getImpactInfo(todo.impact || 'Medium').cardStyle
                           } ${
                             isDragging ? 'opacity-40 border-orange-500 border-dashed scale-[0.98]' : ''
                           } ${

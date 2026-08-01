@@ -41,6 +41,8 @@ import HabitsCalendar from "./HabitsCalendar";
 import ConfirmationModal from "./ConfirmationModal";
 import SecureDataExporterModal from "./SecureDataExporterModal";
 import AppSecurityVaultModal from "./AppSecurityVaultModal";
+import SpiritualBadges from "./SpiritualBadges";
+import Sadhana7DayPointsChart from "./Sadhana7DayPointsChart";
 import { getUserProfile, saveUserProfile, getPersonalizedGreeting, UserProfileData } from "../utils/userProfile";
 import { executeWithExponentialBackoff } from "../utils/exponentialBackoff";
 import { getSyncQueue, syncPendingRecords, clearSyncedCache, resolveSyncConflict, OfflineLog } from "../services/sadhanaOfflineSync";
@@ -2498,6 +2500,12 @@ export default function ProfileTab({
               </div>
             </div>
           </div>
+
+          {/* 7-Day Sadhana Points Recharts Bar Chart */}
+          <Sadhana7DayPointsChart userXP={320} language="hi" />
+
+          {/* Spiritual Badges & Milestone Icons */}
+          <SpiritualBadges userXP={320} language="hi" />
 
           {/* Sadhana Analytics View: Last 7 Days Completed Tasks by Category */}
           <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-2xl shadow-sm space-y-4">

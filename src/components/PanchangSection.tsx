@@ -692,6 +692,10 @@ const PanchangSection = React.memo(function PanchangSection() {
     }
   });
 
+  const [isDailyNotificationEnabled, setIsDailyNotificationEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('panchang_daily_notifications_enabled') === 'true';
+  });
+
   const [notifications, setNotifications] = useState<{id: string, text: string}[]>([]);
 
   // Past Ritual Notifications Log State
@@ -1080,59 +1084,116 @@ const PanchangSection = React.memo(function PanchangSection() {
         </div>
       </div>
 
-      {/* Tithi Alert Subscription Manager */}
+      {/* Tithi Alert & Daily Notification Subscription Manager */}
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-orange-500/5 to-amber-500/5 border border-orange-500/15 rounded-3xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 text-left"
+        className="bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-orange-500/5 border-2 border-orange-500/25 rounded-3xl p-5 flex flex-col gap-4 text-left shadow-sm"
+        id="panchang-daily-notification-hub"
       >
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-[pulse_2s_infinite]" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-spiritual">Tithi Subscription Hub</span>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-orange-500/15">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-[pulse_2s_infinite]" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-spiritual">Jain Ritual Notification Hub</span>
+            </div>
+            <h3 className="text-base font-extrabold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <span>Subscribe for Auspicious Tithi & Daily Ritual Reminders</span>
+            </h3>
+            <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-relaxed max-w-xl font-medium">
+              Get timely home alerts for Navkarsi, Chauvihar, and specific Jain ritual days. Stay mindful of Ashtami fasts and sacred dates.
+            </p>
           </div>
-          <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Subscribe for Auspicious Day Alerts</h3>
-          <p className="text-[10px] text-gray-550 leading-relaxed max-w-xl">
-            Get instant home alerts for chosen Tithis. Select key days to stay mindful of special rituals, penances, or fast timings like Ashtami.
-          </p>
+
+          {/* MASTER TOGGLE DAILY NOTIFICATION BUTTON */}
+          <button
+            type="button"
+            onClick={() => {
+              const nextState = !isDailyNotificationEnabled;
+              setIsDailyNotificationEnabled(nextState);
+              localStorage.setItem('panchang_daily_notifications_enabled', String(nextState));
+
+              if (nextState) {
+                if ('Notification' in window && Notification.permission !== 'granted') {
+                  Notification.requestPermission();
+                }
+                setNotifications(prev => [
+                  { id: `daily_notif_${Date.now()}`, text: '🔔 Daily Jain Ritual Notifications Enabled! You will receive daily updates for Sunrise, Chauvihar & Tithis.' },
+                  ...prev
+                ]);
+              } else {
+                setNotifications(prev => [
+                  { id: `daily_notif_${Date.now()}`, text: '🔕 Daily Ritual Notifications Paused.' },
+                  ...prev
+                ]);
+              }
+            }}
+            className={`px-4 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all border flex items-center justify-center gap-2 shadow-md cursor-pointer shrink-0 active:scale-95 ${
+              isDailyNotificationEnabled
+                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-transparent'
+                : 'bg-white dark:bg-zinc-800 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-zinc-700 hover:border-orange-500'
+            }`}
+            id="toggle-daily-notification-btn"
+          >
+            {isDailyNotificationEnabled ? (
+              <>
+                <BellRing size={16} className="animate-bounce text-amber-300" />
+                <span>Daily Notifications: ON</span>
+              </>
+            ) : (
+              <>
+                <Bell size={16} className="text-gray-500" />
+                <span>Toggle Daily Notification</span>
+              </>
+            )}
+          </button>
         </div>
         
-        <div className="flex flex-wrap gap-2 shrink-0">
-          {[
-            { id: 'ashtami', label: 'अष्टमी (Ashtami)' },
-            { id: 'chaturdashi', label: 'चतुर्दशी (Chaturdashi)' },
-            { id: 'paryushan', label: 'पर्युषण (Paryushan)' },
-            { id: 'pakakhi', label: 'पाक्खी (Pakakhi)' }
-          ].map(opt => {
-            const isSubscribed = subscribedTithis.includes(opt.id);
-            return (
-              <button
-                key={opt.id}
-                type="button"
-                onClick={() => {
-                  let nextSubs;
-                  if (isSubscribed) {
-                    nextSubs = subscribedTithis.filter(s => s !== opt.id);
-                  } else {
-                    nextSubs = [...subscribedTithis, opt.id];
-                    if ('Notification' in window && Notification.permission !== 'granted') {
-                      Notification.requestPermission();
+        {/* Specific Tithis Filter Buttons */}
+        <div>
+          <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400 block mb-2">
+            Subscribe Specific Ritual Days / Tithis:
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { id: 'ashtami', label: 'अष्टमी (Ashtami)' },
+              { id: 'chaturdashi', label: 'चतुर्दशी (Chaturdashi)' },
+              { id: 'gyaras', label: 'ग्यारस (Ekadashi)' },
+              { id: 'purnima', label: 'पूर्णिमा (Full Moon)' },
+              { id: 'amavasya', label: 'अमावस्या (New Moon)' },
+              { id: 'paryushan', label: 'पर्युषण (Paryushan)' },
+              { id: 'pakakhi', label: 'पाक्खी (Pakakhi)' }
+            ].map(opt => {
+              const isSubscribed = subscribedTithis.includes(opt.id);
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => {
+                    let nextSubs;
+                    if (isSubscribed) {
+                      nextSubs = subscribedTithis.filter(s => s !== opt.id);
+                    } else {
+                      nextSubs = [...subscribedTithis, opt.id];
+                      if ('Notification' in window && Notification.permission !== 'granted') {
+                        Notification.requestPermission();
+                      }
                     }
-                  }
-                  setSubscribedTithis(nextSubs);
-                  localStorage.setItem('panchang_subscribed_tithis', JSON.stringify(nextSubs));
-                }}
-                className={`px-3.5 py-2 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all border flex items-center gap-1.5 shadow-sm active:scale-95 ${
-                  isSubscribed
-                    ? 'bg-orange-500 text-white border-transparent'
-                    : 'bg-white dark:bg-gray-800 border-gray-255 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-750'
-                }`}
-              >
-                {isSubscribed ? <BellRing size={11} className="animate-bounce" /> : <Bell size={11} />}
-                {opt.label}
-              </button>
-            );
-          })}
+                    setSubscribedTithis(nextSubs);
+                    localStorage.setItem('panchang_subscribed_tithis', JSON.stringify(nextSubs));
+                  }}
+                  className={`px-3.5 py-2 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all border flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer ${
+                    isSubscribed
+                      ? 'bg-orange-500 text-white border-transparent shadow-xs'
+                      : 'bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-750'
+                  }`}
+                >
+                  {isSubscribed ? <BellRing size={12} className="animate-bounce" /> : <Bell size={12} />}
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </motion.div>
 
