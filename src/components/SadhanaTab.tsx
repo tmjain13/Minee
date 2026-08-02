@@ -7139,30 +7139,40 @@ const SadhanaGoalsSection = ({
 
                 {/* Items in this Group */}
                 <div className="space-y-2.5">
-                  {group.items.map((todo: any) => {
-                    const masterIndex = filteredTodos.findIndex((t: any) => t.id === todo.id);
-                    const isDragging = masterIndex === draggingIndex;
-                    const isDragOver = masterIndex === dragOverIndex;
-                    const itemTag = todo.tag || 'Daily';
-                    const isEditingThisTag = editingTagId === todo.id;
-                    const dueTimeStatus = getDueTimeStatus(todo.dueTime, todo.completed);
-                    const catColor = getCategoryColor(todo.category, todo.categoryColor);
+                  <AnimatePresence mode="popLayout">
+                    {group.items.map((todo: any) => {
+                      const masterIndex = filteredTodos.findIndex((t: any) => t.id === todo.id);
+                      const isDragging = masterIndex === draggingIndex;
+                      const isDragOver = masterIndex === dragOverIndex;
+                      const itemTag = todo.tag || 'Daily';
+                      const isEditingThisTag = editingTagId === todo.id;
+                      const dueTimeStatus = getDueTimeStatus(todo.dueTime, todo.completed);
+                      const catColor = getCategoryColor(todo.category, todo.categoryColor);
 
-                    return (
-                      <motion.div
-                        key={todo.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ 
-                          opacity: 1, 
-                          y: 0,
-                          scale: todo.completed ? [1, 1.03, 1] : 1
-                        }}
-                        transition={{ 
-                          duration: 0.25,
-                          scale: { type: "spring", stiffness: 300, damping: 15 }
-                        }}
-                        className="relative overflow-visible"
-                      >
+                      return (
+                        <motion.div
+                          key={todo.id}
+                          layout
+                          initial={{ opacity: 0, y: -15, scale: 0.96 }}
+                          animate={{ 
+                            opacity: 1, 
+                            y: 0,
+                            scale: todo.completed ? 0.98 : 1,
+                            filter: todo.completed ? 'grayscale(25%)' : 'none'
+                          }}
+                          exit={{ 
+                            opacity: 0, 
+                            x: -35, 
+                            scale: 0.9, 
+                            filter: 'blur(3px)',
+                            transition: { duration: 0.22, ease: "easeIn" }
+                          }}
+                          transition={{ 
+                            duration: 0.25,
+                            ease: [0.32, 0.72, 0, 1]
+                          }}
+                          className="relative overflow-visible"
+                        >
                         <div
                           draggable
                           onDragStart={(e) => handleDragStart(e, masterIndex)}
@@ -7396,40 +7406,65 @@ const SadhanaGoalsSection = ({
 
                                 {/* Due Time Picker / Editor Badge */}
                                 {editingTimeId === todo.id ? (
-                                  <div className="inline-flex items-center gap-1 bg-white dark:bg-zinc-900 border border-orange-500/40 px-2 py-0.5 rounded-md text-[10px] font-mono shadow-xs">
-                                    <Clock size={10} className="text-orange-500 shrink-0" />
+                                  <div className="inline-flex items-center gap-1.5 bg-white dark:bg-zinc-900 border border-orange-500/50 px-2.5 py-1 rounded-xl text-[10px] font-mono shadow-md">
+                                    <Clock size={12} className="text-orange-500 shrink-0" />
                                     <input
                                       type="time"
                                       value={todo.dueTime || ''}
                                       onChange={(e) => handleUpdateDueTime(todo.id, e.target.value)}
-                                      className="bg-transparent text-[10px] text-gray-800 dark:text-gray-100 focus:outline-none"
+                                      className="bg-transparent text-xs text-gray-800 dark:text-gray-100 focus:outline-none font-bold"
                                     />
-                                    <button type="button" onClick={() => setEditingTimeId(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-white shrink-0">
-                                      <X size={10} />
+                                    {todo.dueTime && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdateDueTime(todo.id, '')}
+                                        className="text-red-500 hover:text-red-700 text-[10px] font-bold px-1 transition-colors cursor-pointer"
+                                        title={language === 'hi' ? 'समय हटाएं' : 'Clear time'}
+                                      >
+                                        {language === 'hi' ? 'हटाएं' : 'Clear'}
+                                      </button>
+                                    )}
+                                    <button type="button" onClick={() => setEditingTimeId(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-white shrink-0 cursor-pointer">
+                                      <X size={12} />
                                     </button>
                                   </div>
                                 ) : dueTimeStatus ? (
-                                  itemTag === 'Special Ritual' && dueTimeStatus.isApproaching ? (
+                                  dueTimeStatus.isOverdue ? (
                                     <button
                                       type="button"
                                       onClick={() => setEditingTimeId(todo.id)}
-                                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-700 dark:text-amber-300 text-[10px] font-black tracking-wide animate-pulse cursor-pointer"
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-red-500/15 border border-red-500/30 text-red-700 dark:text-red-300 text-[10px] font-black tracking-wide cursor-pointer transition-all hover:bg-red-500/20"
+                                      title={language === 'hi' ? 'समय बदलें' : 'Click to change due time'}
                                     >
-                                      <Flame size={12} className="text-amber-500 shrink-0" />
+                                      <Flame size={12} className="text-red-500 shrink-0" />
                                       <span>
-                                        {dueTimeStatus.isOverdue
-                                          ? (language === 'hi' ? '⚠️ अनुष्ठान समय समाप्त' : '⚠️ Ritual Overdue')
-                                          : (language === 'hi' ? `⚡ विशेष अनुष्ठान निकट (${dueTimeStatus.diffMins}m)` : `⚡ Special Ritual Due Soon (${dueTimeStatus.diffMins}m)`)}
+                                        {language === 'hi'
+                                          ? `⚠️ समय बीता (${Math.abs(dueTimeStatus.diffMins)}m) • ${todo.dueTime}`
+                                          : `⚠️ Overdue (${Math.abs(dueTimeStatus.diffMins)}m) • ${todo.dueTime}`}
+                                      </span>
+                                    </button>
+                                  ) : dueTimeStatus.isApproaching ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditingTimeId(todo.id)}
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-700 dark:text-amber-300 text-[10px] font-black tracking-wide animate-pulse cursor-pointer hover:bg-amber-500/25 transition-all"
+                                      title={language === 'hi' ? 'समय बदलें' : 'Click to change due time'}
+                                    >
+                                      <Clock size={12} className="text-amber-500 shrink-0" />
+                                      <span>
+                                        {language === 'hi'
+                                          ? `⚡ निकट (${dueTimeStatus.diffMins}m) • ${todo.dueTime}`
+                                          : `⚡ Due Soon (${dueTimeStatus.diffMins}m) • ${todo.dueTime}`}
                                       </span>
                                     </button>
                                   ) : (
                                     <button
                                       type="button"
                                       onClick={() => setEditingTimeId(todo.id)}
-                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:text-orange-600 border border-black/5 dark:border-white/5 font-mono cursor-pointer transition-colors"
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-bold bg-orange-500/10 hover:bg-orange-500/20 text-orange-700 dark:text-orange-300 border border-orange-500/20 font-mono cursor-pointer transition-all"
                                       title={language === 'hi' ? 'समय बदलें' : 'Change due time'}
                                     >
-                                      <Clock size={10} className="text-orange-500 shrink-0" />
+                                      <Clock size={11} className="text-orange-500 shrink-0" />
                                       <span>{todo.dueTime}</span>
                                     </button>
                                   )
@@ -7437,10 +7472,10 @@ const SadhanaGoalsSection = ({
                                   <button
                                     type="button"
                                     onClick={() => setEditingTimeId(todo.id)}
-                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-black/5 dark:bg-white/5 text-gray-400 hover:text-orange-600 border border-black/5 dark:border-white/5 font-mono cursor-pointer transition-colors"
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-bold bg-black/5 dark:bg-white/5 text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 border border-black/5 dark:border-white/5 font-mono cursor-pointer transition-colors"
                                     title={language === 'hi' ? 'समय सेट करें' : 'Set due time'}
                                   >
-                                    <Clock size={10} className="shrink-0" />
+                                    <Clock size={11} className="shrink-0" />
                                     <span>{language === 'hi' ? '+ समय' : '+ Set Time'}</span>
                                   </button>
                                 )}
@@ -7640,7 +7675,8 @@ const SadhanaGoalsSection = ({
                       </motion.div>
                     );
                   })}
-                </div>
+                </AnimatePresence>
+              </div>
               </div>
             );
           })
