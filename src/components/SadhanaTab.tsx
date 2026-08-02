@@ -1,7 +1,7 @@
 import { memo, useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
-import { Clock, Play, Pause, RotateCcw, Sparkles, Volume2, VolumeX, ShieldCheck, Calendar, Plus, Trash2, CheckCircle2, ChevronRight, ChevronDown, Info, Coffee, Sun, Moon, BookOpen, TrendingUp, Download, FileText, Wind, Flame, Timer, RefreshCw, Mic, FlameKindling, CheckSquare, X, Loader2, Send, GripVertical, ArrowUp, ArrowDown, Tag, Filter, Bookmark, Search, BellRing, ArrowUpDown, Award, Compass, Users, Share2, Star, Copy, ListChecks, Check, History, Archive } from 'lucide-react';
+import { Clock, Play, Pause, RotateCcw, Sparkles, Volume2, VolumeX, ShieldCheck, Calendar, Plus, Trash2, CheckCircle2, ChevronRight, ChevronDown, Info, Coffee, Sun, Moon, BookOpen, TrendingUp, Download, FileText, Wind, Flame, Timer, RefreshCw, Mic, FlameKindling, CheckSquare, X, Loader2, Send, GripVertical, ArrowUp, ArrowDown, Tag, Filter, Bookmark, Search, BellRing, ArrowUpDown, Award, Compass, Users, Share2, Star, Copy, ListChecks, Check, History, Archive, Zap } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line, BarChart, Bar, Cell } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -4118,6 +4118,16 @@ const SadhanaGoalsSection = ({
     { hi: 'सायं प्रतिक्रमण (Evening Pratikraman)', en: 'Evening Pratikraman', tag: 'Evening', category: 'Samayik', impact: 'High' as const },
   ];
 
+  const QUICK_ADD_PRESETS = [
+    { hi: '1 सामायिक (48 मिनट)', en: '1 Samayik (48 Mins)', tag: 'Daily', category: 'Samayik', impact: 'High' as const, emoji: '🧘' },
+    { hi: 'सायं प्रतिक्रमण', en: 'Evening Pratikraman', tag: 'Evening', category: 'Samayik', impact: 'High' as const, emoji: '🌅' },
+    { hi: '108 नवकार जाप', en: '108 Navkar Mantra Japa', tag: 'Morning', category: 'Japa', impact: 'High' as const, emoji: '📿' },
+    { hi: 'आगम स्वाध्याय (20 मिनट)', en: 'Agam Swadhyay (20 Mins)', tag: 'Daily', category: 'Swadhyay', impact: 'Medium' as const, emoji: '📖' },
+    { hi: '30 मिनट मौन साधना', en: '30 Mins Silent Meditation', tag: 'Daily', category: 'Sadhana', impact: 'High' as const, emoji: '🤫' },
+    { hi: 'सूर्यास्त चौविहार व्रत', en: 'Sunset Chauvihar Fast', tag: 'Evening', category: 'Tap', impact: 'Medium' as const, emoji: '🌆' },
+    { hi: 'अणुव्रत आचरण', en: 'Anuvrat Moral Discipline', tag: 'Daily', category: 'Sadhana', impact: 'Medium' as const, emoji: '🕊️' },
+  ];
+
   // --- LOCAL SCHEDULING HELPER FOR 'EVENING' AND 'DAILY' TASK NOTIFICATIONS ---
   useEffect(() => {
     const runSchedulerCheck = () => {
@@ -6474,6 +6484,45 @@ const SadhanaGoalsSection = ({
                   isActive ? 'bg-white/20 text-white' : 'bg-black/10 dark:bg-white/10 text-gray-500'
                 }`}>
                   {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Quick Add Predefined Tasks Bar */}
+      <div className="p-4 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 rounded-3xl border border-amber-500/25 space-y-2 shadow-xs">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-xs font-black text-amber-700 dark:text-amber-300">
+            <Zap size={14} className="fill-amber-500 text-amber-500" />
+            <span>{language === 'hi' ? 'त्वरित संकल्प जोड़ें (Quick Add)' : 'Quick Add Common Sadhana Rituals'}</span>
+          </div>
+          <span className="text-[10px] text-gray-400 font-bold">
+            {language === 'hi' ? 'एक-क्लिक में जोड़ें' : '1-tap instant add'}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 scrollbar-none">
+          {QUICK_ADD_PRESETS.map((preset, idx) => {
+            const label = language === 'hi' ? preset.hi : preset.en;
+            const isAlreadyAdded = todos.some((t: any) => !t.completed && t.text.toLowerCase() === label.toLowerCase());
+            return (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleAddPreset(preset)}
+                className={`px-3 py-2 text-xs font-extrabold rounded-2xl transition-all cursor-pointer flex items-center gap-1.5 shrink-0 border ${
+                  isAlreadyAdded
+                    ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+                    : 'bg-white dark:bg-zinc-900 border-amber-500/20 text-gray-800 dark:text-gray-100 hover:border-amber-500 hover:bg-amber-500/10 shadow-xs'
+                }`}
+                title={isAlreadyAdded ? 'Already active in goals' : 'Click to add this goal'}
+              >
+                <span className="text-sm">{preset.emoji}</span>
+                <span>{label}</span>
+                <span className="p-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400">
+                  <Plus size={12} />
                 </span>
               </button>
             );

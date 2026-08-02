@@ -22,10 +22,6 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
-    }
-
     function incoming() {
       return request.resource.data;
     }
@@ -231,10 +227,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // User Profile Rules
+    // User Profile Rules - Secured against role privilege escalation by preventing role modifications on update and prohibiting admin role on create
     match /users/{userId} {
       allow read: if isOwner(userId);
-      allow write: if isOwner(userId);
+      allow create: if isOwner(userId) && (!('role' in incoming()) || incoming().role != 'admin');
+      allow update: if isOwner(userId) && !incoming().diff(existing()).affectedKeys().hasAny(['role']);
+      allow delete: if isOwner(userId);
 
       // Lock down the Sadhana Diary subcollection
       match /sadhana_diary/{document=**} {
