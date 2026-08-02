@@ -214,6 +214,23 @@ export const TerapanthLightChatUI: React.FC<TerapanthLightChatUIProps> = ({
     loadQuizDatabase().then(() => {
       setIsDbLoaded(true);
     });
+
+    const checkAndPrefill = (e?: any) => {
+      let query = e?.detail?.query;
+      if (!query) {
+        query = localStorage.getItem('terapanth_prefill_query');
+      }
+      if (query) {
+        setChatInput(query);
+        localStorage.removeItem('terapanth_prefill_query');
+      }
+    };
+
+    checkAndPrefill();
+    window.addEventListener('terapanth_ask_ai', checkAndPrefill);
+    return () => {
+      window.removeEventListener('terapanth_ask_ai', checkAndPrefill);
+    };
   }, []);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);

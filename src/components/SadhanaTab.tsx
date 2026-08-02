@@ -24,6 +24,7 @@ import {
 import { Registry } from '../integrations/ComponentRegistry';
 import { KNOWLEDGE_BASE } from '../data/knowledge';
 import ArticleReader from './ArticleReader';
+import LotusLogo from './LotusLogo';
 import { LeshyaDhyanVisualizer, ShvasPrekshaGuidedBreathing } from './PrekshaGuidedPractices';
 import SadhanaGoalsAndPoints from './SadhanaGoalsAndPoints';
 import SadhanaWeeklyProgress from './SadhanaWeeklyProgress';
@@ -442,8 +443,40 @@ const SadhanaTab = memo(({
     }
   };
 
-  const [activeSubTab, setActiveSubTab] = useState<'timer' | 'fasting' | 'mantra' | 'breathwork' | 'diary' | 'swadhya' | 'gratitude' | 'suvichar' | 'pratikraman' | 'audio' | 'seva' | 'notifications' | 'salah' | 'streaks' | 'habits' | 'goals' | 'weekly_progress' | 'timeline' | 'soundscapes'>('timer');
+  const [sadhanaGroupTab, setSadhanaGroupTab] = useState<'tracker' | 'meditation' | 'wisdom' | 'rituals' | 'tools'>('tracker');
+
+  const [activeSubTab, setActiveSubTab] = useState<'timer' | 'fasting' | 'mantra' | 'breathwork' | 'diary' | 'swadhya' | 'gratitude' | 'suvichar' | 'pratikraman' | 'audio' | 'seva' | 'notifications' | 'salah' | 'streaks' | 'habits' | 'goals' | 'weekly_progress' | 'timeline' | 'soundscapes' | 'daily_sadhana' | 'alarms'>('daily_sadhana');
   const [showQuickReflectionModal, setShowQuickReflectionModal] = useState(false);
+
+  useEffect(() => {
+    const groupMapping: Record<string, 'tracker' | 'meditation' | 'wisdom' | 'rituals' | 'tools'> = {
+      daily_sadhana: 'tracker',
+      goals: 'tracker',
+      habits: 'tracker',
+      streaks: 'tracker',
+      timer: 'meditation',
+      breathwork: 'meditation',
+      mantra: 'meditation',
+      swadhya: 'wisdom',
+      suvichar: 'wisdom',
+      diary: 'wisdom',
+      gratitude: 'wisdom',
+      seva: 'wisdom',
+      pratikraman: 'rituals',
+      fasting: 'rituals',
+      salah: 'rituals',
+      alarms: 'tools',
+      audio: 'tools',
+      soundscapes: 'tools',
+      timeline: 'tools',
+      weekly_progress: 'tools',
+      notifications: 'tools',
+    };
+    const group = groupMapping[activeSubTab];
+    if (group) {
+      setSadhanaGroupTab(group);
+    }
+  }, [activeSubTab]);
 
   useEffect(() => {
     if (initialSubTab) {
@@ -1838,281 +1871,385 @@ ${window.location.origin}`;
       animate={{ opacity: 1 }}
       className="space-y-6 pb-32 px-4"
     >
-      {dailyStreak !== undefined && dailyStreak > 0 && (
-        <div className="flex items-center justify-between px-6 py-4 bg-orange-500/10 rounded-[2rem] border border-orange-500/20 shadow-sm overflow-hidden relative group">
+      {/* 🌟 MASTER CATEGORY PORTALS NAVIGATION 🌟 */}
+      <div className="bg-white dark:bg-zinc-900 border border-stone-200/50 dark:border-zinc-800 rounded-[2rem] p-5 shadow-md space-y-4">
+        <div className="flex items-center justify-between gap-3 px-1">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-orange-500/20 rounded-xl text-orange-500">
-              <Flame size={20} className={dailyStreak % 7 === 0 ? "animate-bounce" : ""} />
-            </div>
+            <LotusLogo 
+              size={36} 
+              variant="hero" 
+              animateBreathing={true} 
+              showGlow={true} 
+              ariaLabel="Spiritual Sadhana Path Lotus Emblem" 
+              altText="Sadhana Sacred Lotus Branding Logo" 
+            />
             <div>
-              <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest">Sadhana Continuity</p>
-              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-                {dailyStreak} Day Streak
-                {dailyStreak % 7 === 0 && (
-                  <span className="flex items-center gap-1 text-[8px] bg-orange-500 text-white px-2 py-0.5 rounded-full animate-pulse">
-                    <Sparkles size={8} /> MILESTONE
-                  </span>
-                )}
+              <h3 className="serif-text text-lg font-extrabold text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                {language === 'hi' ? 'आध्यात्मिक साधना मार्गदर्शिका' : 'Spiritual Sadhana Path'}
               </h3>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium mt-0.5">
+                {language === 'hi' ? 'जैन साधना पद्धतियों व दैनिक लक्ष्यों को सुगमता से उपयोग करें' : 'Explore diverse dimensions of Jain Sadhana & goals with ease'}
+              </p>
             </div>
           </div>
-          <div className="flex gap-1">
-            {[...Array(7)].map((_, i) => {
-              const isActive = (dailyStreak % 7 === 0) ? true : (i < (dailyStreak % 7));
-              return (
-                <div 
-                  key={i} 
-                  className={`w-1.5 h-6 rounded-full transition-all duration-500 ${
-                    isActive ? 'bg-orange-500' : 'bg-gray-200 dark:bg-gray-700'
-                  }`} 
-                />
-              );
-            })}
-          </div>
-          
-          {dailyStreak % 7 === 0 && (
-            <div className="absolute inset-0 bg-orange-500/5 backdrop-blur-[2px] animate-pulse pointer-events-none" />
-          )}
-        </div>
-      )}
-
-      {/* 🎯 DAILY SPIRITUAL GOALS & 7-DAY RECHARTS POINTS TREND & 6 PM REMINDER */}
-      <SadhanaGoalsAndPoints />
-
-      {/* Quick Alarm Toggle Dashboard */}
-      <div id="quick-alarm-dashboard" className="bg-[var(--card-bg)] border border-black/5 dark:border-white/5 rounded-3xl p-6 space-y-4 shadow-md backdrop-blur-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-0.5">
-            <h3 className="text-sm font-black uppercase tracking-wider text-orange-600 dark:text-orange-400 flex items-center gap-2">
-              <Timer size={16} className="text-orange-500 shrink-0" />
-              Quick Alarm Dashboard (त्वरित अलार्म)
-            </h3>
-            <p className="text-[10px] text-gray-500 leading-normal">
-              Toggle automatic alerts synced to regional Sunrise (Pratah-Navkarsi) and Sunset (Chauvihar) boundaries.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Auto Geo-Tracking</span>
-            <button
-              id="geo-toggle"
-              onClick={() => setGeoTracking(prev => !prev)}
-              className={`w-10 h-5 rounded-full p-0.5 transition-all duration-300 relative outline-none focus:outline-none ${
-                geoTracking ? 'bg-orange-500' : 'bg-gray-200 dark:bg-gray-700'
-              }`}
-              title="Locate via GPS continuously"
-            >
-              <div 
-                className={`w-4 h-4 rounded-full bg-white shadow-md transform transition-transform duration-300 ${
-                  geoTracking ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
+          <span className="text-[9px] font-black uppercase tracking-wider bg-orange-500/10 text-orange-600 dark:text-orange-400 px-3 py-1 rounded-full border border-orange-500/20 shadow-xs shrink-0">
+            {language === 'hi' ? 'स्मार्ट हब' : 'Smart Hub'}
+          </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Sunrise Alert Card */}
-          <div 
-            className={`p-4 rounded-2xl border transition-all duration-300 flex items-center justify-between gap-4 ${
-              sunriseAlarm 
-                ? 'bg-amber-500/5 border-amber-500/25 dark:border-amber-500/20' 
-                : 'bg-black/[0.01] dark:bg-white/[0.01] border-black/5 dark:border-white/5'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-xl ${
-                sunriseAlarm ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-gray-150 dark:bg-gray-800 text-gray-400'
-              }`}>
-                <Sun size={18} />
-              </div>
-              <div>
-                <h4 className="font-bold text-xs text-gray-800 dark:text-gray-100">Pratah Navkarsi Alarm</h4>
-                <p className="text-[9px] text-gray-400">Alerts 48 minutes post-sunrise.</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setSunriseAlarm(prev => !prev)}
-              className={`w-12 h-6 rounded-full p-0.5 transition-all duration-300 relative shrink-0 outline-none focus:outline-none ${
-                sunriseAlarm ? 'bg-amber-500' : 'bg-gray-300 dark:bg-gray-700'
-              }`}
-              title="Toggle morning fast end alert"
-            >
-              <div 
-                className={`w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${
-                  sunriseAlarm ? 'translate-x-6' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
-
-          {/* Sunset Alert Card */}
-          <div 
-            className={`p-4 rounded-2xl border transition-all duration-300 flex items-center justify-between gap-4 ${
-              sunsetAlarm 
-                ? 'bg-orange-500/5 border-orange-500/25 dark:border-orange-500/20' 
-                : 'bg-black/[0.01] dark:bg-white/[0.01] border-black/5 dark:border-white/5'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-xl ${
-                sunsetAlarm ? 'bg-orange-500/20 text-orange-600 dark:text-orange-400' : 'bg-gray-150 dark:bg-gray-800 text-gray-400'
-              }`}>
-                <Moon size={18} />
-              </div>
-              <div>
-                <h4 className="font-bold text-xs text-gray-800 dark:text-gray-100">Chauvihar Sunset Alarm</h4>
-                <p className="text-[9px] text-gray-400">Alerts 3 minutes prior to Sunset.</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setSunsetAlarm(prev => !prev)}
-              className={`w-12 h-6 rounded-full p-0.5 transition-all duration-300 relative shrink-0 outline-none focus:outline-none ${
-                sunsetAlarm ? 'bg-orange-500' : 'bg-gray-300 dark:bg-gray-700'
-              }`}
-              title="Toggle sunset fasting start alert"
-            >
-              <div 
-                className={`w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${
-                  sunsetAlarm ? 'translate-x-6' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
-        </div>
-
-        <div className="pt-2 border-t border-black/5 dark:border-white/5 flex flex-wrap items-center justify-between gap-3 text-[10px] text-gray-500">
-          <div className="flex items-center gap-1.5 font-sans">
-            <Volume2 size={12} className="text-orange-500" />
-            <span>Volume level:</span>
-            {['low', 'medium', 'high'].map(vol => (
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+          {[
+            { id: 'tracker', label: language === 'hi' ? 'संकल्प व लक्ष्य' : 'Checklists', icon: '📋', color: 'from-orange-500/10 to-amber-500/10', text: 'text-orange-600 dark:text-orange-400', desc: language === 'hi' ? 'दैनिक संकल्प व लक्ष्य' : 'Daily lists & targets' },
+            { id: 'meditation', label: language === 'hi' ? 'सामायिक व ध्यान' : 'Meditation', icon: '🧘', color: 'from-purple-500/10 to-pink-500/10', text: 'text-purple-600 dark:text-purple-400', desc: language === 'hi' ? 'सामायिक, ध्यान व जाप' : 'Equanimity & chants' },
+            { id: 'wisdom', label: language === 'hi' ? 'स्वाध्याय व डायरी' : 'Study & Diary', icon: '📚', color: 'from-blue-500/10 to-teal-500/10', text: 'text-blue-600 dark:text-blue-400', desc: language === 'hi' ? 'साहित्य, सुविचार व लेख' : 'Daily study & journal' },
+            { id: 'rituals', label: language === 'hi' ? 'नियम व तप' : 'Rituals & Tapa', icon: '🕌', color: 'from-emerald-500/10 to-teal-500/10', text: 'text-emerald-600 dark:text-emerald-400', desc: language === 'hi' ? 'प्रतिक्रमण व तपस्या' : 'Ritual flow & fasts' },
+            { id: 'tools', label: language === 'hi' ? 'अलार्म व उपकरण' : 'Alarms & Tools', icon: '🔔', color: 'from-rose-500/10 to-red-500/10', text: 'text-rose-600 dark:text-rose-400', desc: language === 'hi' ? 'सूर्योदय/सूर्यास्त अलर्ट' : 'Alerts, audio & stats' }
+          ].map((grp) => {
+            const isActive = sadhanaGroupTab === grp.id;
+            return (
               <button
-                key={vol}
-                onClick={() => setAlarmVolume(vol)}
-                className={`px-2 py-0.5 font-bold uppercase rounded transition-all text-[8px] cursor-pointer ${
-                  alarmVolume === vol 
-                    ? 'bg-orange-500 text-white shadow-sm' 
-                    : 'bg-black/5 dark:bg-white/5 text-gray-400 hover:text-gray-650 dark:hover:text-gray-300'
+                key={grp.id}
+                type="button"
+                onClick={() => {
+                  setSadhanaGroupTab(grp.id as any);
+                  if (grp.id === 'tracker') setActiveSubTab('daily_sadhana');
+                  else if (grp.id === 'meditation') setActiveSubTab('timer');
+                  else if (grp.id === 'wisdom') setActiveSubTab('swadhya');
+                  else if (grp.id === 'rituals') setActiveSubTab('pratikraman');
+                  else if (grp.id === 'tools') setActiveSubTab('alarms');
+                }}
+                className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all duration-300 text-center cursor-pointer group hover:scale-[1.02] ${
+                  isActive 
+                    ? 'bg-gradient-to-br ' + grp.color + ' border-orange-500 shadow-md ring-1 ring-orange-500/30' 
+                    : 'bg-stone-50/50 dark:bg-zinc-900/50 border-stone-200/40 hover:bg-stone-100/50 dark:hover:bg-zinc-800/50'
                 }`}
               >
-                {vol}
+                <span className="text-2xl mb-1.5 transition-transform duration-300 group-hover:scale-110">{grp.icon}</span>
+                <span className={`text-xs font-black tracking-wide truncate max-w-full ${isActive ? grp.text : 'text-stone-800 dark:text-stone-200'}`}>
+                  {grp.label}
+                </span>
+                <span className="text-[8px] text-gray-400 block mt-0.5 font-medium truncate max-w-full opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity">
+                  {grp.desc}
+                </span>
               </button>
-            ))}
-          </div>
-          {geoTracking && (
-            <span className="text-[9px] text-emerald-500 font-bold animate-pulse flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-ping"></span>
-              GPS tracking active
-            </span>
-          )}
+            );
+          })}
         </div>
       </div>
 
-      {/* 🧘‍♂️ DAIY SADHANA COMPONENT (CUSTOM REGISTER RULES CHECKOFF) */}
-      <SadhanaTracker />
-
-      {/* Expanded Sadhana Portals Navigation Links */}
-      <div className="bg-[var(--card-bg)] border border-black/5 dark:border-white/5 rounded-3xl p-5 space-y-3 shadow-md">
-        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-600 dark:text-orange-400">Sadhana Portals</h4>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          <button
-            onClick={() => {
-              if (setActiveTab) {
-                setActiveTab('navkar');
-              } else {
-                setActiveSubTab('mantra');
-              }
-            }}
-            className="flex items-center gap-2 p-3 bg-black/5 dark:bg-white/5 hover:bg-orange-500/10 hover:text-orange-500 rounded-2xl transition-all duration-300 text-left cursor-pointer"
-          >
-            <Sparkles size={16} className="text-amber-500 shrink-0" />
-            <span className="text-xs font-bold truncate">Navkar Mantra</span>
-          </button>
-
-          <button
-            onClick={() => {
-              if (setActiveTab) {
-                setActiveTab('pratikraman');
-              } else {
-                setActiveSubTab('pratikraman');
-              }
-            }}
-            className="flex items-center gap-2 p-3 bg-black/5 dark:bg-white/5 hover:bg-orange-500/10 hover:text-orange-500 rounded-2xl transition-all duration-300 text-left cursor-pointer"
-          >
-            <ShieldCheck size={16} className="text-emerald-500 shrink-0" />
-            <span className="text-xs font-bold truncate">Pratikraman</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab?.('leaderboard')}
-            className="flex items-center gap-2 p-3 bg-black/5 dark:bg-white/5 hover:bg-orange-500/10 hover:text-orange-500 rounded-2xl transition-all duration-300 text-left cursor-pointer"
-          >
-            <TrendingUp size={16} className="text-indigo-500 shrink-0" />
-            <span className="text-xs font-bold truncate">Tapa Leaderboard</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab?.('journal')}
-            className="flex items-center gap-2 p-3 bg-black/5 dark:bg-white/5 hover:bg-orange-500/10 hover:text-orange-500 rounded-2xl transition-all duration-300 text-left cursor-pointer"
-          >
-            <FileText size={16} className="text-rose-500 shrink-0" />
-            <span className="text-xs font-bold truncate">Spiritual Journal</span>
-          </button>
-
-          <button
-            onClick={() => setShowQuickReflectionModal(true)}
-            className="flex items-center gap-2 p-3 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-2xl transition-all duration-300 text-left cursor-pointer border border-amber-500/20"
-          >
-            <BookOpen size={16} className="text-amber-500 shrink-0" />
-            <span className="text-xs font-bold truncate">Quick Reflection</span>
-          </button>
-
-          <button
-            onClick={() => setActiveSubTab('timeline')}
-            className="flex items-center gap-2 p-3 bg-black/5 dark:bg-white/5 hover:bg-orange-500/10 hover:text-orange-500 rounded-2xl transition-all duration-300 text-left cursor-pointer"
-          >
-            <Clock size={16} className="text-orange-500 shrink-0" />
-            <span className="text-xs font-bold truncate">24H Dial Timeline</span>
-          </button>
-
-          <button
-            onClick={() => setActiveSubTab('soundscapes')}
-            className="flex items-center gap-2 p-3 bg-black/5 dark:bg-white/5 hover:bg-orange-500/10 hover:text-orange-500 rounded-2xl transition-all duration-300 text-left cursor-pointer"
-          >
-            <Volume2 size={16} className="text-teal-500 shrink-0" />
-            <span className="text-xs font-bold truncate">Soundscapes</span>
-          </button>
-        </div>
-      </div>
-
-      <div className="flex gap-1.5 p-0.5 bg-black/5 dark:bg-white/5 rounded-2xl sticky top-0 z-20 backdrop-blur-md overflow-x-auto no-scrollbar scroll-smooth">
-        {(['timer', 'goals', 'weekly_progress', 'salah', 'breathwork', 'mantra', 'fasting', 'diary', 'swadhya', 'gratitude', 'suvichar', 'pratikraman', 'audio', 'seva', 'notifications', 'streaks', 'habits', 'timeline', 'soundscapes'] as const).map((tab) => (
+      {/* 🧭 FILTERED CONTEXTUAL SUB-TABS NAVIGATION BAR 🧭 */}
+      <div className="flex gap-1.5 p-1 bg-stone-100/50 dark:bg-zinc-800/30 rounded-2xl sticky top-0 z-20 backdrop-blur-md overflow-x-auto no-scrollbar scroll-smooth border border-stone-200/30 dark:border-zinc-800/50">
+        {(
+          sadhanaGroupTab === 'tracker'
+            ? (['daily_sadhana', 'goals', 'habits', 'streaks'] as const)
+            : sadhanaGroupTab === 'meditation'
+            ? (['timer', 'breathwork', 'mantra'] as const)
+            : sadhanaGroupTab === 'wisdom'
+            ? (['swadhya', 'suvichar', 'diary', 'gratitude', 'seva'] as const)
+            : sadhanaGroupTab === 'rituals'
+            ? (['pratikraman', 'fasting', 'salah'] as const)
+            : (['alarms', 'audio', 'soundscapes', 'timeline', 'weekly_progress', 'notifications'] as const)
+        ).map((tab) => (
           <button
             key={tab}
-            onClick={() => setActiveSubTab(tab)}
-            className={`flex-none px-3 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${activeSubTab === tab ? 'bg-white dark:bg-gray-800 text-spiritual shadow-sm shadow-black/5' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
+            onClick={() => setActiveSubTab(tab as any)}
+            className={`flex-none px-4 py-2.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+              activeSubTab === tab 
+                ? 'bg-white dark:bg-zinc-950 text-spiritual shadow-xs border border-stone-200/50 dark:border-zinc-800' 
+                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 font-bold'
+            }`}
           >
-            {tab === 'timer' && 'Samayik'}
-            {tab === 'goals' && (language === 'hi' ? 'दैनिक लक्ष्य' : 'Daily Goals')}
-            {tab === 'weekly_progress' && (language === 'hi' ? 'साप्ताहिक प्रगति' : 'Weekly Progress')}
-            {tab === 'salah' && 'रोज की सलाह'}
-            {tab === 'breathwork' && 'Breathwork'}
-            {tab === 'mantra' && 'Jaap'}
-            {tab === 'fasting' && 'Tapa'}
-            {tab === 'diary' && 'Diary'}
-            {tab === 'swadhya' && 'Swadhya'}
-            {tab === 'gratitude' && 'Gratitude'}
-            {tab === 'suvichar' && 'Suvichar'}
-            {tab === 'pratikraman' && 'Ritual Flow'}
-            {tab === 'audio' && 'Amritvani Audio'}
-            {tab === 'seva' && 'Seva Ledger'}
-            {tab === 'notifications' && 'Bulletin Board'}
-            {tab === 'streaks' && 'Sadhana Streaks'}
-            {tab === 'habits' && 'Habits Calendar'}
-            {tab === 'timeline' && '24H Dial'}
-            {tab === 'soundscapes' && 'Soundscapes'}
+            {tab === 'daily_sadhana' && (language === 'hi' ? '📋 दैनिक संकल्प' : '📋 Daily Checklist')}
+            {tab === 'goals' && (language === 'hi' ? '🎯 दैनिक लक्ष्य व अंक' : '🎯 Goals & Points')}
+            {tab === 'habits' && (language === 'hi' ? '📅 आदत कैलेंडर' : '📅 Habits Calendar')}
+            {tab === 'streaks' && (language === 'hi' ? '🔥 साधना निरंतरता' : '🔥 Sadhana Streaks')}
+
+            {tab === 'timer' && (language === 'hi' ? '🧘 सामायिक टाइमर' : '🧘 Equanimity Timer')}
+            {tab === 'breathwork' && (language === 'hi' ? '🫁 श्वास-प्रेक्षा' : '🫁 Preksha Breathing')}
+            {tab === 'mantra' && (language === 'hi' ? '📿 णमोकार जाप' : '📿 Navkar Jaap')}
+
+            {tab === 'swadhya' && (language === 'hi' ? '📚 स्वाध्याय साहित्य' : '📚 Swadhya Study')}
+            {tab === 'suvichar' && (language === 'hi' ? '💭 आज का सुविचार' : '💭 Daily Quote')}
+            {tab === 'diary' && (language === 'hi' ? '✍️ साधना डायरी' : '✍️ Sadhana Diary')}
+            {tab === 'gratitude' && (language === 'hi' ? '💖 कृतज्ञता जर्नल' : '💖 Gratitude')}
+            {tab === 'seva' && (language === 'hi' ? '🤝 सेवा लेजर' : '🤝 Seva Ledger')}
+
+            {tab === 'pratikraman' && (language === 'hi' ? '🕌 प्रतिक्रमण विधि' : '🕌 Ritual Flow')}
+            {tab === 'fasting' && (language === 'hi' ? '☀️ तपस्या शिड्यूल' : '☀️ Tapa Fasting')}
+            {tab === 'salah' && (language === 'hi' ? '💡 रोज की सलाह' : '💡 Daily Advice')}
+
+            {tab === 'alarms' && (language === 'hi' ? '⏰ अलार्म सेटिंग्स' : '⏰ Alarms & Alerts')}
+            {tab === 'audio' && (language === 'hi' ? '🎵 अमृतवाणी ऑडियो' : '🎵 Amritvani Audio')}
+            {tab === 'soundscapes' && (language === 'hi' ? '🌊 ध्यान संगीत' : '🌊 Soundscapes')}
+            {tab === 'timeline' && (language === 'hi' ? '🕒 24H साधना चक्र' : '🕒 24H Dial')}
+            {tab === 'weekly_progress' && (language === 'hi' ? '📈 साप्ताहिक रिपोर्ट' : '📈 Weekly Stats')}
+            {tab === 'notifications' && (language === 'hi' ? '📢 सूचना पट्ट' : '📢 Bulletins')}
           </button>
         ))}
       </div>
+
+      {/* --- CONDITIONAL MOUNTED MODULES FOR BASE VIEWS (DAILY SADHANA & GOALS & ALARMS) --- */}
+      
+      {/* 1. Daily Sadhana Tab View */}
+      {activeSubTab === 'daily_sadhana' && (
+        <motion.div
+          key="daily_sadhana_group"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
+          {dailyStreak !== undefined && dailyStreak > 0 && (
+            <div className="flex items-center justify-between px-6 py-4 bg-orange-500/10 rounded-[2rem] border border-orange-500/20 shadow-sm overflow-hidden relative group">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-500/20 rounded-xl text-orange-500">
+                  <Flame size={20} className={dailyStreak % 7 === 0 ? "animate-bounce" : ""} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest">Sadhana Continuity</p>
+                  <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                    {dailyStreak} Day Streak
+                    {dailyStreak % 7 === 0 && (
+                      <span className="flex items-center gap-1 text-[8px] bg-orange-500 text-white px-2 py-0.5 rounded-full animate-pulse">
+                        <Sparkles size={8} /> MILESTONE
+                      </span>
+                    )}
+                  </h3>
+                </div>
+              </div>
+              <div className="flex gap-1">
+                {[...Array(7)].map((_, i) => {
+                  const isActive = (dailyStreak % 7 === 0) ? true : (i < (dailyStreak % 7));
+                  return (
+                    <div 
+                      key={i} 
+                      className={`w-1.5 h-6 rounded-full transition-all duration-500 ${
+                        isActive ? 'bg-orange-500' : 'bg-gray-200 dark:bg-gray-700'
+                      }`} 
+                    />
+                  );
+                })}
+              </div>
+              
+              {dailyStreak % 7 === 0 && (
+                <div className="absolute inset-0 bg-orange-500/5 backdrop-blur-[2px] animate-pulse pointer-events-none" />
+              )}
+            </div>
+          )}
+
+          <SadhanaTracker />
+
+          {/* Expanded Sadhana Portals Navigation Links */}
+          <div className="bg-white dark:bg-zinc-900 border border-stone-200/50 dark:border-zinc-800 rounded-3xl p-5 space-y-3 shadow-md">
+            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-600 dark:text-orange-400">
+              {language === 'hi' ? 'साधना पोर्टल शॉर्टकट्स' : 'Sadhana Portal Shortcuts'}
+            </h4>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <button
+                onClick={() => {
+                  if (setActiveTab) {
+                    setActiveTab('navkar');
+                  } else {
+                    setActiveSubTab('mantra');
+                  }
+                }}
+                className="flex items-center gap-2 p-3 bg-black/5 dark:bg-white/5 hover:bg-orange-500/10 hover:text-orange-500 rounded-2xl transition-all duration-300 text-left cursor-pointer"
+              >
+                <Sparkles size={16} className="text-amber-500 shrink-0" />
+                <span className="text-xs font-bold truncate">Navkar Mantra</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  if (setActiveTab) {
+                    setActiveTab('pratikraman');
+                  } else {
+                    setActiveSubTab('pratikraman');
+                  }
+                }}
+                className="flex items-center gap-2 p-3 bg-black/5 dark:bg-white/5 hover:bg-orange-500/10 hover:text-orange-500 rounded-2xl transition-all duration-300 text-left cursor-pointer"
+              >
+                <ShieldCheck size={16} className="text-emerald-500 shrink-0" />
+                <span className="text-xs font-bold truncate">Pratikraman</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab?.('leaderboard')}
+                className="flex items-center gap-2 p-3 bg-black/5 dark:bg-white/5 hover:bg-orange-500/10 hover:text-orange-500 rounded-2xl transition-all duration-300 text-left cursor-pointer"
+              >
+                <TrendingUp size={16} className="text-indigo-500 shrink-0" />
+                <span className="text-xs font-bold truncate">Tapa Leaderboard</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab?.('journal')}
+                className="flex items-center gap-2 p-3 bg-black/5 dark:bg-white/5 hover:bg-orange-500/10 hover:text-orange-500 rounded-2xl transition-all duration-300 text-left cursor-pointer"
+              >
+                <FileText size={16} className="text-rose-500 shrink-0" />
+                <span className="text-xs font-bold truncate">Spiritual Journal</span>
+              </button>
+
+              <button
+                onClick={() => setShowQuickReflectionModal(true)}
+                className="flex items-center gap-2 p-3 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-2xl transition-all duration-300 text-left cursor-pointer border border-amber-500/20"
+              >
+                <BookOpen size={16} className="text-amber-500 shrink-0" />
+                <span className="text-xs font-bold truncate">Quick Reflection</span>
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* 2. Goals & Points Tab View */}
+      {activeSubTab === 'goals' && (
+        <motion.div
+          key="goals_points_group"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
+          {/* Daily Spiritual Goals, 7-day points trend Recharts line/bar chart & 6 PM Reminder */}
+          <SadhanaGoalsAndPoints />
+        </motion.div>
+      )}
+
+      {/* 3. Alarms & Alerts Tab View */}
+      {activeSubTab === 'alarms' && (
+        <motion.div
+          key="alarms_alerts_group"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
+          {/* Quick Alarm Toggle Dashboard */}
+          <div id="quick-alarm-dashboard" className="bg-[var(--card-bg)] border border-black/5 dark:border-white/5 rounded-3xl p-6 space-y-4 shadow-md backdrop-blur-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <h3 className="text-sm font-black uppercase tracking-wider text-orange-600 dark:text-orange-400 flex items-center gap-2">
+                  <Timer size={16} className="text-orange-500 shrink-0" />
+                  Quick Alarm Dashboard (त्वरित अलार्म)
+                </h3>
+                <p className="text-[10px] text-gray-500 leading-normal font-medium">
+                  Toggle automatic alerts synced to regional Sunrise (Pratah-Navkarsi) and Sunset (Chauvihar) boundaries.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Auto Geo-Tracking</span>
+                <button
+                  id="geo-toggle"
+                  onClick={() => setGeoTracking(prev => !prev)}
+                  className={`w-10 h-5 rounded-full p-0.5 transition-all duration-300 relative outline-none focus:outline-none ${
+                    geoTracking ? 'bg-orange-500' : 'bg-gray-200 dark:bg-gray-700'
+                  }`}
+                  title="Locate via GPS continuously"
+                >
+                  <div 
+                    className={`w-4 h-4 rounded-full bg-white shadow-md transform transition-transform duration-300 ${
+                      geoTracking ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Sunrise Alert Card */}
+              <div 
+                className={`p-4 rounded-2xl border transition-all duration-300 flex items-center justify-between gap-4 ${
+                  sunriseAlarm 
+                    ? 'bg-amber-500/5 border-amber-500/25 dark:border-amber-500/20' 
+                    : 'bg-black/[0.01] dark:bg-white/[0.01] border-black/5 dark:border-white/5'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-xl ${
+                    sunriseAlarm ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-gray-150 dark:bg-gray-800 text-gray-400'
+                  }`}>
+                    <Sun size={18} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-xs text-gray-800 dark:text-gray-100">Pratah Navkarsi Alarm</h4>
+                    <p className="text-[9px] text-gray-400">Alerts 48 minutes post-sunrise.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSunriseAlarm(prev => !prev)}
+                  className={`w-12 h-6 rounded-full p-0.5 transition-all duration-300 relative shrink-0 outline-none focus:outline-none ${
+                    sunriseAlarm ? 'bg-amber-500' : 'bg-gray-300 dark:bg-gray-700'
+                  }`}
+                  title="Toggle morning fast end alert"
+                >
+                  <div 
+                    className={`w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${
+                      sunriseAlarm ? 'translate-x-6' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Sunset Alert Card */}
+              <div 
+                className={`p-4 rounded-2xl border transition-all duration-300 flex items-center justify-between gap-4 ${
+                  sunsetAlarm 
+                    ? 'bg-orange-500/5 border-orange-500/25 dark:border-orange-500/20' 
+                    : 'bg-black/[0.01] dark:bg-white/[0.01] border-black/5 dark:border-white/5'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-xl ${
+                    sunsetAlarm ? 'bg-orange-500/20 text-orange-600 dark:text-orange-400' : 'bg-gray-150 dark:bg-gray-800 text-gray-400'
+                  }`}>
+                    <Moon size={18} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-xs text-gray-800 dark:text-gray-100">Chauvihar Sunset Alarm</h4>
+                    <p className="text-[9px] text-gray-400">Alerts 3 minutes prior to Sunset.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSunsetAlarm(prev => !prev)}
+                  className={`w-12 h-6 rounded-full p-0.5 transition-all duration-300 relative shrink-0 outline-none focus:outline-none ${
+                    sunsetAlarm ? 'bg-orange-500' : 'bg-gray-300 dark:bg-gray-700'
+                  }`}
+                  title="Toggle sunset fasting start alert"
+                >
+                  <div 
+                    className={`w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${
+                      sunsetAlarm ? 'translate-x-6' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-black/5 dark:border-white/5 flex flex-wrap items-center justify-between gap-3 text-[10px] text-gray-500">
+              <div className="flex items-center gap-1.5 font-sans">
+                <Volume2 size={12} className="text-orange-500" />
+                <span>Volume level:</span>
+                {['low', 'medium', 'high'].map(vol => (
+                  <button
+                    key={vol}
+                    onClick={() => setAlarmVolume(vol)}
+                    className={`px-2 py-0.5 font-bold uppercase rounded transition-all text-[8px] cursor-pointer ${
+                      alarmVolume === vol 
+                        ? 'bg-orange-500 text-white shadow-sm' 
+                        : 'bg-black/5 dark:bg-white/5 text-gray-400 hover:text-gray-650 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    {vol}
+                  </button>
+                ))}
+              </div>
+              {geoTracking && (
+                <span className="text-[9px] text-emerald-500 font-bold animate-pulse flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-ping"></span>
+                  GPS tracking active
+                </span>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       <AnimatePresence mode="wait">
         {activeSubTab === 'breathwork' && (
@@ -2602,8 +2739,11 @@ ${window.location.origin}`;
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="pb-10"
+            className="pb-10 space-y-6"
           >
+            {/* 🎯 DAILY SPIRITUAL GOALS & 7-DAY RECHARTS POINTS TREND & 6 PM REMINDER */}
+            <SadhanaGoalsAndPoints />
+
             <SadhanaGoalsSection
               todos={todos}
               setTodos={setTodos}
@@ -3319,28 +3459,7 @@ ${window.location.origin}`;
           </motion.div>
         )}
 
-        {activeSubTab === 'goals' && (
-          <motion.div
-            key="goals"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="pb-4"
-          >
-            <SadhanaGoalsSection 
-              todos={todos} 
-              setTodos={setTodos} 
-              todoInput={todoInput} 
-              setTodoInput={setTodoInput} 
-              handleAddTodo={handleAddTodo} 
-              handleToggleTodo={handleToggleTodo} 
-              handleDeleteTodo={handleDeleteTodo}
-              language={language}
-              archivedTodos={archivedTodos}
-              setArchivedTodos={setArchivedTodos}
-            />
-          </motion.div>
-        )}
+
       </AnimatePresence>
 
       {/* 🧘‍♂️ SADHANA JOURNAL MODAL (NEW FEATURE INTEGRATION) */}
@@ -5282,18 +5401,28 @@ const SadhanaGoalsSection = ({
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-4 relative z-10">
-          <div>
-            <span className="text-[10px] bg-orange-500/15 text-orange-600 dark:text-orange-400 px-3 py-1 rounded-full font-black uppercase tracking-widest leading-none inline-block border border-orange-500/20">
-              {language === 'hi' ? 'दैनिक साधना पुरस्कार प्रणाली' : 'DAILY REWARD SYSTEM'}
-            </span>
-            <h3 className="serif-text text-2xl font-bold mt-2 text-spiritual">
-              {language === 'hi' ? 'आध्यात्मिक संकल्प एवं अंक' : 'Spiritual Priority Checklist'}
-            </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-              {language === 'hi' 
-                ? 'दैनिक सामायिक, जाप एवं संकल्प पूर्ण कर अंक अर्जित करें एवं नया स्तर प्राप्त करें।' 
-                : 'Complete daily Samayik, Japa, and tasks to earn Points & level up.'}
-            </p>
+          <div className="flex items-start gap-3.5">
+            <LotusLogo 
+              size={40} 
+              variant="hero" 
+              animateBreathing={true} 
+              showGlow={true} 
+              ariaLabel="Daily Reward System Lotus Emblem" 
+              altText="Sadhana Daily Reward System Lotus Logo" 
+            />
+            <div>
+              <span className="text-[10px] bg-orange-500/15 text-orange-600 dark:text-orange-400 px-3 py-1 rounded-full font-black uppercase tracking-widest leading-none inline-block border border-orange-500/20">
+                {language === 'hi' ? 'दैनिक साधना पुरस्कार प्रणाली' : 'DAILY REWARD SYSTEM'}
+              </span>
+              <h3 className="serif-text text-2xl font-bold mt-1 text-spiritual">
+                {language === 'hi' ? 'आध्यात्मिक संकल्प एवं अंक' : 'Spiritual Priority Checklist'}
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                {language === 'hi' 
+                  ? 'दैनिक सामायिक, जाप एवं संकल्प पूर्ण कर अंक अर्जित करें एवं नया स्तर प्राप्त करें।' 
+                  : 'Complete daily Samayik, Japa, and tasks to earn Points & level up.'}
+              </p>
+            </div>
           </div>
 
           {/* SADHANA POINTS & LEVEL BADGE */}

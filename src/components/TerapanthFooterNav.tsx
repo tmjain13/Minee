@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getSyncQueueSize, syncPendingRecords, isOnline } from '../services/sadhanaOfflineSync';
+import LotusLogo from './LotusLogo';
 
 interface TerapanthFooterNavProps {
   activeTab: string;
@@ -63,49 +64,54 @@ const LotusIcon: React.FC<{ active?: boolean; size?: number }> = ({ active, size
   <svg
     width={size}
     height={size}
-    viewBox="0 0 100 90"
+    viewBox="0 0 24 24"
     fill="none"
+    stroke="currentColor"
+    strokeWidth={active ? "1.5" : "1.75"}
+    strokeLinecap="round"
+    strokeLinejoin="round"
     className={`transition-colors duration-200 ${
       active ? 'text-[#7A1F2B]' : 'text-[#707070] group-hover:text-[#2B2B2B]'
     }`}
   >
+    {/* Center petal */}
     <path
-      d="M50 24 C50 30 46 34 39 34 C46 34 50 38 50 44 C50 38 54 34 61 34 C54 34 50 30 50 24 Z"
+      d="M12 3C10 7.5 9.5 13 12 21C14.5 13 14 7.5 12 3Z"
       fill="currentColor"
+      fillOpacity={active ? 0.25 : 0}
     />
+    
+    {/* Left inner petal */}
     <path
-      d="M50 78 C38 58 38 36 50 16 C62 36 62 58 50 78 Z"
-      stroke="currentColor"
-      strokeWidth="3.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      d="M12 21C9.5 17 6.5 12.5 7 6C9 10.5 11 15.5 12 21Z"
+      fill="currentColor"
+      fillOpacity={active ? 0.18 : 0}
     />
+    
+    {/* Right inner petal */}
     <path
-      d="M50 78 C50 62 42 52 42 45"
-      stroke="currentColor"
-      strokeWidth="3"
-      strokeLinecap="round"
+      d="M12 21C14.5 17 17.5 12.5 17 6C15 10.5 13 15.5 12 21Z"
+      fill="currentColor"
+      fillOpacity={active ? 0.18 : 0}
     />
+    
+    {/* Left outer petal */}
     <path
-      d="M50 78 C50 62 58 52 58 45"
-      stroke="currentColor"
-      strokeWidth="3"
-      strokeLinecap="round"
+      d="M12 21C7.5 19.5 2.5 16 3 11C6 13 9 16.5 12 21Z"
+      fill="currentColor"
+      fillOpacity={active ? 0.12 : 0}
     />
+    
+    {/* Right outer petal */}
     <path
-      d="M50 78 C31 68 25 48 31 34 M31 34 C38 29 44 26 50 24"
-      stroke="currentColor"
-      strokeWidth="3.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      d="M12 21C16.5 19.5 21.5 16 21 11C18 13 15 16.5 12 21Z"
+      fill="currentColor"
+      fillOpacity={active ? 0.12 : 0}
     />
-    <path
-      d="M50 78 C69 68 75 48 69 34 M69 34 C62 29 56 26 50 24"
-      stroke="currentColor"
-      strokeWidth="3.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
+    
+    {/* Bottom stem cradle / leaf lines */}
+    <path d="M2 18C5 21 10 21.5 12 19C14 21.5 19 21 22 18" />
+    <path d="M12 19V22" />
   </svg>
 );
 
@@ -189,7 +195,22 @@ const TerapanthFooterNav: React.FC<TerapanthFooterNavProps> = ({
     { id: 'home', icon: HomeIcon, labelEn: 'Home', labelHi: 'होम' },
     { id: 'panchang', icon: CalendarIcon, labelEn: 'Calendar', labelHi: 'पंचांग' },
     { id: 'chat', isAi: true, labelEn: 'AI', labelHi: 'AI' },
-    { id: 'sadhana', icon: LotusIcon, labelEn: 'Sadhana', labelHi: 'साधना' },
+    { 
+      id: 'sadhana', 
+      icon: ({ active }: { active?: boolean }) => (
+        <LotusLogo 
+          size={24} 
+          active={active} 
+          variant="nav" 
+          animateBreathing={active} 
+          showGlow={active} 
+          ariaLabel="Sadhana Sacred Lotus Logo Navigation Tab"
+          altText="Sadhana Sacred Lotus Logo"
+        />
+      ), 
+      labelEn: 'Sadhana', 
+      labelHi: 'साधना' 
+    },
     { id: 'profile', icon: ProfileIcon, labelEn: 'Profile', labelHi: 'प्रोफ़ाइल' }
   ];
 

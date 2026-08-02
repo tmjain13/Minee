@@ -1,4 +1,5 @@
 import React, { ReactNode } from 'react';
+import LotusLogo from './LotusLogo';
 
 export interface NavItemConfig {
   id: string;
@@ -32,84 +33,52 @@ const LotusPetalIcon = ({ active }: { active?: boolean }) => (
   <svg
     width="24"
     height="24"
-    viewBox="0 0 100 90"
+    viewBox="0 0 24 24"
     fill="none"
+    stroke="currentColor"
+    strokeWidth={active ? "1.5" : "1.75"}
+    strokeLinecap="round"
+    strokeLinejoin="round"
     className={active ? "text-[#FFFDF8]" : "text-[#E6CDAA]/85"}
   >
-    {/* 4-pointed sparkle star inside upper central petal */}
+    {/* Center petal */}
     <path
-      d="M50 24 C50 30 46 34 39 34 C46 34 50 38 50 44 C50 38 54 34 61 34 C54 34 50 30 50 24 Z"
+      d="M12 3C10 7.5 9.5 13 12 21C14.5 13 14 7.5 12 3Z"
       fill="currentColor"
+      fillOpacity={active ? 0.25 : 0}
     />
-
-    {/* Central Petal Outline */}
+    
+    {/* Left inner petal */}
     <path
-      d="M50 78 C38 58 38 36 50 16 C62 36 62 58 50 78 Z"
-      stroke="currentColor"
-      strokeWidth="3.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      d="M12 21C9.5 17 6.5 12.5 7 6C9 10.5 11 15.5 12 21Z"
+      fill="currentColor"
+      fillOpacity={active ? 0.18 : 0}
     />
-
-    {/* Inner bottom stem lines inside central petal */}
+    
+    {/* Right inner petal */}
     <path
-      d="M50 78 C50 62 42 52 42 45"
-      stroke="currentColor"
-      strokeWidth="3"
-      strokeLinecap="round"
+      d="M12 21C14.5 17 17.5 12.5 17 6C15 10.5 13 15.5 12 21Z"
+      fill="currentColor"
+      fillOpacity={active ? 0.18 : 0}
     />
+    
+    {/* Left outer petal */}
     <path
-      d="M50 78 C50 62 58 52 58 45"
-      stroke="currentColor"
-      strokeWidth="3"
-      strokeLinecap="round"
+      d="M12 21C7.5 19.5 2.5 16 3 11C6 13 9 16.5 12 21Z"
+      fill="currentColor"
+      fillOpacity={active ? 0.12 : 0}
     />
-
-    {/* Middle layer petals */}
+    
+    {/* Right outer petal */}
     <path
-      d="M50 78 C31 68 25 48 31 34 M31 34 C38 29 44 26 50 24"
-      stroke="currentColor"
-      strokeWidth="3.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      d="M12 21C16.5 19.5 21.5 16 21 11C18 13 15 16.5 12 21Z"
+      fill="currentColor"
+      fillOpacity={active ? 0.12 : 0}
     />
-    <path
-      d="M50 78 C69 68 75 48 69 34 M69 34 C62 29 56 26 50 24"
-      stroke="currentColor"
-      strokeWidth="3.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-
-    {/* Upper back petals */}
-    <path
-      d="M31 34 C30 26 36 21 44 20"
-      stroke="currentColor"
-      strokeWidth="3.5"
-      strokeLinecap="round"
-    />
-    <path
-      d="M69 34 C70 26 64 21 56 20"
-      stroke="currentColor"
-      strokeWidth="3.5"
-      strokeLinecap="round"
-    />
-
-    {/* Outer side wing petals and bottom cradle arch */}
-    <path
-      d="M31 34 C18 39 12 44 10 49 C18 69 34 76 50 78"
-      stroke="currentColor"
-      strokeWidth="3.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M69 34 C82 39 88 44 90 49 C82 69 66 76 50 78"
-      stroke="currentColor"
-      strokeWidth="3.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
+    
+    {/* Bottom stem cradle / leaf lines */}
+    <path d="M2 18C5 21 10 21.5 12 19C14 21.5 19 21 22 18" />
+    <path d="M12 19V22" />
   </svg>
 );
 
@@ -139,7 +108,7 @@ export const getNavConfig = (t: (key: string) => string): NavItemConfig[] => [
   { id: 'HOME', label: t('home') || 'Home', icon: <HomeSolidIcon /> },
   { id: 'PANCHANG', label: t('panchang') || 'Calendar', icon: <CalendarGridIcon /> },
   { id: 'CHAT', label: 'AI', icon: <AISparkleCluster /> },
-  { id: 'SADHANA', label: t('sadhana') || 'Sadhana', icon: <LotusPetalIcon /> },
+  { id: 'SADHANA', label: t('sadhana') || 'Sadhana', icon: <LotusLogo size={24} variant="nav" ariaLabel="Sadhana Sacred Lotus Logo Navigation Tab" altText="Sadhana Sacred Lotus Logo" /> },
   { id: 'PROFILE', label: 'Profile', icon: <ProfileOutlineIcon /> }
 ];
 
@@ -274,7 +243,19 @@ export const SharedFooterNav: React.FC<SharedFooterNavProps> = ({
                   }}
                   className="flex flex-col items-center justify-center py-1 px-1 min-h-[48px] min-w-[48px] cursor-pointer group focus:outline-none transition-colors"
                 >
-                  <IconComp active={Active} />
+                  {item.id === 'SADHANA' ? (
+                    <LotusLogo
+                      size={24}
+                      active={Active}
+                      variant="nav"
+                      animateBreathing={Active}
+                      showGlow={Active}
+                      ariaLabel="Sadhana Sacred Lotus Logo Navigation Tab"
+                      altText="Sadhana Sacred Lotus Logo"
+                    />
+                  ) : (
+                    <IconComp active={Active} />
+                  )}
                   <span
                     className={`text-[11px] font-medium tracking-tight mt-0.5 transition-colors ${
                       Active ? 'text-[#FFFDF8] font-semibold' : 'text-[#E6CDAA]/85 group-hover:text-[#FFFDF8]'

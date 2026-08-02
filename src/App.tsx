@@ -367,7 +367,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<string>('home');
   const [isSearchModalOpen, setIsSearchModalOpen] = useState<boolean>(false);
 
-  // Global Ctrl/Cmd + K listener for search modal
+  // Global Ctrl/Cmd + K listener for search modal & tab navigation events
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
@@ -375,8 +375,29 @@ export default function App() {
         setIsSearchModalOpen((prev) => !prev);
       }
     };
+
+    const handleTabNav = (e: any) => {
+      if (e?.detail) {
+        setActiveTab(e.detail);
+      }
+    };
+
+    const handleAskAi = (e: any) => {
+      if (e?.detail?.query) {
+        localStorage.setItem('terapanth_prefill_query', e.detail.query);
+      }
+      setActiveTab('chat');
+    };
+
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("terapanth_navigate_tab", handleTabNav);
+    window.addEventListener("terapanth_ask_ai", handleAskAi);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("terapanth_navigate_tab", handleTabNav);
+      window.removeEventListener("terapanth_ask_ai", handleAskAi);
+    };
   }, []);
 
   const renderTabContent = () => {
