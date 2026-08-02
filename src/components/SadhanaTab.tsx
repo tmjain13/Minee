@@ -72,6 +72,55 @@ interface FastingLog {
   timestamp: any;
 }
 
+/**
+ * Helper function to automatically sort a list of todo items so that
+ * uncompleted (pending) tasks always appear at the top.
+ */
+export function sortTodosWithUncompletedFirst(todosList: any[], sortBy: string = 'date_desc'): any[] {
+  if (!Array.isArray(todosList)) return [];
+
+  const getImpactVal = (impact?: string) => {
+    if (impact === 'High') return 3;
+    if (impact === 'Low') return 1;
+    return 2; // Medium
+  };
+
+  return [...todosList].sort((a: any, b: any) => {
+    if (sortBy === 'status_completed_first') {
+      if (a.completed === b.completed) return (Number(b.id) || 0) - (Number(a.id) || 0);
+      return a.completed ? -1 : 1;
+    }
+
+    // Primary rule: Uncompleted (pending) tasks always at the top, completed at the bottom
+    if (a.completed !== b.completed) {
+      return a.completed ? 1 : -1;
+    }
+
+    // Secondary rule: Impact level priority (High > Medium > Low)
+    const valA = getImpactVal(a.impact);
+    const valB = getImpactVal(b.impact);
+    if (valB !== valA) {
+      return valB - valA;
+    }
+
+    // Tertiary rule: User selected sorting criteria
+    if (sortBy === 'alphabetical_asc') {
+      return (a.text || '').localeCompare(b.text || '');
+    }
+    if (sortBy === 'alphabetical_desc') {
+      return (b.text || '').localeCompare(a.text || '');
+    }
+    if (sortBy === 'impact_asc') {
+      return valA - valB;
+    }
+    if (sortBy === 'date_asc') {
+      return (Number(a.id) || 0) - (Number(b.id) || 0);
+    }
+    // Default: date_desc (newest created first)
+    return (Number(b.id) || 0) - (Number(a.id) || 0);
+  });
+}
+
 const FASTING_TYPES = [
   { id: 'upvas', name: 'Upvas', desc: 'Complete 24h fast', impact: 20 },
   { id: 'ekasana', name: 'Ekasana', desc: 'One meal a day', impact: 5 },
@@ -3980,6 +4029,25 @@ const SadhanaGoalsSection = ({
   const [editingTimeId, setEditingTimeId] = useState<string | null>(null);
   const [copyToast, setCopyToast] = useState<boolean>(false);
   const [showQuickReflectionModal, setShowQuickReflectionModal] = useState<boolean>(false);
+  const [quickAddToast, setQuickAddToast] = useState<{ id: string; text: string } | null>(null);
+  const quickAddTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // --- AUTO-ARCHIVE COMPLETED TASKS TOGGLE SETTING ---
+  const [autoArchiveCompleted, setAutoArchiveCompleted] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('terapanth_auto_archive_completed');
+      if (saved !== null) return JSON.parse(saved);
+    } catch (e) {}
+    return true;
+  });
+
+  const handleToggleAutoArchiveSetting = () => {
+    const next = !autoArchiveCompleted;
+    setAutoArchiveCompleted(next);
+    try {
+      localStorage.setItem('terapanth_auto_archive_completed', JSON.stringify(next));
+    } catch (e) {}
+  };
 
   // --- USER-DEFINED CUSTOM CATEGORIES & COLOR CODING ---
   const [customCategories, setCustomCategories] = useState<Array<{ id: string; label: { en: string; hi: string }; emoji: string; color: string }>>(() => {
@@ -4654,6 +4722,19 @@ const SadhanaGoalsSection = ({
           });
         }
       }
+
+      // If auto-archive setting is ON, auto-move completed task into archived history
+      if (autoArchiveCompleted) {
+        handleToggleTodo(id);
+        setTimeout(() => {
+          const completedItem = { ...todo, completed: true, completedAt: Date.now() };
+          if (setArchivedTodos) {
+            setArchivedTodos((prev: any[]) => [completedItem, ...prev.filter((a: any) => a.id !== id)]);
+          }
+          setTodos((prev: any[]) => prev.filter(t => t.id !== id));
+        }, 1100);
+        return;
+      }
     }
     handleToggleTodo(id);
   };
@@ -4723,6 +4804,27 @@ const SadhanaGoalsSection = ({
       subtasks: initialSubtasks
     };
     setTodos((prev: any[]) => [...prev, newTodo]);
+
+    if (quickAddTimerRef.current) {
+      clearTimeout(quickAddTimerRef.current);
+    }
+    setQuickAddToast({ id: newTodo.id, text: label });
+    quickAddTimerRef.current = setTimeout(() => {
+      setQuickAddToast(null);
+    }, 5000);
+  };
+
+  const handleUndoQuickAdd = () => {
+    if (!quickAddToast) return;
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate([20, 20]);
+    }
+    const targetId = quickAddToast.id;
+    setTodos((prev: any[]) => prev.filter((t: any) => t.id !== targetId));
+    setQuickAddToast(null);
+    if (quickAddTimerRef.current) {
+      clearTimeout(quickAddTimerRef.current);
+    }
   };
 
   const handleChangeItemTag = (todoId: string, newTag: string) => {
@@ -5155,46 +5257,7 @@ const SadhanaGoalsSection = ({
       return matchesTag && matchesCategory && matchesPriority && matchesKeyword && matchesStatus;
     });
 
-    const getImpactVal = (impact?: string) => {
-      if (impact === 'High') return 3;
-      if (impact === 'Low') return 1;
-      return 2; // Medium
-    };
-
-    return [...result].sort((a: any, b: any) => {
-      if (sortBy === 'status_completed_first') {
-        if (a.completed === b.completed) return (Number(b.id) || 0) - (Number(a.id) || 0);
-        return a.completed ? -1 : 1;
-      }
-
-      // Default & required behavior: Completed tasks move to the bottom of the list
-      if (a.completed !== b.completed) {
-        return a.completed ? 1 : -1;
-      }
-
-      // Priority sort for pending (and completed) tasks: High > Medium > Low
-      const valA = getImpactVal(a.impact);
-      const valB = getImpactVal(b.impact);
-      if (valB !== valA) {
-        return valB - valA;
-      }
-
-      // Fallback sorting criteria
-      if (sortBy === 'alphabetical_asc') {
-        return (a.text || '').localeCompare(b.text || '');
-      }
-      if (sortBy === 'alphabetical_desc') {
-        return (b.text || '').localeCompare(a.text || '');
-      }
-      if (sortBy === 'impact_asc') {
-        return valA - valB;
-      }
-      if (sortBy === 'date_asc') {
-        return (Number(a.id) || 0) - (Number(b.id) || 0);
-      }
-      // date_desc
-      return (Number(b.id) || 0) - (Number(a.id) || 0);
-    });
+    return sortTodosWithUncompletedFirst(result, sortBy);
   }, [todos, activeTagFilter, activeCategoryFilter, activePriorityFilter, statusFilter, searchKeyword, sortBy]);
 
   const getCategoryColor = (category?: string, categoryColor?: string) => {
@@ -5854,22 +5917,66 @@ const SadhanaGoalsSection = ({
         </div>
       </div>
 
-      {/* Auto-Archive & Restoration Drawer Trigger */}
-      <div className="flex items-center justify-between p-3.5 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/5 dark:border-white/5 text-xs">
-        <div className="flex items-center gap-2 text-gray-500">
-          <Clock size={14} className="text-amber-500 shrink-0" />
-          <span className="text-[11px] font-semibold">
-            {language === 'hi' 
-              ? 'पूर्ण संकल्प 24 घंटे बाद स्वचालित रूप से आर्काइव होते हैं' 
-              : 'Completed goals auto-archive after 24h'}
-          </span>
+      {/* Auto-Archive & Restoration Configuration Bar */}
+      <div className="p-3.5 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/5 dark:border-white/5 space-y-2.5 text-xs">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className={`p-2 rounded-xl transition-colors shrink-0 ${autoArchiveCompleted ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-gray-500/15 text-gray-400'}`}>
+              <Archive size={16} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-gray-800 dark:text-gray-150 text-xs">
+                  {language === 'hi' ? 'पूर्ण संकल्प ऑटो-आर्काइव मोड' : 'Auto-Archive Completed Goals'}
+                </span>
+                <span className={`text-[10px] font-black px-2 py-0.2 rounded-full uppercase tracking-wider ${
+                  autoArchiveCompleted ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300' : 'bg-gray-200 dark:bg-zinc-800 text-gray-600 dark:text-gray-400'
+                }`}>
+                  {autoArchiveCompleted 
+                    ? (language === 'hi' ? 'ऑटो-आर्काइव ऑन' : 'Auto-Archive ON')
+                    : (language === 'hi' ? 'सक्रिय सूची ऑन' : 'Keep in Active List')}
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-500 mt-0.5">
+                {autoArchiveCompleted
+                  ? (language === 'hi' ? 'पूर्ण होने पर संकल्प स्वतः आर्काइव इतिहास में स्थानांतरित होते हैं।' : 'Completed goals automatically move to Archived History.')
+                  : (language === 'hi' ? 'पूर्ण संकल्प दैनिक निगरानी हेतु सक्रिय सूची में बने रहते हैं।' : 'Completed goals stay in active list for persistent daily tracking.')}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
+            {/* Interactive Toggle Switch */}
+            <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-xl border border-black/5 dark:border-zinc-800 shadow-2xs">
+              <span className="text-[11px] font-bold text-gray-600 dark:text-gray-300">
+                {autoArchiveCompleted ? (language === 'hi' ? 'आर्काइव' : 'Archive') : (language === 'hi' ? 'सक्रिय रखें' : 'Keep Active')}
+              </span>
+              <button
+                type="button"
+                onClick={handleToggleAutoArchiveSetting}
+                className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  autoArchiveCompleted ? 'bg-amber-500' : 'bg-gray-300 dark:bg-zinc-700'
+                }`}
+                title={language === 'hi' ? 'स्वचालित आर्काइव मोड बदलें' : 'Toggle auto-archive mode'}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                    autoArchiveCompleted ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowArchivedModal(true)}
+              className="px-2.5 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 rounded-xl text-[11px] font-bold transition-colors cursor-pointer border border-orange-500/20 shrink-0 flex items-center gap-1.5"
+            >
+              <History size={12} />
+              <span>{language === 'hi' ? `इतिहास (${archivedTodos.length})` : `Archived (${archivedTodos.length})`}</span>
+            </button>
+          </div>
         </div>
-        <button
-          onClick={() => setShowArchivedModal(true)}
-          className="px-2.5 py-1 bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 rounded-xl text-[11px] font-bold transition-colors cursor-pointer border border-orange-500/20 shrink-0"
-        >
-          {language === 'hi' ? `आर्काइव्ड (${archivedTodos.length})` : `Archived (${archivedTodos.length})`}
-        </button>
       </div>
 
       {/* Progress & Stats Card */}
@@ -6528,6 +6635,49 @@ const SadhanaGoalsSection = ({
             );
           })}
         </div>
+
+        {/* Undo Toast Notification for Quick Add */}
+        <AnimatePresence>
+          {quickAddToast && (
+            <motion.div
+              initial={{ opacity: 0, y: -6, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.96 }}
+              transition={{ duration: 0.18 }}
+              className="mt-2 p-2.5 bg-zinc-900 dark:bg-zinc-800 text-white rounded-2xl border border-amber-500/30 shadow-lg flex items-center justify-between gap-2"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="p-1 rounded-full bg-emerald-500/20 text-emerald-400 shrink-0">
+                  <CheckCircle2 size={14} />
+                </div>
+                <div className="text-xs truncate">
+                  <span className="font-extrabold text-amber-400 mr-1">
+                    {language === 'hi' ? 'संकल्प जोड़ा गया:' : 'Task Added:'}
+                  </span>
+                  <span className="text-zinc-200 font-medium truncate">{quickAddToast.text}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleUndoQuickAdd}
+                  className="px-2.5 py-1 text-[11px] font-black bg-amber-500 hover:bg-amber-400 text-black rounded-xl transition-all flex items-center gap-1 shadow-xs cursor-pointer active:scale-95"
+                >
+                  <RotateCcw size={12} />
+                  <span>{language === 'hi' ? 'पूर्ववत करें' : 'Undo'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setQuickAddToast(null)}
+                  className="p-1 text-zinc-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Goal Entry Input with Tag, Category, Impact Level & Optional Due Time */}
@@ -6898,14 +7048,75 @@ const SadhanaGoalsSection = ({
       {/* Grouped Todo List Container */}
       <div className="space-y-6">
         {groupedTodos.length === 0 ? (
-          <div className="p-8 border-2 border-dashed border-black/5 dark:border-white/10 rounded-[2rem] text-center space-y-2">
-            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
-              {language === 'hi' ? 'इस श्रेणी में कोई लक्ष्य नहीं मिला' : 'No goals found in this filter'}
-            </p>
-            <p className="text-[10px] text-gray-400">
-              {language === 'hi' ? 'ऊपर नया संकल्प जोड़ें या दूसरे टैग पर स्विच करें।' : 'Add a new goal above or switch to another filter tag.'}
-            </p>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-8 sm:p-10 border-2 border-dashed border-amber-500/20 dark:border-amber-500/15 rounded-[2.5rem] text-center space-y-5 bg-gradient-to-b from-amber-500/5 via-orange-500/5 to-transparent relative overflow-hidden shadow-xs"
+          >
+            {/* Background ambient glow circle */}
+            <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-48 h-48 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+
+            {/* Custom Spiritual Icon Artwork */}
+            <div className="relative inline-flex items-center justify-center">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-500/20 via-orange-500/15 to-emerald-500/20 border border-amber-500/30 flex items-center justify-center shadow-md text-amber-600 dark:text-amber-300">
+                <svg
+                  viewBox="0 0 64 64"
+                  fill="none"
+                  className="w-12 h-12 text-amber-500 stroke-current stroke-[2]"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  {/* Outer lotus petal ring */}
+                  <path d="M32 8 C36 18, 48 24, 48 34 C48 44, 38 52, 32 52 C26 52, 16 44, 16 34 C16 24, 28 18, 32 8 Z" className="fill-amber-500/10" />
+                  <path d="M32 16 C34 24, 42 28, 42 35 C42 41, 36 47, 32 47 C28 47, 22 41, 22 35 C22 28, 30 24, 32 16 Z" className="fill-orange-500/20" />
+                  {/* Center flame/light */}
+                  <circle cx="32" cy="35" r="5" className="fill-amber-400 stroke-amber-500" />
+                  <path d="M32 20 L32 24" />
+                  <path d="M20 35 L24 35" />
+                  <path d="M40 35 L44 35" />
+                  <path d="M23 26 L26 29" />
+                  <path d="M41 26 L38 29" />
+                </svg>
+              </div>
+              <motion.div
+                animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute -top-1 -right-1 p-1.5 bg-amber-500 text-white rounded-full shadow-sm"
+              >
+                <Sparkles size={14} />
+              </motion.div>
+            </div>
+
+            <div className="space-y-2 max-w-sm mx-auto">
+              <h3 className="text-base font-black text-gray-800 dark:text-gray-100 uppercase tracking-wide">
+                {language === 'hi' ? 'अपनी साधना का पावन आरम्भ करें' : 'Begin Your Daily Spiritual Practice'}
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed font-medium">
+                {language === 'hi'
+                  ? 'आपकी संकल्प सूची रिक्त है। आत्म-विशुद्धि एवं आंतरिक शांति हेतु एक नया आध्यात्मिक नियम या सामायिक-जाप चुनें।'
+                  : 'Your active resolutions list is clear. Select a quick-add ritual below or create a custom spiritual vow to start your session.'}
+              </p>
+            </div>
+
+            {/* Recommended Starter Ritual Quick Buttons inside Empty State */}
+            <div className="pt-2 flex flex-wrap items-center justify-center gap-2 max-w-md mx-auto">
+              <span className="w-full text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400">
+                {language === 'hi' ? 'त्वरित नियम चुनें:' : 'Suggested Quick Practices:'}
+              </span>
+              {QUICK_ADD_PRESETS.slice(0, 4).map((preset, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleAddPreset(preset)}
+                  className="px-3 py-2 text-xs font-bold rounded-2xl bg-white dark:bg-zinc-900 border border-amber-500/25 hover:border-amber-500 hover:bg-amber-500/10 text-gray-800 dark:text-gray-200 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs active:scale-95"
+                >
+                  <span>{preset.emoji}</span>
+                  <span>{language === 'hi' ? preset.hi : preset.en}</span>
+                  <Plus size={12} className="text-amber-500" />
+                </button>
+              ))}
+            </div>
+          </motion.div>
         ) : (
           groupedTodos.map((group) => {
             const groupCompletedCount = group.items.filter((i: any) => i.completed).length;
