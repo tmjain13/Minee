@@ -4032,6 +4032,14 @@ const SadhanaGoalsSection = ({
   const [quickAddToast, setQuickAddToast] = useState<{ id: string; text: string } | null>(null);
   const quickAddTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  useEffect(() => {
+    return () => {
+      if (quickAddTimerRef.current) {
+        clearTimeout(quickAddTimerRef.current);
+      }
+    };
+  }, []);
+
   // --- AUTO-ARCHIVE COMPLETED TASKS TOGGLE SETTING ---
   const [autoArchiveCompleted, setAutoArchiveCompleted] = useState<boolean>(() => {
     try {

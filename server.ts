@@ -253,20 +253,33 @@ async function startServer() {
         callback(null, true);
         return;
       }
-      
-      if (
-        origin.includes("localhost") ||
-        origin.endsWith(".run.app") ||
-        origin.endsWith(".google.com") ||
-        origin.endsWith(".googleusercontent.com") ||
-        origin.endsWith(".firebaseapp.com") ||
-        process.env.NODE_ENV !== "production"
-      ) {
+
+      if (process.env.NODE_ENV !== "production") {
         callback(null, true);
         return;
       }
 
-      callback(null, true);
+      try {
+        const hostname = new URL(origin).hostname;
+
+        // Check for localhost
+        if (hostname === "localhost" || hostname === "127.0.0.1") {
+          callback(null, true);
+          return;
+        }
+
+        // Allowlisted suffixes
+        const allowedSuffixes = [".run.app", ".google.com", ".googleusercontent.com", ".firebaseapp.com"];
+        const isAllowed = allowedSuffixes.some(suffix => hostname === suffix.slice(1) || hostname.endsWith(suffix));
+
+        if (isAllowed) {
+          callback(null, true);
+        } else {
+          callback(new Error("Not allowed by CORS"));
+        }
+      } catch (err) {
+        callback(new Error("Invalid Origin"));
+      }
     },
     credentials: true
   }));
