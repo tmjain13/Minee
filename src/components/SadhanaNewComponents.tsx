@@ -660,8 +660,24 @@ export function QuickReflectionModal({ isOpen, onClose }: QuickReflectionModalPr
 
   const [mood, setMood] = useState('🧘 Calm (शांत)');
   const [tag, setTag] = useState('Preksha Dhyan');
-  const [text, setText] = useState('');
+  const [text, setText] = useState(() => {
+    try {
+      return localStorage.getItem('sadhana_reflection_modal_autosave') || '';
+    } catch {
+      return '';
+    }
+  });
   const [isDictating, setIsDictating] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (text) {
+        localStorage.setItem('sadhana_reflection_modal_autosave', text);
+      } else {
+        localStorage.removeItem('sadhana_reflection_modal_autosave');
+      }
+    } catch (e) {}
+  }, [text]);
 
   const saveEntriesToStorage = (updated: ReflectionEntry[]) => {
     setEntries(updated);
@@ -684,6 +700,7 @@ export function QuickReflectionModal({ isOpen, onClose }: QuickReflectionModalPr
     const updated = [newEntry, ...entries];
     saveEntriesToStorage(updated);
     setText('');
+    localStorage.removeItem('sadhana_reflection_modal_autosave');
   };
 
   const handleDeleteEntry = (id: string) => {

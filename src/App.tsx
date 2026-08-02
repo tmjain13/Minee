@@ -19,6 +19,7 @@ import {
   Monitor,
   PenTool,
   Check,
+  CheckCircle2,
   X,
   Wifi,
   WifiOff,
@@ -721,7 +722,13 @@ export default function App() {
   const [showSadhanaSummary, setShowSadhanaSummary] = useState(false);
   const [summaryDuration, setSummaryDuration] = useState(0);
   const [summaryCompletedTasks, setSummaryCompletedTasks] = useState<Todo[]>([]);
-  const [sadhanaObservation, setSadhanaObservation] = useState('');
+  const [sadhanaObservation, setSadhanaObservation] = useState(() => {
+    try {
+      return localStorage.getItem('sadhana_summary_observation_autosave') || '';
+    } catch {
+      return '';
+    }
+  });
   const [showResetTabOrderConfirm, setShowResetTabOrderConfirm] = useState(false);
   const [todoToDeleteId, setTodoToDeleteId] = useState<string | null>(null);
   const [savedObservations, setSavedObservations] = useState<{date: string, observation: string, duration: number}[]>(() => {
@@ -733,9 +740,35 @@ export default function App() {
     }
   });
 
+  // Auto-save Sadhana observation textarea input to localStorage
+  useEffect(() => {
+    try {
+      if (sadhanaObservation) {
+        localStorage.setItem('sadhana_summary_observation_autosave', sadhanaObservation);
+      } else {
+        localStorage.removeItem('sadhana_summary_observation_autosave');
+      }
+    } catch (e) {
+      console.warn("Failed to auto-save Sadhana summary observation:", e);
+    }
+  }, [sadhanaObservation]);
+
+  // Restore autosaved Sadhana observation when summary modal opens
+  useEffect(() => {
+    if (showSadhanaSummary) {
+      try {
+        const savedText = localStorage.getItem('sadhana_summary_observation_autosave');
+        if (savedText && !sadhanaObservation) {
+          setSadhanaObservation(savedText);
+        }
+      } catch (e) {}
+    }
+  }, [showSadhanaSummary]);
+
   const handleSaveSadhanaObservation = () => {
     if (!sadhanaObservation.trim()) {
       setShowSadhanaSummary(false);
+      localStorage.removeItem('sadhana_summary_observation_autosave');
       return;
     }
     const newRecord = {
@@ -747,6 +780,7 @@ export default function App() {
     setSavedObservations(updated);
     localStorage.setItem('preksha_meditation_observations', JSON.stringify(updated));
     setSadhanaObservation('');
+    localStorage.removeItem('sadhana_summary_observation_autosave');
     setShowSadhanaSummary(false);
   };
 
@@ -2523,9 +2557,16 @@ export default function App() {
 
               {/* State of Mind Observation Field */}
               <div className="space-y-1.5 text-left">
-                <label className="block text-[10px] text-zinc-400 uppercase tracking-widest font-black">
-                  📝 {language === 'hi' ? 'ध्यान के अनुभव / अंतर्दृष्टि' : 'Log State of Mind / Insights'}
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="block text-[10px] text-zinc-400 uppercase tracking-widest font-black">
+                    📝 {language === 'hi' ? 'ध्यान के अनुभव / अंतर्दृष्टि' : 'Log State of Mind / Insights'}
+                  </label>
+                  {sadhanaObservation.trim().length > 0 && (
+                    <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md flex items-center gap-1 border border-emerald-500/20">
+                      <CheckCircle2 size={10} /> {language === 'hi' ? 'स्वचालित सहेजा गया' : 'Auto-saved'}
+                    </span>
+                  )}
+                </div>
                 <textarea
                   value={sadhanaObservation}
                   onChange={(e) => setSadhanaObservation(e.target.value)}

@@ -626,6 +626,18 @@ const SadhanaTab = memo(({
     }
   }, [sessionJournalText]);
 
+  // Restore autosaved observation when journal modal opens
+  useEffect(() => {
+    if (showJournalModal) {
+      try {
+        const savedText = localStorage.getItem('sadhana_summary_observation_autosave');
+        if (savedText && !sessionJournalText) {
+          setSessionJournalText(savedText);
+        }
+      } catch (e) {}
+    }
+  }, [showJournalModal]);
+
   // Compute meditation duration trend across the last 7 sessions
   const last7MeditationSessionsData = useMemo(() => {
     let savedSessions: { date: string; duration: number }[] = [];
