@@ -75,17 +75,35 @@ export const SadhalaAuthAndPanchangHub = () => {
       setPassword('');
     } catch (err: any) {
       console.error(err);
-      if (err?.code === 'auth/operation-not-allowed' || (err?.message && err.message.includes('operation-not-allowed'))) {
+      const code = err?.code || '';
+      const msg = err?.message || '';
+
+      if (code === 'auth/operation-not-allowed' || msg.includes('operation-not-allowed')) {
         setIsOpNotAllowed(true);
       }
-      if (err.message.includes('auth/invalid-credential') || err.message.includes('auth/wrong-password')) {
-        setAuthError('ईमेल या पासवर्ड अमान्य है।');
-      } else if (err.message.includes('auth/weak-password')) {
-        setAuthError('पासवर्ड कम से कम 6 अक्षरों का होना चाहिए।');
-      } else if (err.message.includes('auth/email-already-in-use')) {
-        setAuthError('यह ईमेल पहले से पंजीकृत है।');
-      } else {
-        setAuthError(err.message || 'प्रमाणीकरण विफल रहा।');
+
+      switch (code) {
+        case 'auth/invalid-credential':
+        case 'auth/wrong-password':
+          setAuthError('ईमेल या पासवर्ड अमान्य है।');
+          break;
+        case 'auth/weak-password':
+          setAuthError('पासवर्ड कम से कम 6 अक्षरों का होना चाहिए।');
+          break;
+        case 'auth/email-already-in-use':
+          setAuthError('यह ईमेल पहले से पंजीकृत है।');
+          break;
+        default:
+          if (msg.includes('auth/invalid-credential') || msg.includes('auth/wrong-password')) {
+            setAuthError('ईमेल या पासवर्ड अमान्य है।');
+          } else if (msg.includes('auth/weak-password')) {
+            setAuthError('पासवर्ड कम से कम 6 अक्षरों का होना चाहिए।');
+          } else if (msg.includes('auth/email-already-in-use')) {
+            setAuthError('यह ईमेल पहले से पंजीकृत है।');
+          } else {
+            setAuthError(msg || 'प्रमाणीकरण विफल रहा।');
+          }
+          break;
       }
     } finally {
       setAuthLoading(false);

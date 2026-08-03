@@ -184,10 +184,10 @@ async function startServer() {
   const postBodySchema = z.object({
     message: z.string().max(4000).optional(),
     history: z.array(z.record(z.string(), z.any())).optional(),
-    term: z.string().optional(),
-    url: z.string().optional(),
-    title: z.string().optional(),
-    details: z.string().optional(),
+    term: z.string().max(200).optional(),
+    url: z.string().max(2048).optional(),
+    title: z.string().max(300).optional(),
+    details: z.string().max(4000).optional(),
     offlineContext: z.string().max(4000).optional(),
   });
 

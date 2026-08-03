@@ -4031,11 +4031,15 @@ const SadhanaGoalsSection = ({
   const [showQuickReflectionModal, setShowQuickReflectionModal] = useState<boolean>(false);
   const [quickAddToast, setQuickAddToast] = useState<{ id: string; text: string } | null>(null);
   const quickAddTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoArchiveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     return () => {
       if (quickAddTimerRef.current) {
         clearTimeout(quickAddTimerRef.current);
+      }
+      if (autoArchiveTimerRef.current) {
+        clearTimeout(autoArchiveTimerRef.current);
       }
     };
   }, []);
@@ -4734,7 +4738,10 @@ const SadhanaGoalsSection = ({
       // If auto-archive setting is ON, auto-move completed task into archived history
       if (autoArchiveCompleted) {
         handleToggleTodo(id);
-        setTimeout(() => {
+        if (autoArchiveTimerRef.current) {
+          clearTimeout(autoArchiveTimerRef.current);
+        }
+        autoArchiveTimerRef.current = setTimeout(() => {
           const completedItem = { ...todo, completed: true, completedAt: Date.now() };
           if (setArchivedTodos) {
             setArchivedTodos((prev: any[]) => [completedItem, ...prev.filter((a: any) => a.id !== id)]);

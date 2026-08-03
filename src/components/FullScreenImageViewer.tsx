@@ -8,9 +8,13 @@ interface MonasticMember {
   id: string;
   name: string;
   role: string;
-  category: 'Acharya' | 'Muni' | 'Sadhvi' | 'Sadhvi Pramukha' | 'Mahashraman';
+  category: string;
   imageUrl?: string;
   description?: string;
+  location?: string;
+  event?: string;
+  acharya?: string;
+  tags?: string[];
 }
 
 interface FullScreenImageViewerProps {
